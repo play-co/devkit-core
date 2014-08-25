@@ -1,0 +1,39 @@
+{
+  "name": "devkit-core",
+  "author": "Game Closure",
+  "description": "DevKit client API",
+  "version": "2.0.0-beta.6",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "http://github.com/gameclosure/gcapi/gcapi.git"
+  },
+  "dependencies": {
+    "cli-color": "^0.3.2",
+    "etags": "git+https://github.com/gameclosure/etags#1.0.0",
+    "ff": "^0.2.0",
+    "graceful-fs": "^3.0.2",
+    "image-size": "0.3.2",
+    "mime": "1.2.11",
+    "mkdirp": "0.5.0",
+    "optimist": "^0.6.1",
+    "printf": "0.2.0",
+    "stylus": "^0.47.3",
+    "uglify-js": "^2.4.15"
+  },
+  "scripts": {
+    "preinstall": "scripts/preinstall.sh"
+  },
+  "devkit": {
+    "buildTargets": {
+      "browser-mobile": "src/build/browser/",
+      "browser-desktop": "src/build/browser/",
+      "native-ios": "src/build/native/native-ios",
+      "native-android": "src/build/native/native-android"
+    },
+    "clientPaths": {
+      "devkit": "src/clientapi",
+      "ff": "src/clientapi/api/ff"
+    }
+  }
+}
