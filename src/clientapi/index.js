@@ -26,10 +26,6 @@ import ui.StackView;
 import device;
 var FontRenderer = device.get('FontRenderer');
 
-if (device.simulatingMobileNative) {
-	jsio('import .debugging.nativeShim');
-}
-
 if (!GLOBAL.CONFIG) { GLOBAL.CONFIG = {}; }
 if (!GLOBAL.DEBUG) { GLOBAL.DEBUG = false; }
 

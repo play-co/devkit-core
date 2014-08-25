@@ -19,17 +19,17 @@ jsio.__env.fetch = function (filename) {
 };
 
 import ..debugging.conn;
-import device;
-var isSimulator = device.isSimulator;
+
+var isSimulator = GLOBAL.CONFIG && !!CONFIG.simulator;
+var isNative = /^native/.test(CONFIG.target);
 
 if (isSimulator) {
 	// prefix filenames in the debugger
 	jsio.__env.debugPath = function (path) { return 'http://' + (CONFIG.bundleID || CONFIG.packageName) + '/' + path.replace(/^[\.\/]+/, ''); }
 
-	// NATIVE will be simulated in this case
-} else {
-	// device.simulatingMobileNative = true;
-	// import gc.debugging.nativeShim;
+	if (isNative) {
+		import ..debugging.nativeShim;
+	}
 }
 
 // shims
@@ -123,6 +123,7 @@ if (DEBUG) {
 		}
 	}
 
+	import device;
 	debugging.conn.connect({
 		handshake: {
 			deviceId: deviceId,

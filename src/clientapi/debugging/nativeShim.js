@@ -18,60 +18,49 @@ import lib.PubSub;
 import lib.Callback;
 import device;
 
-var testContactList = [
-];
-
-// for (var i = testContactList.length; i < 1000; ++i) {
-// 	testContactList.push({id: i, name: username(), phones: [{number: '123456789'}]});
-// }
-
+exports.isShim = true;
 exports.backButton = new lib.PubSub();
-
 exports.dialogs = {
-	
-	showDialog: function () {
-		logger.log("Showing a dialog!");
-	},
-
-	showAppRater: function () {
-		logger.log("Showing rate dialog!");
-	}
-
+  showDialog: function () {
+    logger.log("Showing a dialog!");
+  },
+  showAppRater: function () {
+    logger.log("Showing rate dialog!");
+  }
 };
-
 
 var _withContacts = new lib.Callback();
 _withContacts.fire();
 
 exports.contacts = merge(new lib.PubSub(), {
-	
-	getContactList: function () {
-		return testContactList;
-	},
 
-	withContacts: function () { _withContacts.forward(arguments); },
+  getContactList: function () {
+    return [];
+  },
 
-	sendAutomatedSMS: function (phone, msg, cb) {
-		logger.log('Send Automated SMS:', phone, msg);
-		cb && cb();
-	},
+  withContacts: function () { _withContacts.forward(arguments); },
 
-	sendSMS: function (phone, msg, cb) {
-		logger.log('Send SMS:', phone, msg);
-		cb && cb();
-	},
+  sendAutomatedSMS: function (phone, msg, cb) {
+    logger.log('Send Automated SMS:', phone, msg);
+    cb && cb();
+  },
 
-	getPicture: function (id) {
-		return null;
-	},
-	
-	getPictures: function (ids) {
-		return null;
-	},
+  sendSMS: function (phone, msg, cb) {
+    logger.log('Send SMS:', phone, msg);
+    cb && cb();
+  },
 
-	getPictureBase64: function (id) {
-		return null;
-	}
+  getPicture: function (id) {
+    return null;
+  },
+
+  getPictures: function (ids) {
+    return null;
+  },
+
+  getPictureBase64: function (id) {
+    return null;
+  }
 
 });
 
@@ -82,79 +71,74 @@ var _withPhoneNumber = new lib.Callback();
 _withPhoneNumber.fire(null);
 
 exports.profile = {
-	fullName: "",
+  fullName: "",
 
-	getPicture: function (id) {
-		return null;
-	},
+  getPicture: function (id) {
+    return null;
+  },
 
-	getPictureBase64: function (id) {
-		return null;
-	},
+  getPictureBase64: function (id) {
+    return null;
+  },
 
-	withPhoneNumber: function () { _withPhoneNumber.forward(arguments); }
+  withPhoneNumber: function () { _withPhoneNumber.forward(arguments); }
 };
 
 exports.sound = {
-	playSound: function (url, volume) {
-		logger.log('NATIVE shim: play a sound');
-	},
-	loadSound: function (url) {
-		logger.log('NATIVE shim: load a sound');
-	},
-	pauseSound: function (url) {
-		logger.log('NATIVE shim: pause a sound');
-	},
-	stopSound: function (url) {
-		logger.log('NATIVE shim: stop a sound');
-	},
-	setVolume: function (url, volume) {
-		logger.log('NATIVE shim: set the volume of a sound');
-	},
-	loadBackgroundMusic: function (url) {
-		logger.log('NATIVE shim: load background music');
-	},
-	playBackgroundMusic: function (url) {
-		logger.log('NATIVE shim: play background music');
-	},
-	registerMusic: function (url) {
-		logger.log('NATIVE shim: register background music');
-	}
+  playSound: function (url, volume) {
+    logger.log('NATIVE shim: play a sound');
+  },
+  loadSound: function (url) {
+    logger.log('NATIVE shim: load a sound');
+  },
+  pauseSound: function (url) {
+    logger.log('NATIVE shim: pause a sound');
+  },
+  stopSound: function (url) {
+    logger.log('NATIVE shim: stop a sound');
+  },
+  setVolume: function (url, volume) {
+    logger.log('NATIVE shim: set the volume of a sound');
+  },
+  loadBackgroundMusic: function (url) {
+    logger.log('NATIVE shim: load background music');
+  },
+  playBackgroundMusic: function (url) {
+    logger.log('NATIVE shim: play background music');
+  },
+  registerMusic: function (url) {
+    logger.log('NATIVE shim: register background music');
+  }
 };
 
 exports.events = {
-	registerHandler: function(eventName) {
-		// logger.log('NATIVE shim: register an event handler for the ' + eventName + ' event');
-	}
+  registerHandler: function(eventName) {
+    // logger.log('NATIVE shim: register an event handler for the ' + eventName + ' event');
+  }
 };
 
 exports.plugins = {
-	sendEvent: function(plugin, eventName) {
-		logger.log('NATIVE shim: send a ' + eventName + ' event to the ' + plugin + ' plugin');
-	}
+  sendEvent: function(plugin, eventName) {
+    logger.log('NATIVE shim: send a ' + eventName + ' event to the ' + plugin + ' plugin');
+  }
 };
 
 exports.alerts = new lib.PubSub();
 merge(exports.alerts, {
-	onNotificationLoad: function () {},
-	showNotification: function () {
-		return -1;
-	},
-	showRecurringNotification: function () {
-		logger.log("Setting up a recurring notification!");
-		return -1;
-	}
+  onNotificationLoad: function () {},
+  showNotification: function () {
+    return -1;
+  },
+  showRecurringNotification: function () {
+    logger.log("Setting up a recurring notification!");
+    return -1;
+  }
 });
 
 exports.social = new lib.PubSub();
 
-exports.isSimulator = function() {
-    return device.isSimulatingMobileNative;
-};
-
-//import .auth.conn;
-//auth.conn.webAutoLogin();
+exports.isSimulator = function() { return device.isNativeSimulator; };
 
 if (!GLOBAL.NATIVE) {
-	GLOBAL.NATIVE = exports;
+  GLOBAL.NATIVE = exports;
 }
