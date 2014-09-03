@@ -16,6 +16,7 @@ exports.opts = require('optimist')
     .alias('clean', 'c').describe('clean', 'Clean build before compilation').boolean('clean').default('clean', false)
     .alias('clearstorage', 's').describe('clearstorage', 'Clear localStorage on device').boolean('clearstorage').default('clearstorage', false)
     .alias('repack', 'js-only').describe('repack', 'only build the JavaScript').boolean('repack').default('repack', false)
+    .describe('resources-only', 'skip the native build').boolean('resources-only').default('resources-only', false)
 
 exports.configure = function (api, app, config, cb) {
   logger = api.logging.get('build-native');
@@ -28,6 +29,7 @@ exports.configure = function (api, app, config, cb) {
   config.isAndroid = true;
   config.repack = argv.repack;
   config.enableLogging = !argv.debug && argv.enableReleaseLogging;
+  config.resourcesOnly = argv["resources-only"];
 
   if (!config.isSimulated) {
     config.outputResourcePath = path.join(config.outputPath, "assets/resources");
@@ -62,7 +64,9 @@ exports.build = function (api, app, config, cb) {
     var f = ff(function () {
       require('./resources').writeNativeResources(api, app, config, f());
     }, function () {
-      require('../../../modules/native-android/build').build(api, app, config, f());
+      if (!config.resourcesOnly) {
+        require('../../../modules/native-android/build').build(api, app, config, f());
+      }
     }).cb(cb);
   }
 };
