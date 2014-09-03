@@ -121,6 +121,9 @@ exports.plugins = {
   sendEvent: function(plugin, eventName) {
     logger.log('NATIVE shim: send a ' + eventName + ' event to the ' + plugin + ' plugin');
   }
+  sendRequest: function(plugin, name, cb) {
+    logger.log('NATIVE shim: send a ' + name + ' request to the ' + plugin + ' plugin');
+  }
 };
 
 exports.alerts = new lib.PubSub();
