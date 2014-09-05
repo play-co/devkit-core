@@ -106,6 +106,9 @@ exports.writeNativeResources = function (api, app, config, cb) {
         }
 
         logger.log("Writing resource:", info.target);
+        if (/ttf$/.test(info.target)) {
+          info.target = path.join('resources', 'fonts', path.basename(info.target));
+        }
         resourceList.add({
           target: info.target,
           copyFrom: info.fullPath
