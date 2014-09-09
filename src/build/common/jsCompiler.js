@@ -1,23 +1,26 @@
-
 var path = require('path');
+var fs = require('fs');
+var crypto = require('crypto');
+
 var argv = require('optimist').argv;
 var mkdirp = require('mkdirp');
 var EventEmitter = require('events').EventEmitter;
+var color = require('cli-color');
 
 // clone to modify the path for this jsio but not any others
 var jsio = require('jsio').clone();
 
-var _uglify = require('uglify-js');
-var parser = _uglify.parser;
-var uglify = _uglify.uglify;
+var uglify = require('uglify-js');
 
 function deepCopy(obj) { return obj && JSON.parse(JSON.stringify(obj)); }
 
 var logger;
+var compressLog;
 
 exports.JSCompiler = Class(function () {
   this.init = function (api, app, opts, jsConfig) {
     logger = api.logging.get('jsio-compile');
+    compressLog = api.logging.get('jsio-compile');
 
     this._api = api;
     this._app = app;
@@ -26,10 +29,16 @@ exports.JSCompiler = Class(function () {
   }
 
   this.compile = function (opts, cb) {
+    var opts = merge({}, opts, this._opts);
+
     var appPath = this._app.paths.root;
     var jsCachePath = opts.jsCachePath;
     if (!jsCachePath) {
-      jsCachePath = path.join(appPath, "build/.cache");
+      if (opts.schemePath && opts.target) {
+        jsCachePath = path.join(opts.schemePath, '.js-cache-' + opts.target);
+      } else {
+        jsCachePath = path.join(appPath, 'build', '.js-cache');
+      }
     }
 
     var clientPaths = this._app.clientPaths;
@@ -122,33 +131,43 @@ exports.JSCompiler = Class(function () {
       '--jscomp_off', 'internetExplorerChecks'
     ];
 
-    this._api.jvmtools.exec("closure", closureOpts, src, function (closure) {
-      var out = [];
-      var err = [];
-      closure.on("out", function (data) { out.push(data); });
-      closure.on("err", function (data) {
-        err.push(data);
-      });
-      closure.on("end", function (code) {
-        err = err.join('').replace(/^stdin:(\d+):/mg, 'Line $1:');
-        if (err.length) {
-          compressLog.log(clc.greenBright(filename + ':\n') + err);
-        }
+    this._api.jvmtools.exec({
+      tool: "closure",
+      args: closureOpts,
+      stdin: src,
+      buffer: true
+    }, function (err, stdout, stderr) {
+      if (stderr) {
+        stderr = stderr.replace(/^stdin:(\d+):/mg, 'Line $1:');
+        if (stderr.length) {
+          var showLog = opts.showWarnings;
+          if (showLog === false) {
+            var lines = stderr.split('\n');
+            var lastLine = lines[lines.length - 1];
+            var numErrors = stderr.match(/(\d+) error/);
+            numErrors = numErrors && numErrors[1];
+            if (numErrors > 0) {
+              showLog = true;
+            }
+          }
 
-        if (code == 0) {
-          var compressedSrc = out.join('');
-          cb(null, compressedSrc);
-        } else {
-          compressLog.error("exited with code", code);
-          cb({'code': code}, src);
+          if (showLog !== false) {
+            compressLog.log(color.greenBright(filename + ':\n') + stderr);
+          }
         }
-      });
+      }
+
+      if (!err.code) {
+        var compressedSrc = stdout;
+        cb(null, compressedSrc);
+      } else {
+        compressLog.error("exited with code", err.code);
+        cb({'code': err.code}, src);
+      }
     });
   }
 
   this.strip = function (src, opts, cb) {
-    var ast = parser.parse(src);
-
     var defines = {};
     for (var key in opts.defines) {
 
@@ -162,15 +181,16 @@ exports.JSCompiler = Class(function () {
       defines[key] = [type, JSON.stringify(opts.defines[key])];
     }
 
-    ast = uglify.ast_mangle(ast, {
-      defines: defines
-    });
+    try {
+      var result = uglify.minify(src, {
+        fromString: true,
+        global_defs: defines
+      });
 
-    ast = uglify.ast_squeeze(ast);
-    ast = uglify.ast_lift_variables(ast);
-
-    var src = uglify.gen_code(ast);
-    cb(null, src);
+      cb && cb(null, result.code);
+    } catch (e) {
+      cb && cb(e);
+    }
   }
 
   this.precompress = function () {
@@ -277,14 +297,11 @@ var DevKitJsioInterface = Class(EventEmitter, function () {
           compressLog.error(err);
         }
 
-        compressLog.log("Starting JS compression for", filename ? filename : "(eval)");
+        compressLog.log("compressing JS" + (filename ? ' for ' + filename : '') + '...');
         bridge.compress(filename, src, opts, onCompress);
       } else {
         // Set cache path to false so it will not be updated in onCompress()
         cachePath = false;
-
-        compressLog.log('Read from cache:', filename);
-
         onCompress(err, src);
       }
     }
@@ -295,7 +312,6 @@ var DevKitJsioInterface = Class(EventEmitter, function () {
       } else {
         try {
           if (cachePath && filename) {
-            compressLog.log('Updating cache for', filename, 'at', cachePath);
             fs.writeFile(cachePath, checksum + '\n' + src);
           }
         } catch(e) {

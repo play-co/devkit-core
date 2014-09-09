@@ -25,7 +25,7 @@ var INITIAL_IMPORT = 'devkit.browser.launchClient';
 
 // Static resources.
 var STATIC_GA_JS = fs.readFileSync(path.join(__dirname, 'browser-static/ga.js'), 'utf8');
-var STATIC_BOOTSTRAP_CSS = path.join(__dirname, 'browser-static/bootstrap.css');
+var STATIC_BOOTSTRAP_CSS = path.join(__dirname, 'browser-static/bootstrap.styl');
 var STATIC_BOOTSTRAP_JS = path.join(__dirname, 'browser-static/bootstrap.js');
 
 exports.opts = require('optimist')(process.argv)

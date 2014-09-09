@@ -1,13 +1,15 @@
-var ff = require('ff');
 var path = require('path');
+var fs = require('fs');
+
+var ff = require('ff');
 var stylus = require('stylus');
+var nib = require('nib');
+var printf = require('printf');
+
+var JSCompiler = require('../common/jsCompiler').JSCompiler;
 var getBase64Image = require('./datauri').getBase64Image;
 
-exports.compressCSS = function (css, cb) {
-  stylus(css)
-    .set('compress', true)
-    .render(cb);
-}
+var TARGET_APPLE_TOUCH_ICON_SIZE = 152;
 
 exports.IndexHTML = Class(function () {
   this.generate = function (api, app, config, cb) {
@@ -39,41 +41,45 @@ exports.GameHTML = Class(function () {
   this.addJS = function (js) { this._js.push(js); }
 
   this.generate = function (api, app, config, cb) {
+    var logger = api.logging.get('build-html');
+
     var f = ff(this, function () {
-      var js = this._js.join(';');
       var css = this._css.join('\n');
+      stylus(css)
+        .set('compress', config.compress)
+        .use(nib())
+        .render(f());
 
+      var js = this._js.join(';');
       if (config.compress) {
-        _builder.packager.compressCSS(css, f());
-
         var onCompress = f();
-        // new JSCompiler(api, app);
-        var compiler = _builder.packager.createCompiler(app, config, function (compiler) {
-          compiler.inferOptsFromEnv('browser');
-          compiler.compress('[bootstrap]', js, function (err, src) {
-            compiler.strip(src, function (err, src) {
-              onCompress(null, src + ';' + preloadJS);
-            });
+        var compiler = new JSCompiler(api, app);
+        compiler.compress('[bootstrap]', js, {showWarnings: false}, function (err, src) {
+          compiler.strip(src, {}, function (err, src) {
+            onCompress(null, src);
           });
         });
       } else {
-        f(css, js);
+        f(js);
       }
     }, function (css, js) {
       // browser splash
-      var splashImage = config.browser.splash;
-      if (!splashImage && !config.isSimulated) {
+      var splashImage = config.browser.splash && path.resolve(app.paths.root, config.browser.splash);
+      if (!fs.existsSync(splashImage) && !config.isSimulated) {
         var splashOpts = app.manifest.splash;
-        var splashPaths = ['landscape1536', 'landscape768', 'portrait2048', 'portrait1136', 'portrait1024', 'portrait960', 'portrait480'];
+        var splashPaths = ['landscape1536', 'landscape768', 'portrait2048', 'portrait1136', 'portrait1024', 'portrait960', 'portrait480', 'universal'];
         var i = splashPaths.length;
-        splashImage = splashOpts[splashPaths[--i]];
-        while (i && !splashImage) {
-          splashImage = splashOpts[splashPaths[--i]];
+        while (i) {
+          var img = splashOpts[splashPaths[--i]];
+          img = img && path.resolve(app.paths.root, img);
+          if (fs.existsSync(img)) {
+            splashImage = img;
+          }
         }
       }
 
-      if (splashImage) {
-        splashImage = path.resolve(app.paths.root, splashImage);
+      if (!fs.existsSync(splashImage)) {
+        splashImage = null;
       }
 
       // Create HTML document.
@@ -108,15 +114,32 @@ exports.GameHTML = Class(function () {
           // Apple Touch icons
           var iosIcons = app.manifest.ios && app.manifest.ios.icons;
           if (iosIcons) {
-            var largest = 0;
+            // get smallest icon size >= TARGET_APPLE_TOUCH_ICON_SIZE, or the
+            // largest icon if none is >= TARGET_APPLE_TOUCH_ICON_SIZE
+            var closestSize = 0;
+            var closestIcon;
+
             for (var size in iosIcons) {
               var intSize = parseInt(size);
-              if (intSize > largest) {
-                largest = intSize;
+              var icon = path.join(app.paths.root, iosIcons[size]);
+              if (!fs.existsSync(icon)) {
+                logger.warn(printf('icon manifest.ios[%(size)s] does not exist (%(path)s)', {
+                  size: intSize,
+                  path: icon
+                }));
+                continue;
+              }
+
+              if (closestSize < TARGET_APPLE_TOUCH_ICON_SIZE && intSize > closestSize
+                  || closestSize > TARGET_APPLE_TOUCH_ICON_SIZE && intSize > TARGET_APPLE_TOUCH_ICON_SIZE && intSize < closestSize)
+              {
+                closestSize = intSize;
+                closestIcon = icon;
               }
             }
-            if (largest > 0) {
-              html.push('<link rel="apple-touch-icon" href="' + getBase64Image(iosIcons[largest.toString()]) + '">');
+
+            if (closestIcon) {
+              html.push('<link rel="apple-touch-icon" href="' + getBase64Image(closestIcon) + '">');
             }
           }
         }
