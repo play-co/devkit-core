@@ -41,18 +41,13 @@ exports = new (Class(function () {
     }));
 
     client.onRequest('SCREENSHOT', bind(this, function (req) {
-      var canv = GC.app.engine.getElement();
-      if (canv && canv.toDataURL) {
-        req.respond({
-          width: canv.width,
-          height: canv.height,
-          canvasImg: canv.toDataURL('image/png')
-        });
-      } else {
-        req.error({
-          NOT_SUPPORTED: true
-        });
-      }
+      _DEBUG && _DEBUG.screenshot(function (err, res) {
+        if (err) {
+          req.error(err);
+        } else {
+          req.respond(res);
+        }
+      });
     }));
 
     client.onEvent('MUTE', bind(this, function (evt) {
