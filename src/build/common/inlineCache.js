@@ -5,6 +5,7 @@ var path = require('path');
 var exts = {
   '.js': true,
   '.json': true,
+  '.xml': true,
   '.css': false // TODO
 };
 
