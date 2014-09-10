@@ -2,7 +2,7 @@
   "name": "devkit-core",
   "author": "Game Closure",
   "description": "DevKit client API",
-  "version": "2.0.0-beta.6",
+  "version": "2.0.4",
   "private": true,
   "repository": {
     "type": "git",
