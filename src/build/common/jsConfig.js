@@ -7,7 +7,7 @@ exports.JSConfig = Class(function () {
     this._config = {
       appID: manifest.appID,
       ios: {
-        appleID: manifest.ios.appleID
+        appleID: manifest.ios && manifest.ios.appleID
       },
       supportedOrientations: deepCopy(manifest.supportedOrientations),
       shortName: manifest.shortName,

@@ -33,7 +33,7 @@ exports.CSSFontList = Class(function () {
   this.addFiles = function (files, cb) {
     for (var i = 0, n = files.length; i < n; ++i) {
       var file = files[i];
-      if (exts[file.ext]) {
+      if (exts[file.ext.toLowerCase()]) {
         this.add(file.fullPath);
       }
     }
