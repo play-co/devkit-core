@@ -16,6 +16,7 @@ exports.insert = function (app, config, argv) {
   if (config.isSimulated) {
     config.browser = {
       embedSplash: false,
+      embedFonts: false,
       appleTouchIcon: false,
       appleTouchStartupImage: false,
       frame: {},
@@ -36,6 +37,10 @@ exports.insert = function (app, config, argv) {
     // include a base64-inline image for the apple-touch-icon meta tag (if webpage is saved to homescreen)
     appleTouchIcon: true,
     appleTouchStartupImage: true,
+
+    // embed fonts disabled by default (load over URL), if true, base64 encode
+    // them into the css
+    embedFonts: false,
 
     // embed a base64 splash screen (background-size: cover)
     embedSplash: true,
