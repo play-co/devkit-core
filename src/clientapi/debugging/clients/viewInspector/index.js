@@ -21,7 +21,7 @@ if (DEBUG) {
   import ui.resource.Image as Image;
   import ui.ImageView as ImageView;
 
-  import .InputMoveListener;
+  import ...InputMoveListener;
   import .OverlayRenderer;
 
   // mapping for reading/writing style properties on a view
@@ -87,26 +87,48 @@ if (DEBUG) {
         logging.setPrefix(evt.args.name + ': ');
       }));
 
+      function getParentUIDs(view) {
+        var uids = view.getSuperviews().map(function (view) { return view.uid; });
+        uids.push(view.uid);
+        return uids;
+      }
+
       var _input = null;
       client.onRequest('ADD_MOUSE_EVT', bind(this, function (req) {
         if (!_input) {
-          _input = new InputMoveListener()
-            .on('trace', function (trace) {
-              client.sendEvent('TRACE', trace);
+          _input = new InputMoveListener({requireShiftClick: true})
+            .on('trace', function (evt) {
+              client.sendEvent('INPUT_TRACE', {
+                x: evt.x,
+                y: evt.y,
+                target: evt.target.uid,
+                trace: evt.trace.map(function (item) {
+                  return {
+                    uid: item.view.uid,
+                    tag: item.view.getTag(),
+                    depth: item.depth
+                  };
+                })
+              });
             })
-            .on('move', function (where) {
-              client.sendEvent('INPUT_MOVE', where);
+            .on('move', function (evt) {
+              client.sendEvent('INPUT_MOVE', {
+                parents: getParentUIDs(evt.target)
+              });
             })
-            .on('select', function (where) {
-              client.sendEvent('INPUT_SELECT', where);
+            .on('select', function (evt) {
+              client.sendEvent('INPUT_SELECT', {
+                parents: getParentUIDs(evt.target)
+              });
             });
         }
 
+        _input.connect();
         req.respond();
       }));
 
       client.onRequest('REMOVE_MOUSE_EVT', bind(this, function (req) {
-        if (_input) { _input.destroy(); }
+        if (_input) { _input.disconnect(); }
         req.respond();
       }));
 
