@@ -33,7 +33,7 @@ if (DEBUG) {
 					width: canvas.width,
 					height: canvas.height
 				});
-			
+
 			if (_debugCanvas && _debugCanvas.toDataURL) {
 				var ctx = _debugCanvas.getContext('2d');
 				var reDomain = /^https?:\/\/(.*?)\//;
@@ -162,9 +162,10 @@ if (DEBUG) {
 					ctx.save();
 					ctx.fillStyle = 'rgba(' + gray + ',' + gray + ',' + gray + ',' + gray / 512 + ')';
 					ctx.strokeStyle = 'rgba(' + gray + ',0,0,1)';
+					ctx.translate(pos.x, pos.y);
 					ctx.rotate(pos.r);
-					ctx.fillRect(pos.x, pos.y, pos.width, pos.height);
-					ctx.strokeRect(pos.x - 0.5, pos.y - 0.5, pos.width + 1, pos.height + 1);
+					ctx.fillRect(0, 0, pos.width, pos.height);
+					ctx.strokeRect(-0.5, -0.5, pos.width + 1, pos.height + 1);
 					ctx.restore();
 				});
 			}
