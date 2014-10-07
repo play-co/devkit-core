@@ -74,10 +74,6 @@ function analytics () {
 }
 
 function startApp (conn) {
-	if (conn) {
-		import ..debugging.TimestepInspector;
-		conn.addClient(new debugging.TimestepInspector());
-	}
 
 	var type = "Client";
 	//logging.setPrefix(type);
