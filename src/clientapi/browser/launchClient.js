@@ -19,6 +19,7 @@ jsio.__env.fetch = function (filename) {
 };
 
 import ..debugging.conn;
+import device;
 
 var isSimulator = GLOBAL.CONFIG && !!CONFIG.simulator;
 var isNative = /^native/.test(CONFIG.target);
@@ -123,7 +124,6 @@ if (DEBUG) {
 		}
 	}
 
-	import device;
 	debugging.conn.connect({
 		handshake: {
 			deviceId: deviceId,
