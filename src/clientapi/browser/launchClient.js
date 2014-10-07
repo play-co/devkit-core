@@ -124,17 +124,22 @@ if (DEBUG) {
 		}
 	}
 
-	debugging.conn.connect({
-		handshake: {
-			deviceId: deviceId,
-			deviceType: deviceType,
-			userAgent: navigator.userAgent,
-			screen: {
-				width: device.screen.width,
-				height: device.screen.height
-			}
-		}
-	}, function () { startApp(); });
+	// TODO: debugging conn should be fixed (missing socketio.js file)
+	// and should be changed to handle the load failure
+	// debugging.conn.connect({
+	// 	handshake: {
+	// 		deviceId: deviceId,
+	// 		deviceType: deviceType,
+	// 		userAgent: navigator.userAgent,
+	// 		screen: {
+	// 			width: device.screen.width,
+	// 			height: device.screen.height
+	// 		}
+	// 	}
+	// }, function () { startApp(); });
+
+	// just start app without debugging connection for now
+	startApp();
 } else {
 	startApp();
 }
