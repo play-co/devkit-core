@@ -14,7 +14,8 @@
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
 
-GLOBAL.console = jsio('import base', {}).logging.get('console');
+var jsioBase = jsio('import base', {});
+GLOBAL.console = jsioBase.logging.get('console');
 
 if (!window.DEV_MODE) { window.DEV_MODE = false; }
 
