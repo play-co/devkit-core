@@ -107,6 +107,21 @@ if (DEBUG) {
 				logger.error(e);
 			}
 		}
+
+		// TODO: debugging conn should be fixed (missing socketio.js file)
+		// and should be changed to handle the load failure
+		debugging.conn.connect({
+			handshake: {
+				deviceId: deviceId,
+				deviceType: deviceType,
+				userAgent: navigator.userAgent,
+				screen: {
+					width: device.screen.width,
+					height: device.screen.height
+				}
+			}
+		}, function () { startApp(); });
+
 	} else {
 		deviceId = localStorage.getItem(DEVICE_ID_KEY);
 		if (!deviceId) {
@@ -122,24 +137,11 @@ if (DEBUG) {
 		} else {
 			deviceType = 'browser-mobile';
 		}
+
+		// start app without debugging connection
+		startApp();
 	}
 
-	// TODO: debugging conn should be fixed (missing socketio.js file)
-	// and should be changed to handle the load failure
-	// debugging.conn.connect({
-	// 	handshake: {
-	// 		deviceId: deviceId,
-	// 		deviceType: deviceType,
-	// 		userAgent: navigator.userAgent,
-	// 		screen: {
-	// 			width: device.screen.width,
-	// 			height: device.screen.height
-	// 		}
-	// 	}
-	// }, function () { startApp(); });
-
-	// just start app without debugging connection for now
-	startApp();
 } else {
 	startApp();
 }
