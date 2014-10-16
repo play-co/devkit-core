@@ -97,6 +97,11 @@ NATIVE.gl.makeCanvas = function (width, height, unloadListener) {
 	return textureData;
 }
 
+NATIVE.gl.updateCanvasURL = function (oldUrl, newUrl) {
+	canvasImages[newUrl] = canvasImages[oldUrl];
+	delete canvasImages[oldUrl];
+}
+
 NATIVE.gl.forgetCanvas = function (url) {
 	logger.log("{canvas-registry} Forgetting canvas:", url);
 
