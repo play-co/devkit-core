@@ -66,20 +66,41 @@ exports.GameHTML = Class(function () {
       // browser splash
       var splashImage = config.browser.splash && path.resolve(app.paths.root, config.browser.splash);
       if (!fs.existsSync(splashImage) && !config.isSimulated) {
-        var splashOpts = app.manifest.splash;
-        var splashPaths = ['landscape1536', 'landscape768', 'portrait2048', 'portrait1136', 'portrait1024', 'portrait960', 'portrait480', 'universal'];
-        var i = splashPaths.length;
-        while (i) {
-          var img = splashOpts[splashPaths[--i]];
+        var splashPaths = {
+          'portrait': ['portrait2048', 'portrait1136',
+                        'portrait1024', 'portrait960', 'portrait480'],
+          'landscape': ['landscape1536', 'landscape768']
+        };
+
+        // get list of splash images to test
+        var splashes = [];
+        if (app.manifest.supportedOrientations) {
+          if (app.manifest.supportedOrientations.portrait) {
+            splashes = splashes.concat(splashPaths.portrait);
+          }
+          if (app.manifest.supportedOrientations.landscape) {
+            splashes = splashes.concat(splashPaths.landscape);
+          }
+        } else {
+          splashes = splashes
+            .concat(splashPaths.portrait)
+            .concat(splashPaths.landscape);
+        }
+        splashes.push('universal');
+
+        // test if each splash path is in the manifest
+        var img;
+        for (var i = 0; i < splashes.length; i++) {
+          img = app.manifest.splash && app.manifest.splash[splashes[i]];
           img = img && path.resolve(app.paths.root, img);
-          if (fs.existsSync(img)) {
+          if (img && fs.existsSync(img)) {
+            // take first matching image found?
+            // TODO: figure out correct logic here
             splashImage = img;
+            break;
           }
         }
-      }
 
-      if (!fs.existsSync(splashImage)) {
-        splashImage = null;
       }
 
       // Create HTML document.
