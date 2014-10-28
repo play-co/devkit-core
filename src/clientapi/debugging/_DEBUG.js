@@ -194,6 +194,27 @@ if (DEBUG) {
 
 		this.getViewByID = function (uid) { return this.find(function (view) { return view.uid == uid; }); }
 
+		this.getImages = function (view) {
+			import ui.ImageView;
+			import ui.ImageScaleView;
+
+			var hash = {};
+			this.traverseView(function (view) {
+				if (view instanceof ui.ImageView || view instanceof ui.ImageScaleView) {
+					var img = view.getImage();
+					if (img) {
+						var url = img.getOriginalURL();
+						hash[url] = true;
+					}
+				}
+
+			}, view || GC.app);
+
+			var images = Object.keys(hash);
+			images.sort();
+			return images;
+		}
+
 		this.pack = function () { return GC.app && this.packView(GC.app.view); }
 		this.packView = function (view) {
 			import ui.ImageView;
