@@ -177,6 +177,7 @@ exports.build = function (api, app, config, cb) {
 
     logger.log('Writing files...');
     resourceList.write(config.outputPath, config.appPath, f());
+    resourceList.writeSourceMap(config.outputPath, files.imageSourceMap, f());
   }, function () {
     logger.log('Done');
   }).cb(cb);

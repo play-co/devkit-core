@@ -48,6 +48,20 @@ exports.ResourceList = Class(function () {
       });
     }).cb(cb);
   }
+
+  this.writeSourceMap = function (targetDirectory, imageSourceMap, cb) {
+    fs.writeFile(path.join(targetDirectory, 'resource_source_map.json'), JSON.stringify(merge(imageSourceMap, this.toSourceMap())), cb);
+  }
+
+  this.toSourceMap = function () {
+    var res = {};
+    this._resources.forEach(function (resource) {
+      if (resource.target && resource.copyFrom) {
+        res[resource.target] = resource.copyFrom;
+      }
+    });
+    return res;
+  }
 });
 
 var Writer = Class(function () {

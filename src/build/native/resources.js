@@ -127,6 +127,8 @@ exports.writeNativeResources = function (api, app, config, cb) {
     });
 
     fs.readFile(path.join(__dirname, "env.js"), 'utf8', f());
+
+    resourceList.writeSourceMap(config.outputPath, files.imageSourceMap, f.wait());
   }, function (gameJS, nativeEnv) {
     resourceList.add({
       target: 'native.js',

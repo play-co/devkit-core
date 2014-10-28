@@ -62,6 +62,7 @@ exports.getFiles = function (api, app, config, cb) {
   var files = {
       images: [],
       imageMap: {},
+      imageSourceMap: {},
       other: []
     };
 
@@ -122,6 +123,9 @@ exports.getFiles = function (api, app, config, cb) {
               logger.log("WARNING: multiple images exported with the same name (" + key + "). Only the last image will be included in the build.");
             }
             files.imageMap[key] = res.imageMap[key];
+
+            var relPath = path.relative(directory.target, key);
+            files.imageSourceMap[key] = path.join(directory.src, relPath);
           });
 
           // next directory
