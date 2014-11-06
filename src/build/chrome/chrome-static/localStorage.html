@@ -1,0 +1,28 @@
+<script>
+var GC_CHROME = GC_CHROME || {};
+GC_CHROME._chromeLocalStorage = {
+  getItem: function(key) {
+    if (chrome) {
+      console.warn("TODO: chrome getData: ",key);
+    } else {
+      return localStorage.getItem(key);
+    }
+  },
+
+  setItem: function(key, value) {
+    if (chrome) {
+      console.warn("TODO: chrome setData: ", key, value);
+    } else {
+      localStorage.setItem(key, value);
+    }
+  },
+
+  removeItem: function(key) {
+    if (chrome) {
+      console.warn("TODO: chrome removeData: ", key);
+    } else {
+      localStorage.removeItem(key);
+    }
+  }
+};
+</script>

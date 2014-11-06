@@ -29,7 +29,8 @@
       "browser-mobile": "src/build/browser/",
       "browser-desktop": "src/build/browser/",
       "native-ios": "src/build/native/native-ios",
-      "native-android": "src/build/native/native-android"
+      "native-android": "src/build/native/native-android",
+      "chrome": "src/build/chrome"
     },
     "clientPaths": {
       "devkit": "src/clientapi",
