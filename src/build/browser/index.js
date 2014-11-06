@@ -79,7 +79,8 @@ exports.build = function (api, app, config, cb) {
     } else {
       jsCompiler.compile({
         initialImport: 'devkit.browser.bootstrap.launchBrowser',
-        appendImport: false
+        appendImport: false,
+        preCompress: config.preCompressCallback
       }, f());
     }
 
@@ -130,7 +131,8 @@ exports.build = function (api, app, config, cb) {
       initialImport: INITIAL_IMPORT,
       appendImport: false,
       includeJsio: !config.excludeJsio,
-      debug: config.scheme == 'debug'
+      debug: config.scheme == 'debug',
+      preCompress: config.preCompressCallback
     }, f());
 
     // Condense resources.

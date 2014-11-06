@@ -70,11 +70,6 @@ exports.JSCompiler = Class(function () {
       jsioOpts.compressResult = true;
     }
 
-    if (opts.extractImages) {
-      var imgTest = /^[^?*:;{}\'"]+\.(png|jpg|jpeg|gif)$/i;
-      jsioOpts.preCompress = imageExtractor.bind(this, opts.extractImages);
-    }
-
     var importStatement = 'import ' + opts.initialImport;
     logger.log('compiling', importStatement);
 
@@ -106,7 +101,7 @@ exports.JSCompiler = Class(function () {
         cb && cb(null, code);
       });
 
-    jsioOpts['preCompress'] = this.precompress.bind(this);
+    jsioOpts['preCompress'] = opts.preCompress;//this.precompress.bind(this);
 
     // start the compile by passing something equivalent to argv (first argument is
     // ignored, but traditionally should be the name of the executable?)
@@ -192,29 +187,7 @@ exports.JSCompiler = Class(function () {
       cb && cb(e);
     }
   }
-
-  this.precompress = function () {
-
-  }
 });
-
-function imageExtractor(result, srcTable) {
-  // TODO: this doesn't work
-
-  // for (var key in srcTable) {
-  //  Object.keys(_builder.strings.getStrings(srcTable[key].src)).forEach(function (str) {
-  //    try {
-  //      var match = str.match(imgTest);
-  //      if (match) {
-  //        imgCache[str] = datauri.toDataURI(fs.readFileSync(path.resolve(appPath, str)), mime.lookup(str, 'image/png'));
-  //      }
-  //    } catch (e) {
-  //      logger.error(e);
-  //    }
-  //  });
-  // }
-}
-
 
 var DevKitJsioInterface = Class(EventEmitter, function () {
 
