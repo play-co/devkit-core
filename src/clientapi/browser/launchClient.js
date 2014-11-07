@@ -14,9 +14,31 @@
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
 
-jsio.__env.fetch = function (filename) {
-	return false;
-};
+;(function () {
+    var repos = {
+        "modules/devkit-core/modules/timestep/": "https://cdn.rawgit.com/gameclosure/timestep/develop/",
+        "modules/devkit-core/node_modules/jsio/": "https://cdn.rawgit.com/gameclosure/js.io/develop/"
+    };
+
+    var repoPrefix = Object.keys(repos);
+    var repoURLs = repoPrefix.map(function (prefix) { return repos[prefix]; });
+    var numRepos = repoPrefix.length;
+
+    jsio.__env.fetch = function (filename) {
+        for (var i = 0; i < numRepos; ++i) {
+            if (filename.indexOf(repoPrefix[i]) == 0) {
+                var xhr = new XMLHttpRequest();
+                xhr.open("GET", repoURLs[i] + filename.substring(repoPrefix[i].length), false);
+                xhr.send();
+                if (xhr.status == 200) {
+                    return xhr.responseText;
+                }
+            }
+
+        }
+        return false;
+    }
+})();
 
 import ..debugging.conn;
 import device;
@@ -139,11 +161,24 @@ if (DEBUG) {
 		}
 
 		// start app without debugging connection
-		startApp();
+		queueStart();
 	}
 
 } else {
-	startApp();
+	queueStart();
+}
+
+function queueStart() {
+	if (GC_DOCS._isDocs) {
+		var intervalId = setInterval(function(){
+			if (GC_DOCS._docsReady) {
+				startApp();
+				clearInterval(intervalId);
+			}
+		}, 100);
+	} else {
+		startApp();
+	}
 }
 
 function startApp () {

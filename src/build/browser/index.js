@@ -51,6 +51,7 @@ exports.build = function (api, app, config, cb) {
   var imgCache = {};
 
   var isMobile = (config.target != 'browser-desktop');
+  var isDocs = (config.target == 'browser-docs');
   var CSSFontList = require('./fonts').CSSFontList;
   var InlineCache = require('../common/inlineCache').InlineCache;
   var resourceList = new (require('../common/resources').ResourceList);
@@ -77,6 +78,21 @@ exports.build = function (api, app, config, cb) {
     if (/^native/.test(config.target)) {
       f('jsio=function(){window._continueLoad()}');
     } else {
+
+      if (isDocs && !config.preCompressCallback) {
+        config.preCompressCallback = function(sourceTable) {
+          for (var fullPath in sourceTable) {
+            var fileValues = sourceTable[fullPath];
+            if (fileValues.friendlyPath === 'src.Application') {
+              logger.log('Removing Application.js from sourceTable');
+              delete sourceTable[fullPath];
+              return;
+            }
+          }
+          logger.warn('Could not find Application.js in sourceTable');
+        };
+      }
+
       jsCompiler.compile({
         initialImport: 'devkit.browser.bootstrap.launchBrowser',
         appendImport: false,
@@ -92,24 +108,6 @@ exports.build = function (api, app, config, cb) {
     fontList.addFiles(files.other, f.wait());
   }, function (preloadJS, bootstrapCSS, bootstrapJS) {
     jsConfig.add('embeddedFonts', fontList.getNames());
-
-    gameHTML.addCSS(bootstrapCSS);
-    gameHTML.addCSS(fontList.getCSS({
-      embedFonts: config.browser.embedFonts,
-      formats: require('./fonts').getFormatsForTarget(config.target)
-    }));
-
-    if (config.browser.canvas.css) {
-      gameHTML.addCSS("#timestep_onscreen_canvas{" + config.browser.canvas.css + "}");
-    }
-
-    gameHTML.addJS(jsConfig.toString());
-    gameHTML.addJS(bootstrapJS);
-    gameHTML.addJS(printf('bootstrap("%(initialImport)s", "%(target)s")', {
-        initialImport: INITIAL_IMPORT,
-        target: config.target
-      }));
-    gameHTML.addJS(preloadJS);
 
     // miscellaneous files must be copied into the build
     files.other.forEach(function (file) {
@@ -135,8 +133,87 @@ exports.build = function (api, app, config, cb) {
       preCompress: config.preCompressCallback
     }, f());
 
-    // Condense resources.
-    gameHTML.generate(api, app, config, f());
+    // We need to generate a couple different files if this is going to be a
+    // Docs export
+    if (isDocs) {
+      // CSS //
+      var cssContents = '';
+      cssContents += bootstrapCSS;
+      cssContents += fontList.getCSS({
+        embedFonts: config.browser.embedFonts,
+        formats: require('./fonts').getFormatsForTarget(config.target)
+      });
+
+      if (config.browser.canvas.css) {
+        cssContents += ("#timestep_onscreen_canvas{" + config.browser.canvas.css + "}");
+      }
+
+      var stylus = require('stylus');
+      var nib = require('nib');
+      stylus(cssContents)
+        .set('compress', config.compress)
+        .use(nib())
+        .render(function(err, res){
+          if (res) {
+            resourceList.add({
+              target: 'styles.css',
+              contents: res
+            });
+          }
+        });
+      // JS //
+      var jsContents = '';
+      jsContents += jsConfig.toString()+';\n';
+      jsContents += (bootstrapJS)+';\n';
+      jsContents += (printf('bootstrap("%(initialImport)s", "%(target)s")', {
+          initialImport: INITIAL_IMPORT,
+          target: config.target
+        }))+';\n';
+      jsContents += (preloadJS)+';\n';
+      jsContents += ('var GC_DOCS = GC_DOCS || { _isDocs: true }; ')+';\n';
+
+      resourceList.add({
+        target: 'game.js',
+        contents: jsContents
+      });
+      // HTML
+      // gameHTML.addHTML('<p>test</p>');
+      // gameHTML.generate(api, app, config, f());
+
+      f(null, [
+        '<!DOCTYPE html>',
+        '<html>',
+        '<head>',
+        '<title>' + app.manifest.title + '</title>',
+        '<link rel="stylesheet" type="text/css" href="styles.css">',
+        '</head>',
+        '<body style="margin:0px;padding:0px;' + (config.browser.desktopBodyCSS || '') + '">',
+        '</body>',
+        '<script src="game.js"></script>',
+        '</html>'
+      ].join('\n'));
+    } else {
+      gameHTML.addCSS(bootstrapCSS);
+      gameHTML.addCSS(fontList.getCSS({
+        embedFonts: config.browser.embedFonts,
+        formats: require('./fonts').getFormatsForTarget(config.target)
+      }));
+
+      if (config.browser.canvas.css) {
+        gameHTML.addCSS("#timestep_onscreen_canvas{" + config.browser.canvas.css + "}");
+      }
+
+      gameHTML.addJS(jsConfig.toString());
+      gameHTML.addJS(bootstrapJS);
+      gameHTML.addJS(printf('bootstrap("%(initialImport)s", "%(target)s")', {
+          initialImport: INITIAL_IMPORT,
+          target: config.target
+        }));
+      gameHTML.addJS(preloadJS);
+
+      // Condense resources.
+      gameHTML.generate(api, app, config, f());
+    }
 
     if (!isMobile) {
       new html.IndexHTML().generate(api, app, config, f());

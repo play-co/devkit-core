@@ -28,6 +28,7 @@
     "buildTargets": {
       "browser-mobile": "src/build/browser/",
       "browser-desktop": "src/build/browser/",
+      "browser-docs": "src/build/browser/",
       "native-ios": "src/build/native/native-ios",
       "native-android": "src/build/native/native-android",
       "chrome": "src/build/chrome"
