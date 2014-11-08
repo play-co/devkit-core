@@ -77,6 +77,8 @@ NATIVE.events.registerHandler('dialogButtonClicked', function (evt) {
 	var cb = dialogCallbacks[evt.id];
 	if(cb && cb instanceof Function) {
 		cb();
-		delete dialogCallbacks[evt.id];
+		//delete dialogCallbacks[evt.id];
+		dialogId = 0;
+                dialogCallbacks = {};
 	}
 });
