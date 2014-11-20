@@ -22,7 +22,7 @@
     "uglify-js": "^2.4.15"
   },
   "scripts": {
-    "preinstall": "chmod u+x scripts/preinstall.sh && scripts/preinstall.sh"
+    "preinstall": "sh scripts/preinstall.sh && sh scripts/preinstall.sh"
   },
   "devkit": {
     "buildTargets": {
