@@ -2,7 +2,7 @@
   "name": "devkit-core",
   "author": "Game Closure",
   "description": "DevKit client API",
-  "version": "2.0.13",
+  "version": "2.0.15",
   "repository": {
     "type": "git",
     "url": "http://github.com/gameclosure/gcapi/gcapi.git"
