@@ -44,7 +44,7 @@ if (!window.console) {
 	window.console.log = window.console.info = window.console.error = window.console.warn = function () {};
 }
 
-if (!typeof localStorage !== 'undefined') {
+if (typeof localStorage !== 'undefined') {
 	localStorage = {
 		getItem: function () {},
 		setItem: function () {},
