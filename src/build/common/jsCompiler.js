@@ -123,7 +123,8 @@ exports.JSCompiler = Class(function () {
 
     var closureOpts = [
       '--compilation_level', 'SIMPLE_OPTIMIZATIONS',
-      '--jscomp_off', 'internetExplorerChecks'
+      '--jscomp_off', 'internetExplorerChecks',
+      '--language_in', 'ECMASCRIPT5'
     ];
 
     this._api.jvmtools.exec({
