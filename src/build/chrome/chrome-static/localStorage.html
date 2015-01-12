@@ -1,0 +1,49 @@
+<script>
+// Object only present in chrome builds
+var GC_CHROME = GC_CHROME || {};
+// 'localStorage' for the page, which is in a sandboxed iframe
+GC_CHROME._localMemoryStorageObject = {};
+// We will post set and remove calls to the parent window, but also mirror those
+// actions here in the memory object
+GC_CHROME._chromeLocalStorage = {
+  getItem: function(key) {
+    if (chrome) {
+      return GC_CHROME._localMemoryStorageObject[key];
+    } else {
+      return localStorage.getItem(key);
+    }
+  },
+
+  setItem: function(key, value) {
+    if (chrome) {
+      GC_CHROME._localMemoryStorageObject[key] = value;
+      parent.postMessage({ type: 'setItem', key: key, value: value }, "*");
+    } else {
+      localStorage.setItem(key, value);
+    }
+  },
+
+  removeItem: function(key) {
+    if (chrome) {
+      delete GC_CHROME._localMemoryStorageObject[key];
+      parent.postMessage({ type: 'removeItem', key: key }, "*");
+    } else {
+      localStorage.removeItem(key);
+    }
+  }
+};
+
+// Listen for an incomming event from parent window which will give us initial
+// values held in the parent (not sandboxed) 'localStorage'
+window.addEventListener('message', function (e) {
+  if (e.source == window.parent) {
+    console.log('[GC_CHROME message]', e.data);
+    var messageData = e.data;
+    if (messageData.type == 'initialLocalStorage') {
+      for (key in messageData.data) {
+        GC_CHROME._localMemoryStorageObject[key] = messageData.data[key];
+      }
+    }
+  }
+});
+</script>
