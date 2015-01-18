@@ -31,7 +31,8 @@
       "browser-desktop": "src/build/browser/",
       "native-ios": "src/build/native/native-ios",
       "native-android": "src/build/native/native-android",
-      "chrome": "src/build/chrome"
+      "chrome": "src/build/chrome",
+      "resources-bundle": "src/build/resources-bundle"
     },
     "clientPaths": {
       "devkit": "src/clientapi",
