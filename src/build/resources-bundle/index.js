@@ -28,7 +28,6 @@ var logger;
 var STATIC_DIR = path.join(__dirname, 'static');
 
 exports.opts = require('optimist')(process.argv);
-  // .alias('baseURL', 'u').describe('baseURL', 'all relative resources except for index should be loaded from this URL');
 
 exports.configure = function (api, app, config, cb) {
   logger = api.logging.get('build-resources-bundle');
@@ -36,14 +35,12 @@ exports.configure = function (api, app, config, cb) {
 }
 
 exports.build = function (api, app, config, cb) {
+  // Add the static src to the path cache so we use this to find Application.js
+  // instead of the projects src
+  app.clientPaths.src = STATIC_DIR + '/src'
   var resourceList = new (require('../common/resources').ResourceList);
 
   var f = ff(function() {
-    resourceList.add({
-      target: 'Application.js',
-      copyFrom: path.join(STATIC_DIR, 'Application.js')
-    });
-  }, function() {
     logger.log("Writing native resources");
     require('../native/resources').writeNativeResources(api, app, config, f());
   }, function () {
