@@ -169,9 +169,9 @@ if (DEBUG) {
 }
 
 function queueStart() {
-	if (GC_DOCS._isDocs) {
+	if (GC_LIVE_EDIT && GC_LIVE_EDIT._isLiveEdit) {
 		var intervalId = setInterval(function(){
-			if (GC_DOCS._docsReady) {
+			if (GC_LIVE_EDIT._liveEditReady) {
 				startApp();
 				clearInterval(intervalId);
 			}

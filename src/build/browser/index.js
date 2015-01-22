@@ -51,7 +51,7 @@ exports.build = function (api, app, config, cb) {
   var imgCache = {};
 
   var isMobile = (config.target != 'browser-desktop');
-  var isDocs = (config.target == 'browser-docs');
+  var isLiveEdit = (config.target == 'live-edit');
   var CSSFontList = require('./fonts').CSSFontList;
   var InlineCache = require('../common/inlineCache').InlineCache;
   var resourceList = new (require('../common/resources').ResourceList);
@@ -79,18 +79,14 @@ exports.build = function (api, app, config, cb) {
       f('jsio=function(){window._continueLoad()}');
     } else {
 
-      if (isDocs && !config.preCompressCallback) {
+      if (isLiveEdit && !config.preCompressCallback) {
         config.preCompressCallback = function(sourceTable) {
           for (var fullPath in sourceTable) {
             var fileValues = sourceTable[fullPath];
-            if (fileValues.friendlyPath === 'src.Application') {
-              logger.log('Removing Application.js from sourceTable');
-              delete sourceTable[fullPath];
-            }
-            else if (fileValues.friendlyPath == 'ui.resource.Image') {
-              logger.log('Patching Image to look for GC_DOCS._imgBase');
+            if (fileValues.friendlyPath == 'ui.resource.Image') {
+              logger.log('Patching ui.resource.Image to look for GC_LIVE_EDIT._imgBase');
               var regex = /(this._setSrcImg.+{)/;
-              var insert = 'if(url&&GC_DOCS._imgBase){url=GC_DOCS._imgBase+url;}';
+              var insert = 'if(url&&GC_LIVE_EDIT._imgBase){url=GC_LIVE_EDIT._imgBase+url;}';
               fileValues.src = fileValues.src.replace(regex, '$1' + insert);
             }
           }
@@ -155,8 +151,8 @@ exports.build = function (api, app, config, cb) {
         target: config.target
       }));
     gameHTML.addJS(preloadJS);
-    if (isDocs) {
-      gameHTML.addJS('var GC_DOCS = GC_DOCS || { _isDocs: true }; ');
+    if (isLiveEdit) {
+      gameHTML.addJS('var GC_LIVE_EDIT = GC_LIVE_EDIT || { _isLiveEdit: true, _liveEditReady: false }; ');
     }
 
     // Condense resources.
