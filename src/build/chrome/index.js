@@ -135,6 +135,15 @@ exports.build = function (api, app, config, cb) {
       contents: backgroundJS
     });
 
+    resourceList.add({
+      target: 'pageWrapper.html',
+      copyFrom: path.join(STATIC_DIR, 'pageWrapper.html')
+    });
+    resourceList.add({
+      target: 'pageWrapper.js',
+      copyFrom: path.join(STATIC_DIR, 'pageWrapper.js')
+    });
+
     // Actually write out the files
     logger.log('Writing files...');
     resourceList.write(config.outputPath, config.appPath, f());
