@@ -27,6 +27,7 @@ var INITIAL_IMPORT = 'devkit.browser.launchClient';
 var STATIC_GA_JS = fs.readFileSync(path.join(__dirname, 'browser-static/ga.js'), 'utf8');
 var STATIC_BOOTSTRAP_CSS = path.join(__dirname, 'browser-static/bootstrap.styl');
 var STATIC_BOOTSTRAP_JS = path.join(__dirname, 'browser-static/bootstrap.js');
+var STATIC_LIVE_EDIT_JS = path.join(__dirname, 'browser-static/liveEdit.js');
 
 exports.opts = require('optimist')(process.argv)
   .alias('baseURL', 'u').describe('baseURL', 'all relative resources except for index should be loaded from this URL');
@@ -103,10 +104,14 @@ exports.build = function (api, app, config, cb) {
     fs.readFile(STATIC_BOOTSTRAP_CSS, 'utf8', f());
     fs.readFile(STATIC_BOOTSTRAP_JS, 'utf8', f());
 
+    if (isLiveEdit) {
+      fs.readFile(STATIC_LIVE_EDIT_JS, 'utf8', f());
+    }
+
     // cache other files as needed
     inlineCache.addFiles(files.other, f.wait());
     fontList.addFiles(files.other, f.wait());
-  }, function (preloadJS, bootstrapCSS, bootstrapJS) {
+  }, function (preloadJS, bootstrapCSS, bootstrapJS, liveEditJS) {
     jsConfig.add('embeddedFonts', fontList.getNames());
 
     // miscellaneous files must be copied into the build
@@ -151,9 +156,8 @@ exports.build = function (api, app, config, cb) {
         target: config.target
       }));
     gameHTML.addJS(preloadJS);
-    if (isLiveEdit) {
-      gameHTML.addJS('var GC_LIVE_EDIT = GC_LIVE_EDIT || { _isLiveEdit: true, _liveEditReady: false }; ');
-    }
+
+    liveEditJS && gameHTML.addJS(liveEditJS);
 
     // Condense resources.
     gameHTML.generate(api, app, config, f());
