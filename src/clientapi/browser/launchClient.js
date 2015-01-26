@@ -169,7 +169,7 @@ if (DEBUG) {
 }
 
 function queueStart() {
-	if (GC_LIVE_EDIT && GC_LIVE_EDIT._isLiveEdit) {
+	if (window.GC_LIVE_EDIT && GC_LIVE_EDIT._isLiveEdit) {
 		var intervalId = setInterval(function(){
 			if (GC_LIVE_EDIT._liveEditReady) {
 				startApp();
