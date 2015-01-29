@@ -43,7 +43,7 @@
 import ..debugging.conn;
 import device;
 
-var isSimulator = GLOBAL.CONFIG && !!CONFIG.simulator;
+var isSimulator = GLOBAL.CONFIG && !!CONFIG.simulator && (window.parent !== window);
 var isNative = /^native/.test(CONFIG.target);
 
 if (isSimulator) {
