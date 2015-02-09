@@ -172,7 +172,12 @@ function queueStart() {
 	if (window.GC_LIVE_EDIT && GC_LIVE_EDIT._isLiveEdit) {
 		var intervalId = setInterval(function(){
 			if (GC_LIVE_EDIT._liveEditReady) {
-				startApp();
+				try {
+					startApp();
+				} catch(err) {
+					// In case loading fails, we will still clear the interval
+					console.error('Error while starting app', err);
+				}
 				clearInterval(intervalId);
 			}
 		}, 100);
