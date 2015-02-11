@@ -36,7 +36,7 @@
     },
     "clientPaths": {
       "devkit": "src/clientapi",
-      "ff": "src/clientapi/api/ff"
+      "*": "src/clientapi/api/"
     }
   }
 }

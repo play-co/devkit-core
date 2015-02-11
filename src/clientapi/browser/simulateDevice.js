@@ -17,33 +17,27 @@
 import lib.Enum;
 
 exports.simulate = function (params) {
-	if (params.userAgent) {
-		var navigator = window.navigator;
-		var shim = window.navigator = {};
-		for (var i in navigator) {
-			shim[i] = navigator[i];
-		}
+  if (params.userAgent) {
+    var navigator = window.navigator;
+    var shim = window.navigator = {};
+    for (var i in navigator) {
+      shim[i] = navigator[i];
+    }
 
-		shim.userAgent = params.userAgent;
-	}
+    shim.userAgent = params.userAgent;
+  }
 
-	window.devicePixelRatio = params.devicePixelRatio || 1;
+  window.devicePixelRatio = params.devicePixelRatio || 1;
 
-	import device;
+  import device;
 
-	var deviceName = params.name.toLowerCase();
-	
-	device.simulating = params;
-	device.simulatingMobileNative = params.target == "native-android" || params.target == "native-ios";
-	device.simulatingMobileBrowser = params.target == "browser-desktop" || params.target == "browser-mobile";
-	
-	if (device.simulatingMobileBrowser) {
-		device.isMobileBrowser = true;
-		device.setUseDOM(true);
-	}
+  var deviceName = params.name.toLowerCase();
 
-	if (device.simulatingMobileNative) {
-		device.setUseDOM(false);
-	}
+  var isNative = params.target == "native-android" || params.target == "native-ios";
+  var isMobileBrowser = params.target == "browser-desktop" || params.target == "browser-mobile";
 
+  if (isMobileBrowser) {
+    device.isMobileBrowser = true;
+    // device.setUseDOM(true);
+  }
 }

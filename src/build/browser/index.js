@@ -128,7 +128,7 @@ exports.build = function (api, app, config, cb) {
 
     jsCompiler.compile({
       env: 'browser',
-      initialImport: INITIAL_IMPORT,
+      initialImport: [INITIAL_IMPORT].concat(config.imports).join(', '),
       appendImport: false,
       includeJsio: !config.excludeJsio,
       debug: config.scheme == 'debug',

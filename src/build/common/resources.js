@@ -27,8 +27,7 @@ exports.ResourceList = Class(function () {
   }
 
   this.write = function (targetDirectory, appPath, cb) {
-    new Writer(this._resources.slice(0), targetDirectory, appPath)
-      .write(cb);
+    write(this._resources.slice(0), targetDirectory, appPath).nodeify(cb);
   }
 
   this.getHashes = function (targetDirectory, appPath, cb) {
@@ -64,57 +63,32 @@ exports.ResourceList = Class(function () {
   }
 });
 
-var Writer = Class(function () {
-  this.init = function (resources, targetDirectory, appPath) {
-    this._resources = resources;
-    this._targetDirectory = targetDirectory;
-    this._appPath = appPath;
-  }
+var mkdirp = Promise.promisify(mkdirp);
+var writeFile = Promise.promisify(fs.writeFile);
 
-  this.write = function (cb) {
-    this._onFinish = cb;
-    this._writeNext();
-  }
-
-  this._writeNext = function () {
-    var res = this._resources.shift();
-    if (!res) {
-      return this._onFinish();
-    }
-
-    var cb = function (err) {
-      if (err) {
-        console.error(err);
-        this._onFinish(err);
-      } else {
-        console.log('wrote', res.target);
-        this._writeNext();
-      }
-    }.bind(this);
-
-    var targetFile = path.join(this._targetDirectory, res.target);
-    mkdirp(path.dirname(targetFile), function (err) {
-      if (err) { return cb(err); }
-
-      if ('contents' in res) {
-        fs.writeFile(targetFile, res.contents, cb);
-      } else if (res.copyFrom && res.copyFrom != targetFile) {
+function write(resources, targetDirectory, appPath) {
+  return Promise.map(resources, function (resource) {
+    var targetFile = path.join(targetDirectory, resource.target);
+    return mkdirp(path.dirname(targetFile)).then(function () {
+      if ('contents' in resource) {
+        return writeFile(targetFile, resource.contents);
+      } else if (resource.copyFrom && resource.copyFrom != targetFile) {
         var cmd = printf('cp -p "%(src)s" "%(dest)s"', {
-          src: res.copyFrom,
+          src: resource.copyFrom,
           dest: targetFile
         });
 
-        exec(cmd, {cwd: this._appPath}, function (err, stdout, stderr) {
-          if (err && err.code != 1) {
-            console.log(JSON.stringify(code));
-            cb(new Error('code ' + code + '\n' + stdout + '\n' + stderr));
-          } else {
-            cb();
-          }
+        return new Promise(function (resolve, reject) {
+          exec(cmd, {cwd: this._appPath}, function (err, stdout, stderr) {
+            if (err && err.code != 1) {
+              console.log(JSON.stringify(code));
+              reject(new Error('code ' + code + '\n' + stdout + '\n' + stderr));
+            } else {
+              resolve();
+            }
+          });
         });
-      } else {
-        cb();
       }
     });
-  }
-});
+  }, {concurrency: 8});
+}
