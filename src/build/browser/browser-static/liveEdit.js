@@ -11,7 +11,7 @@ var GC_LIVE_EDIT = GC_LIVE_EDIT || { _isLiveEdit: true, _liveEditReady: false };
 
   var processSrc = function(src) {
     // Make sure that all the `import xxx;` are turned into `jsio('import xxx')`
-    var regex = /(import .+);/g;
+    var regex = /(import [^'"]+?);/g;
     src = src.replace(regex, "jsio('$1');")
     return src;
   }
