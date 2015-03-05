@@ -11,7 +11,7 @@ exports.opts = require('optimist')(process.argv)
     .describe('sdk', '(optional) Specify an iOS SDK other than the default one').string('sdk')
     .alias('provision', 'p').describe('provision', '(required for --ipa) Path to .mobileprovision profile file').string('provision')
     .alias('developer', 'v').describe('developer', '(required for --ipa) Name of developer').string('developer')
-    .alias('open', 'o').describe('open', '(ignored when --ipa is specified) Open the XCode project after building').boolean('open').default('open', true)
+    .alias('open', 'o').describe('open', 'Open the XCode project after building, defaults to true for non-ipa builds, pass --no-open to override')
     .describe('reveal').describe('reveal', 'Shows ipa or XCode project in Finder after build')
 
 exports.build = function (api, app, buildTarget, opts, cb) {
@@ -42,6 +42,13 @@ exports.configure = function (api, app, config, cb) {
 
   if (argv.ipa) {
     config.ipaPath = path.join(config.outputPath, app.manifest.shortName + '.ipa');
+
+    // unless config.open is explicity provided, set it to false
+    if (!(config.open === 'true' || config.open === 1 || config.open === true)) {
+      config.open = false;
+    }
+  } else if (config.open === undefined) {
+    config.open = true;
   }
 
   // TODO: can override the following for external projects

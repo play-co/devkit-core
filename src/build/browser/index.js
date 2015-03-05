@@ -27,6 +27,7 @@ var INITIAL_IMPORT = 'devkit.browser.launchClient';
 var STATIC_GA_JS = fs.readFileSync(path.join(__dirname, 'browser-static/ga.js'), 'utf8');
 var STATIC_BOOTSTRAP_CSS = path.join(__dirname, 'browser-static/bootstrap.styl');
 var STATIC_BOOTSTRAP_JS = path.join(__dirname, 'browser-static/bootstrap.js');
+var STATIC_LIVE_EDIT_JS = path.join(__dirname, 'browser-static/liveEdit.js');
 
 exports.opts = require('optimist')(process.argv)
   .alias('baseURL', 'u').describe('baseURL', 'all relative resources except for index should be loaded from this URL');
@@ -51,6 +52,7 @@ exports.build = function (api, app, config, cb) {
   var imgCache = {};
 
   var isMobile = (config.target != 'browser-desktop');
+  var isLiveEdit = (config.target == 'live-edit');
   var CSSFontList = require('./fonts').CSSFontList;
   var InlineCache = require('../common/inlineCache').InlineCache;
   var resourceList = new (require('../common/resources').ResourceList);
@@ -77,6 +79,21 @@ exports.build = function (api, app, config, cb) {
     if (/^native/.test(config.target)) {
       f('jsio=function(){window._continueLoad()}');
     } else {
+
+      if (isLiveEdit && !config.preCompressCallback) {
+        config.preCompressCallback = function(sourceTable) {
+          for (var fullPath in sourceTable) {
+            var fileValues = sourceTable[fullPath];
+            if (fileValues.friendlyPath == 'ui.resource.Image') {
+              logger.log('Patching ui.resource.Image to look for GC_LIVE_EDIT._imgBase');
+              var regex = /(this._setSrcImg.+{)/;
+              var insert = 'if(url&&GC_LIVE_EDIT._imgBase){url=GC_LIVE_EDIT._imgBase+url;}';
+              fileValues.src = fileValues.src.replace(regex, '$1' + insert);
+            }
+          }
+        };
+      }
+
       jsCompiler.compile({
         initialImport: 'devkit.browser.bootstrap.launchBrowser',
         appendImport: false,
@@ -87,29 +104,15 @@ exports.build = function (api, app, config, cb) {
     fs.readFile(STATIC_BOOTSTRAP_CSS, 'utf8', f());
     fs.readFile(STATIC_BOOTSTRAP_JS, 'utf8', f());
 
+    if (isLiveEdit) {
+      fs.readFile(STATIC_LIVE_EDIT_JS, 'utf8', f());
+    }
+
     // cache other files as needed
     inlineCache.addFiles(files.other, f.wait());
     fontList.addFiles(files.other, f.wait());
-  }, function (preloadJS, bootstrapCSS, bootstrapJS) {
+  }, function (preloadJS, bootstrapCSS, bootstrapJS, liveEditJS) {
     jsConfig.add('embeddedFonts', fontList.getNames());
-
-    gameHTML.addCSS(bootstrapCSS);
-    gameHTML.addCSS(fontList.getCSS({
-      embedFonts: config.browser.embedFonts,
-      formats: require('./fonts').getFormatsForTarget(config.target)
-    }));
-
-    if (config.browser.canvas.css) {
-      gameHTML.addCSS("#timestep_onscreen_canvas{" + config.browser.canvas.css + "}");
-    }
-
-    gameHTML.addJS(jsConfig.toString());
-    gameHTML.addJS(bootstrapJS);
-    gameHTML.addJS(printf('bootstrap("%(initialImport)s", "%(target)s")', {
-        initialImport: INITIAL_IMPORT,
-        target: config.target
-      }));
-    gameHTML.addJS(preloadJS);
 
     // miscellaneous files must be copied into the build
     files.other.forEach(function (file) {
@@ -134,6 +137,27 @@ exports.build = function (api, app, config, cb) {
       debug: config.scheme == 'debug',
       preCompress: config.preCompressCallback
     }, f());
+
+    // We need to generate a couple different files if this is going to be a
+    gameHTML.addCSS(bootstrapCSS);
+    gameHTML.addCSS(fontList.getCSS({
+      embedFonts: config.browser.embedFonts,
+      formats: require('./fonts').getFormatsForTarget(config.target)
+    }));
+
+    if (config.browser.canvas.css) {
+      gameHTML.addCSS("#timestep_onscreen_canvas{" + config.browser.canvas.css + "}");
+    }
+
+    gameHTML.addJS(jsConfig.toString());
+    gameHTML.addJS(bootstrapJS);
+    gameHTML.addJS(printf('bootstrap("%(initialImport)s", "%(target)s")', {
+        initialImport: INITIAL_IMPORT,
+        target: config.target
+      }));
+    gameHTML.addJS(preloadJS);
+
+    liveEditJS && gameHTML.addJS(liveEditJS);
 
     // Condense resources.
     gameHTML.generate(api, app, config, f());
