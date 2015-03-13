@@ -166,7 +166,11 @@ var CSSFont = Class(function () {
     var fontData = {};
     Object.keys(exts).forEach(function (ext) {
       var filename = path.join(dirname, fileBase + ext);
-      fontData[ext] = getFontDataURI(filename);
+      if (opts.embedFonts) {
+        fontData[ext] = getFontDataURI(filename);
+      } else {
+        fontData[ext] = fs.existsSync(filename);
+      }
     }, this);
 
     var css = '';
