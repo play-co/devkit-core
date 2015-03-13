@@ -137,7 +137,6 @@ exports.build = function (api, app, config, cb) {
       var addToFontList = fontList.add.bind(fontList);
 
       var sourceMap = {};
-
       if (spriterResult) {
         files = files.concat(spriterResult.files);
         sourceMap = merge(sourceMap, spriterResult.sourceMap);

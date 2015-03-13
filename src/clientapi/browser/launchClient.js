@@ -73,7 +73,7 @@ if (typeof localStorage !== 'undefined') {
     getItem: function () {},
     setItem: function () {},
     removeItem: function () {}
-  }
+  };
 }
 
 var splash = document.getElementById('_GCSplash');
@@ -110,47 +110,33 @@ if (DEBUG) {
   var deviceType;
 
   if (isSimulator) {
-    deviceId = CONFIG.simulator.deviceId;
-    deviceType = CONFIG.simulator.deviceType;
-
-    var deviceInfo = CONFIG.simulator.deviceInfo;
-
-    import .simulateDevice;
-    simulateDevice.simulate(deviceInfo);
+    Promise.map(CONFIG.simulator.modules, function (name) {
+        try {
+          var module = jsio(name);
+          if (module && module.init) {
+            return module.init();
+          }
+        } catch (e) {}
+      })
+      .timeout(5000)
+      .finally(queueStart);
   } else {
-    deviceId = localStorage.getItem(DEVICE_ID_KEY);
-    if (!deviceId) {
-      import std.uuid;
-      deviceId = std.uuid.uuid();
-      localStorage.setItem(DEVICE_ID_KEY, deviceId);
-    }
+    // deviceId = localStorage.getItem(DEVICE_ID_KEY);
+    // if (!deviceId) {
+    //   import std.uuid;
+    //   deviceId = std.uuid.uuid();
+    //   localStorage.setItem(DEVICE_ID_KEY, deviceId);
+    // }
 
-    if (device.isAndroid) {
-      deviceType = 'browser-android';
-    } else if (device.isIOS) {
-      deviceType = 'browser-ios';
-    } else {
-      deviceType = 'browser-mobile';
-    }
+    // if (device.isAndroid) {
+    //   deviceType = 'browser-android';
+    // } else if (device.isIOS) {
+    //   deviceType = 'browser-ios';
+    // } else {
+    //   deviceType = 'browser-mobile';
+    // }
+    queueStart();
   }
-
-  var channel = debugging.getChannel('devkit-simulator');
-
-  logger.log('waiting for debugger...');
-  channel.connect()
-    .timeout(1000)
-    .then(function () {
-      channel.emit('handshake', {
-        deviceId: deviceId,
-        deviceType: deviceType,
-        userAgent: navigator.userAgent,
-        screen: {
-          width: device.screen.width,
-          height: device.screen.height
-        }
-      });
-    })
-    .finally(queueStart);
 } else {
   queueStart();
 }
