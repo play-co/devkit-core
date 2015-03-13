@@ -178,6 +178,8 @@ exports.GameHTML = Class(function () {
             var closestIcon;
 
             for (var size in iosIcons) {
+              if (typeof iosIcons[size] != 'string') { continue; }
+
               var intSize = parseInt(size);
               var icon = path.join(app.paths.root, iosIcons[size]);
               if (!fs.existsSync(icon)) {
