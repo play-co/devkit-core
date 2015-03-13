@@ -33,4 +33,6 @@ var GC_LIVE_EDIT = GC_LIVE_EDIT || { _isLiveEdit: true, _liveEditReady: false };
       setCachedSrc(subCmd.cmd, subCmd.data);
     }
   }, false);
+
+  parent.postMessage('LIVE_EDIT listener_ready', '*');
 })();
