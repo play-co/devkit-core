@@ -11,6 +11,7 @@
     "cli-color": "^0.3.2",
     "etags": "git+https://github.com/gameclosure/etags#1.0.0",
     "ff": "^0.2.0",
+    "glob": "^5.0.2",
     "graceful-fs": "^3.0.2",
     "image-size": "0.3.2",
     "jsio": "^2.0.0",
@@ -19,8 +20,12 @@
     "nib": "1.0.3",
     "optimist": "^0.6.1",
     "printf": "0.2.0",
+    "slash": "^1.0.0",
+    "stream-from-array": "^0.1.0",
     "stylus": "0.48.1",
-    "uglify-js": "^2.4.15"
+    "uglify-js": "^2.4.17",
+    "vinyl": "^0.4.6",
+    "vinyl-fs": "^1.0.0"
   },
   "scripts": {
     "preinstall": "sh scripts/preinstall.sh && sh scripts/preinstall.sh"

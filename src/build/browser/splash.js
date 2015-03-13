@@ -37,4 +37,4 @@ exports.getSplashHTML = function (opts, splashImage) {
 
   html += '</div>';
   return html;
-}
+};

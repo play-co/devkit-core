@@ -1,9 +1,10 @@
 var url = require('url');
 var printf = require('printf');
+var slash = require('slash');
 
 // generate an HTML5 offline cache manifest file
-exports.generate = function(app, config, resourceMap) {
-  return printf('CACHE MANIFEST\n' +
+exports.generate = function(app, config, files) {
+  return new Buffer(printf('CACHE MANIFEST\n' +
     '\n' +
     '#%(appID)s version %(version)s\n' +
     '\n' +
@@ -17,12 +18,17 @@ exports.generate = function(app, config, resourceMap) {
     '*\n', {
       appID: app.manifest.appID,
       version: config.version,
-      resources: Object.keys(resourceMap).map(function (line) {
-        if (config.browser.baseURL) {
-          return url.resolve(config.browser.baseURL, line);
-        } else {
-          return line;
-        }
-      }).join('\n')
-  });
-}
+      resources: files
+        .filter(function (file) {
+          return !file.inlined;
+        })
+        .map(function (file) {
+          var relative = slash(file.relative);
+          if (config.browser.baseURL) {
+            return url.resolve(config.browser.baseURL, relative);
+          } else {
+            return relative;
+          }
+        }).join('\n')
+  }));
+};

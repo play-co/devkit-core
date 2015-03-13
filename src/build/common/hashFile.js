@@ -2,12 +2,12 @@
 var crypto = require('crypto');
 var ff = require('ff');
 var fs = require('graceful-fs');
-var path = require('path');
 
 function md5file (filename, cb) {
 	var md5sum = crypto.createHash('md5');
+	var s;
 	try {
-		var s = fs.createReadStream(filename);
+		s = fs.createReadStream(filename);
 	} catch (e) {
 		return cb(e);
 	}
@@ -26,4 +26,4 @@ module.exports = function (filename, cb) {
 	}, function (stat, md5) {
 		f(md5 + '|' + (+stat.mtime));
 	}).cb(cb);
-}
+};
