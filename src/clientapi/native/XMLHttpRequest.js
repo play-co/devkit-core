@@ -41,9 +41,19 @@ var XMLHttpRequest = Class(function () {
 		}
 	}
 
-	this.getResponseHeader = function (name) { return this._responseHeaders[name]; }
+	this.getResponseHeader = function (name) { return this._responseHeadersLowerCase[name.toLowerCase()]; }
 
-	this.getAllResponseHeaders = function () { return this._responseHeaders; }
+	this.getAllResponseHeaders = function () {
+		var lines = [];
+		var headers = this._responseHeaders;
+		for(var key in headers) {
+			if (!headers.hasOwnProperty(key)) {
+				continue;
+			}
+			lines.push(key + ': ' + headers[key]);
+		}
+		return lines.join('\r\n');
+	}
 	
 	this.setRequestHeader = function (name, value) {
 		this._requestHeaders[name] = value;
@@ -83,10 +93,12 @@ exports.install = function () {
 		var xhr = xhrs[evt.id];
 		if (xhr) {
 			var headers = {};
+			var headersLowercase = {};
 			for(var i = 0, len = evt.headerKeys.length; i < len; i++) {
-				headers[evt.headerKeys[i]] = evt.headerValues[i];
+				headersLowercase[evt.headerKeys[i].toLowerCase()] = headers[evt.headerKeys[i]] = evt.headerValues[i];
 			}
 			xhr._responseHeaders = headers;
+			xhr._responseHeadersLowerCase = headersLowercase;
 			xhr._onreadystatechange(evt.state, evt.status, evt.response);
 		}
 		delete xhrs[evt.id];
