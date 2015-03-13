@@ -30,28 +30,7 @@ device.init();
 import .common;
 common.install();
 
-import .socketTransport;
-
-if (window.DEBUG_WAIT) {
-	import ..debugging.connect;
-
-	var cwd = jsio.__env.getCwd();
-	var match = /https?:\/\/([^:]*).*/.exec(cwd);
-	var host = null;
-	if (match) {
-		host = match[1];
-	}
-
-	debugging.connect.connect({
-		transport: socketTransport.Connector,
-		opts: {
-			host: host,
-			port: 9226
-		}
-	}, startApp);
-} else {
-	startApp();
-}
+startApp();
 
 /**
  * Anonymous statistics, this information helps us improve the DevKit by

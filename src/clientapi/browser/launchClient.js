@@ -103,10 +103,7 @@ var mute = uri.hash('mute');
 CONFIG.isMuted = true; // mute != undefined && mute != "false" && mute != "0" && mute != "no";
 
 if (DEBUG) {
-  import ..debugging.api;
-  import ..debugging._DEBUG as _DEBUG;
-
-  GLOBAL._DEBUG = new _DEBUG();
+  import ..debugging;
 
   var DEVICE_ID_KEY = '.devkit.deviceId';
   var deviceId;
@@ -137,7 +134,7 @@ if (DEBUG) {
     }
   }
 
-  var channel = debugging.api.getChannel('devkit-simulator');
+  var channel = debugging.getChannel('devkit-simulator');
 
   logger.log('waiting for debugger...');
   channel.connect()

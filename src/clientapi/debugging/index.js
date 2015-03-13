@@ -1,4 +1,8 @@
 import lib.PubSub;
+
+import .traversal;
+from .screenshot import screenshot;
+
 import .Channel;
 
 var API = Class(function () {
@@ -25,9 +29,13 @@ var API = Class(function () {
       this._channels[channel].setTransport(transport);
     }
   }
+
+  this.screenshot = screenshot;
 });
 
 exports = new API();
+
+merge(exports, traversal);
 
 var _transport;
 
@@ -38,10 +46,7 @@ var setTransport = bind(exports, function (transport) {
     _transport = null;
   });
 
-  for (var channel in this._channels) {
-    // active all channels
-    this._channels[channel].setTransport(transport);
-  }
+  this.__onConnect(transport);
 });
 
 // try to connect
