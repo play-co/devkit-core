@@ -139,7 +139,9 @@ exports.GameHTML = Class(function () {
         config.compress
           ? compileJS('[bootstrap]', js, {showWarnings: false})
           : js
-      ]).spread(function (css, js) {
+      ])
+      .bind(this)
+      .spread(function (css, js) {
         // browser splash
         var splashImage = config.browser.splash
                        && path.resolve(app.paths.root, config.browser.splash);

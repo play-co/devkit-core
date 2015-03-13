@@ -116,7 +116,7 @@ exports.build = function (api, app, config, cb) {
           readFile(STATIC_BOOTSTRAP_CSS, 'utf8'),
           readFile(STATIC_BOOTSTRAP_JS, 'utf8'),
           isLiveEdit && readFile(STATIC_LIVE_EDIT_JS, 'utf8'),
-          config.spriteImages && sprite(directories),
+          config.spriteImages !== false && sprite(directories),
           compileJS({
             env: 'browser',
             initialImport: [INITIAL_IMPORT].concat(config.imports).join(', '),
