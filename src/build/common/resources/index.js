@@ -1,4 +1,5 @@
 var path = require('path');
+var fs = require('fs');
 var File = require('vinyl');
 var glob = Promise.promisify(require('glob'));
 
@@ -15,7 +16,8 @@ exports.getFiles = function (targetDirectory, directories) {
         var targetPath = path.join(targetDirectory, directory.target, filename);
         var file = new File({
           base: targetDirectory,
-          path: srcPath
+          path: srcPath,
+          contents: fs.createReadStream(srcPath)
         });
 
         file.path = targetPath;
