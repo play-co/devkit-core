@@ -48,7 +48,11 @@ exports.InlineCache = Class(function () {
         }
 
         if (ext === '.json') {
-          contents = JSON.stringify(JSON.parse(contents.toString('utf8')));
+          try {
+            contents = JSON.stringify(JSON.parse(contents.toString('utf8')));
+          } catch (e) {
+            this._logger.warn('invalid JSON in', file.path);
+          }
         }
 
         this._cache[file.relative] = contents;
