@@ -183,9 +183,6 @@ exports = Class(lib.PubSub, function () {
 		view.engine.show();
 		view.engine.startLoop();
 
-		// expose global mute
-		view.muteAll = AudioManager.muteAll;
-
 		view.initUI && view.initUI();
 
 		FontRenderer.init();
