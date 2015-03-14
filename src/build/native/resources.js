@@ -44,7 +44,7 @@ exports.writeNativeResources = function (api, app, config, cb) {
         config.spriteImages && sprite(directories),
         compileJS({
           env: 'native',
-          initialImport: INITIAL_IMPORT,
+          initialImport: [INITIAL_IMPORT].concat(config.imports).join(', '),
           appendImport: false,
           includeJsio: !config.excludeJsio,
           debug: config.scheme === 'debug'
