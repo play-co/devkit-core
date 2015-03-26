@@ -25,12 +25,21 @@ var GC_LIVE_EDIT = GC_LIVE_EDIT || { _isLiveEdit: true, _liveEditReady: false };
     var msg = event.data;
     var cmd = splitCmd(msg);
 
-    if (cmd.cmd == 'LIVE_EDIT') {
-      if (cmd.data == 'ready') GC_LIVE_EDIT._liveEditReady = true;
-      if (cmd.data == 'not_ready') GC_LIVE_EDIT._liveEditReady = false;
-    } else if (cmd.cmd == 'SOURCE') {
-      var subCmd = splitCmd(cmd.data);
-      setCachedSrc(subCmd.cmd, subCmd.data);
+    switch (cmd.cmd) {
+      case 'LIVE_EDIT':
+        if (cmd.data === 'ready') GC_LIVE_EDIT._liveEditReady = true;
+        if (cmd.data === 'not_ready') GC_LIVE_EDIT._liveEditReady = false;
+        break;
+
+      case 'SOURCE':
+        var subCmd = splitCmd(cmd.data);
+        setCachedSrc(subCmd.cmd, subCmd.data);
+        break;
+
+      case 'SCREENSHOT':
+        var canvas = document.getElementById('timestep_onscreen_canvas');
+        parent.postMessage('SCREENSHOT ' + canvas.toDataURL(), '*');
+        break;
     }
   }, false);
 
