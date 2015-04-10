@@ -18,6 +18,7 @@ var printf = require('printf');
 var fs = require('graceful-fs');
 var File = require('vinyl');
 var vfs = require('vinyl-fs');
+// var newer = require('gulp-newer');
 var slash = require('slash');
 var streamFromArray = require('stream-from-array');
 
@@ -246,6 +247,7 @@ exports.build = function (api, app, config, cb) {
           logger.log('Writing files...');
           return new Promise(function (resolve, reject) {
             streamFromArray.obj(files)
+              // .pipe(newer(baseDirectory))
               .pipe(vfs.dest(baseDirectory))
               .on('end', resolve)
               .on('error', reject);
