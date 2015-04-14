@@ -113,6 +113,7 @@ exports.build = function (api, app, config, cb) {
     .then(function (directories) {
       return Promise.all([
           resources.getFiles(baseDirectory, directories),
+          readFile(getLocalFilePath('../../clientapi/browser/cache-worker.js'), 'utf8'),
           getPreloadJS(),
           readFile(STATIC_BOOTSTRAP_CSS, 'utf8'),
           readFile(STATIC_BOOTSTRAP_JS, 'utf8'),
@@ -128,9 +129,8 @@ exports.build = function (api, app, config, cb) {
           })
         ]);
     })
-    .spread(function (files, preloadJS, bootstrapCSS, bootstrapJS,
+    .spread(function (files, cacheWorkerJS, preloadJS, bootstrapCSS, bootstrapJS,
                       liveEditJS, spriterResult, jsSrc) {
-
       logger.log('Creating HTML and JavaScript...');
 
       jsConfig.add('embeddedFonts', fontList.getNames());
@@ -241,6 +241,13 @@ exports.build = function (api, app, config, cb) {
             base: baseDirectory,
             path: path.join(baseDirectory, 'resource_source_map.json'),
             contents: new Buffer(JSON.stringify(sourceMap))
+          }));
+
+          var js = require('./cacheWorker.js').generate(config, cacheWorkerJS);
+          files.push(new File({
+            base: baseDirectory,
+            path: path.join(baseDirectory, 'cache-worker.js'),
+            contents: new Buffer(js)
           }));
 
           // https://github.com/petkaantonov/bluebird/issues/332

@@ -76,6 +76,11 @@ if (typeof localStorage !== 'undefined') {
   };
 }
 
+if (!isSimulator) {
+  // start the cache service-worker
+  import .cache;
+}
+
 var splash = document.getElementById('_GCSplash');
 if (splash) {
   if (!CONFIG.splash.hide) {
