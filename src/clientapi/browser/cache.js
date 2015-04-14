@@ -34,14 +34,20 @@ if (exports.isEnabled) {
       // cache spritesheets
       import ui.resource.loader;
       var map = ui.resource.loader.getMap();
-      var urls = {};
+      var sheets = {};
       for (var uri in map) {
         if (map[uri].sheet) {
-          urls[map[uri].sheet] = true;
+          sheets[map[uri].sheet] = true;
         }
       }
 
-      return exports.addToCache(Object.keys(urls));
+      var urls = Object.keys(sheets);
+
+      // cache the current URL (index.html is cached, but we might be loading /
+      // instead)
+      urls.unshift(window.location.toString());
+
+      return exports.addToCache(urls);
     })
     .then(function (res) {
       console.log('spritesheets now available offline');
