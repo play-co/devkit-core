@@ -110,6 +110,40 @@ var BASE_URLS = [
   'INSERT:BASE_URLS'
 ];
 
+var hostURL = location;
+
+var whitelistOrigins = [];
+var blacklistURLs = [];
+
+function addToList(list, pattern) {
+  if (!list._patterns) {
+    list._patterns = {};
+  }
+
+  if (pattern in list._patterns) {
+    return;
+  }
+
+  list._patterns[pattern] = true;
+  list.push(convertToRegexp(pattern));
+}
+
+function convertToRegexp(pattern) {
+  if (typeof pattern == 'string') {
+    return new RegExp(pattern
+      .replace(/\./g, '\\.')
+      .replace(/\*/g, '.*'));
+  }
+
+  return pattern;
+}
+
+// don't cache anything that looks like an api
+addToList(blacklistURLs, (/\/api\//));
+
+// cache everything on this domain
+addToList(whitelistOrigins, location.origin);
+
 self.addEventListener('install', function (event) {
 
   // Take over immediately from old service-worker if we're the new version. by
@@ -131,7 +165,9 @@ self.addEventListener('install', function (event) {
       .then(function () {
         console.log('[install] finished');
       })
-      .catch());
+      .catch(function (e) {
+        console.error('error installing:', e);
+      }));
 });
 
 self.addEventListener('activate', function (event) {
@@ -162,11 +198,22 @@ self.addEventListener('activate', function (event) {
       }));
 });
 
-function skipCache(hostURL, requestURL) {
-  // don't cache any requests from different origins
-  return hostURL.origin != requestURL.origin
-    // don't cache anything that looks like an api
-    || /\/api\//.test(requestURL);
+function skipCache(request) {
+  var origin = new URL(request.url).origin;
+
+  for (var i = 0, n = blacklistURLs.length; i < n; ++i) {
+    if (blacklistURLs[i].test(origin)) {
+      return false;
+    }
+  }
+
+  for (var i = 0, n = whitelistOrigins.length; i < n; ++i) {
+    if (whitelistOrigins[i].test(origin)) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 // handle cache
@@ -174,21 +221,6 @@ self.addEventListener('fetch', function(event) {
 
   var request = event.request;
   // var client = event.client;
-
-  var requestURL = new URL(request.url);
-  var hostURL = location;
-
-  // requests that don't hit cache
-  if (skipCache(hostURL, requestURL)) {
-    console.log("skipping cache for", requestURL.toString());
-    return fetch(request);
-  }
-
-  // requests that always hit cache (Fail if not in cache)
-  if (request.headers.get('Accept') == 'x-cache/only') {
-    console.log("querying cache for", requestURL.toString());
-    return caches.match(request);
-  }
 
   // all other requests hit cache first, then if not in the cache, make the
   // request and cache the response
@@ -201,6 +233,19 @@ self.addEventListener('fetch', function(event) {
           return response;
         }
 
+        // requests that don't get cached
+        if (skipCache(request)) {
+          console.log("skipping cache for", request.url);
+          return fetch(request);
+        }
+
+        // requests that only check cache (fail if not in cache)
+        if (request.headers.get('Accept') == 'x-cache/only') {
+          console.log("cache lookup failed for", request.url);
+          return;
+        }
+
+
         return Promise.all([fetch(request.clone()), caches.open(CACHE_NAME)])
           .then(function (results) {
             var response = results[0];
@@ -208,9 +253,9 @@ self.addEventListener('fetch', function(event) {
             cache
               .put(request, response.clone())
               .then(function () {
-                console.log("cached", requestURL.toString());
+                console.log("cached", request.url);
               }, function (e) {
-                console.error("could not cache", requestURL.toString(), e);
+                console.error("could not cache", request.url, e);
               });
             return response;
           });
@@ -222,7 +267,7 @@ self.addEventListener('message', function(event) {
   console.log(event.waitUntil);
   console.log('received command', event.data.command);
   switch (event.data.command) {
-    case 'add':
+    case 'addURLs':
       var urls = event.data.urls;
       console.log('[add] adding', urls.length, 'urls to cache');
       cacheURLs(urls).then(function (res) {
@@ -232,6 +277,10 @@ self.addEventListener('message', function(event) {
           failedURLs: res.failedURLs
         });
       });
+      break;
+    case 'addWhitelistDomain':
+      console.log('[add] whitelist domain:', event.data.domain);
+      addToList(whitelistOrigins, event.data.domain);
       break;
     default:
       console.error('command unknown:', event.data.command);

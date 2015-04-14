@@ -1,47 +1,96 @@
 var _cacheWorker;
 
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('cache-worker.js').then(function(reg) {
+function init() {
+  return navigator.serviceWorker.register('cache-worker.js')
+    .then(function(reg) {
 
-    // try to grab the just-registered worker to send it the cache message
-    _cacheWorker = reg.installing || reg.waiting || reg.active;
+      // try to grab the just-registered worker to send it the cache message
+      _cacheWorker = reg.installing || reg.waiting || reg.active;
 
-    if (reg.installing) {
-      console.log('cache worker installing...');
-    } else if (reg.waiting) {
-      console.log('cache worker waiting to activate (close, then reopen app)');
-    } else if (reg.active) {
-      console.log('cache worker already active!');
-    } else {
-      console.error('unknown cache worker state?');
-    }
-
-    // cache spritesheets
-    import ui.resource.loader;
-    var map = ui.resource.loader.getMap();
-    var urls = {};
-    for (var uri in map) {
-      if (map[uri].sheet) {
-        urls[map[uri].sheet] = true;
+      if (reg.installing) {
+        console.log('cache worker installing...');
+      } else if (reg.waiting) {
+        console.log('cache worker waiting to activate (close, then reopen app)');
+      } else if (reg.active) {
+        console.log('cache worker already active!');
+      } else {
+        console.error('unknown cache worker state?');
       }
-    }
-
-    sendMessage({
-        command: 'add',
-        urls: Object.keys(urls)
-      })
-      .then(function (res) {
-        console.log('spritesheets now available offline');
-
-        if (res && res.failedURLs) {
-          console.error('following spritesheets failed to load:',
-                        res.failedURLs);
-        }
-      });
-  }, function(err) {
-    console.log('cache worker failed', err);
-  });
+    }, function(err) {
+      console.log('cache worker failed', err);
+    });
 }
+
+exports.isEnabled = 'serviceWorker' in navigator;
+
+var _onInit;
+if (exports.isEnabled) {
+  _onInit = init();
+
+  // cache spritesheets after init
+  Promise
+    .resolve(_onInit)
+    .then(function () {
+      // cache spritesheets
+      import ui.resource.loader;
+      var map = ui.resource.loader.getMap();
+      var urls = {};
+      for (var uri in map) {
+        if (map[uri].sheet) {
+          urls[map[uri].sheet] = true;
+        }
+      }
+
+      return exports.addToCache(Object.keys(urls));
+    })
+    .then(function (res) {
+      console.log('spritesheets now available offline');
+
+      if (res && res.failedURLs) {
+        console.error('following spritesheets failed to load:',
+                      res.failedURLs);
+      }
+    });
+}
+
+exports.addWhitelistDomain = function (domain) {
+  if (!_onInit) {
+    return Promise.reject(new Error("cache not available"));
+  }
+
+  // block on init
+  return Promise
+    .resolve(_onInit)
+    .then(function () {
+      return sendMessage({
+        command: 'addWhitelistDomain',
+        domain: domain
+      });
+    });
+}
+
+// Accepts a url or array of urls to cache
+// Returns a promise that resolves after caching, with any urls that failed to
+// cache
+exports.addToCache = function (urls) {
+  if (!Array.isArray(urls)) {
+    urls = [urls];
+  }
+
+  if (!_onInit) {
+    return Promise.reject(new Error("cache not available"));
+  }
+
+  // block on init
+  return Promise
+    .resolve(_onInit)
+    .then(function () {
+      return sendMessage({
+        command: 'addURLs',
+        urls: urls
+      });
+    });
+};
 
 // from https://github.com/GoogleChrome/samples/blob/gh-pages/service-worker/post-message/index.html
 function sendMessage(message) {
