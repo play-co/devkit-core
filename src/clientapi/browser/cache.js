@@ -1,3 +1,5 @@
+import device;
+
 var _cacheWorker;
 
 function init() {
@@ -21,7 +23,7 @@ function init() {
     });
 }
 
-exports.isEnabled = 'serviceWorker' in navigator;
+exports.isEnabled = ('serviceWorker' in navigator) && !device.isSimulator;
 
 var _onInit;
 if (exports.isEnabled) {

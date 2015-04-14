@@ -33,10 +33,9 @@ exports.CSSFontList = Class(function () {
   };
 
   this.add = function (file) {
-    var filePath = file.path;
+    var filePath = file.history[0];
     var ext = path.extname(filePath).toLowerCase();
     if (FONT_EXTS[ext]) {
-      console.log(file.base, file.path);
       this._fonts[path.basename(filePath)] = new CSSFont(filePath);
     }
   };

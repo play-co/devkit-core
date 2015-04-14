@@ -56,7 +56,9 @@ if (CONFIG.simulator) {
   var devkit;
   try {
     devkit = window.parent.devkit;
-  } catch (e) {
+  } catch (e) {}
+
+  if (!devkit || !devkit.getSimulator) {
     return;
   }
 
