@@ -9,7 +9,7 @@ exports.generate = function (config, js) {
   var keys = {
     'APP_ID': string(config.appID),
     'APP_VERSION': string(config.version),
-    'ALLOW_MULTIPLE_APPS_PER_DOMAIN': false,
+    'ALLOW_MULTIPLE_APPS_PER_DOMAIN': true,
     'BASE_URLS': [
       string('index.html'),
       string(config.target + '.js')
