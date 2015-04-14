@@ -135,8 +135,6 @@ exports.build = function (api, app, config, cb) {
 
       jsConfig.add('embeddedFonts', fontList.getNames());
 
-      var addToFontList = fontList.add.bind(fontList);
-
       var sourceMap = {};
       if (spriterResult) {
         // remove sprited files from file list
@@ -148,10 +146,9 @@ exports.build = function (api, app, config, cb) {
         sourceMap = merge(sourceMap, spriterResult.sourceMap);
       }
 
-      var tasks = [];
+      files.map(fontList.add.bind(fontList));
 
-      tasks.push(Promise.resolve(files)
-          .map(addToFontList));
+      var tasks = [];
 
       // We need to generate a couple different files if this is going to be a
       gameHTML.addCSS(bootstrapCSS);
