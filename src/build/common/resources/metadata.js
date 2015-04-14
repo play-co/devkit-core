@@ -67,8 +67,9 @@ Options.prototype.add = function (metadata) {
   }
 };
 
-Options.prototype.get = function (prop, buildOpts) {
-  var rules = Options.filterRules(this.rules, buildOpts);
+Options.prototype.get = function (filename, prop, buildOpts) {
+
+  var rules = Options.filterRules(this.rules, filename, buildOpts);
   var n = rules.length;
   for (var i = n - 1; i >= 0; --i) {
     if (prop in rules[i]) {
@@ -79,10 +80,23 @@ Options.prototype.get = function (prop, buildOpts) {
   return this.values[prop];
 };
 
-Options.filterRules = function (rules, buildOpts) {
+Options.filterRules = function (rules, filename, buildOpts) {
   return rules.filter(function (rule) {
-    return !('cond-buildMode' in rule)
-      || rule['cond-buildMode'] === buildOpts.scheme && !('cond-target' in rule)
-      || rule['cond-target'] === buildOpts.target;
+    return (!buildOpts
+        || (!rule['cond-buildMode']
+          || rule['cond-buildMode'] === buildOpts.scheme)
+
+        && (!rule['cond-target']
+          || rule['cond-target'] === buildOpts.target))
+
+      && (!rule['cond-fileList']
+          // exact match
+          || rule['cond-fileList'].indexOf(filename) >= 0
+          // filtered length
+          || rule['cond-fileList'].filter(function (match) {
+            var n = match.length;
+            return match === filename.substring(0, n)
+              && (filename[n] == '/' || filename[n] == '\\');
+          }).length);
   });
 };

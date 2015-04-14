@@ -139,6 +139,11 @@ exports.build = function (api, app, config, cb) {
 
       var sourceMap = {};
       if (spriterResult) {
+        // remove sprited files from file list
+        files = files.filter(function (file) {
+          return !(file.originalRelativePath in spriterResult.sourceMap);
+        });
+
         files = files.concat(spriterResult.files);
         sourceMap = merge(sourceMap, spriterResult.sourceMap);
       }

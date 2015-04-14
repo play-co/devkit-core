@@ -13,21 +13,26 @@ exports.getFiles = function (targetDirectory, directories) {
         // the history is the location on disk, then we set the path to the
         // target location
         var srcPath = path.join(directory.src, filename);
-        var targetPath = path.join(targetDirectory, directory.target, filename);
         var file = new File({
-          base: targetDirectory,
+          base: directory.src,
           path: srcPath,
           contents: fs.createReadStream(srcPath)
         });
 
-        file.path = targetPath;
+        file.originalRelativePath = filename;
         return file;
       })
       .filter(function (file) {
         return exports.getMetadata(file)
           .then(function (options) {
-            return options.get('package') !== false;
+            // console.log(file.relative, options.get('package'))
+            return options.get(file.originalRelativePath, 'package') !== false;
           });
+      })
+      .map(function (file) {
+        file.base = targetDirectory;
+        file.path = path.join(targetDirectory, directory.target, file.originalRelativePath);
+        return file;
       });
   }).then(function (fileArrays) {
     // concat all arrays
