@@ -25,7 +25,7 @@ exports.InlineCache = Class(function () {
   // function (filter out the files that get inlined)
   this.add = function (file) {
     var ext = path.extname(file.path);
-    if (!exts[ext]) { return true; }
+    if (!exts[ext] || file.inline === false) { return true; }
 
     return new Promise(function (resolve, reject) {
         if (file.contents) {

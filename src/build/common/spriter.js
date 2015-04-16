@@ -61,6 +61,14 @@ exports.sprite = function (api, app, config, directories) {
         }
       }
 
+      var sheetMapFile = new File({
+          base: baseDirectory,
+          path: filename,
+          contents: new Buffer(JSON.stringify(sheetMap))
+        });
+
+      sheetMapFile.inline = false;
+
       return {
         sourceMap: spritesheets.sourceMap,
         files: [
@@ -72,11 +80,7 @@ exports.sprite = function (api, app, config, directories) {
               path: path.join(spritesheetsDirectory, 'map.json'),
               contents: new Buffer(JSON.stringify(spritesheets.imageMap))
             }),
-          new File({
-              base: baseDirectory,
-              path: filename,
-              contents: new Buffer(JSON.stringify(sheetMap))
-            })
+          sheetMapFile
         ]
       };
 
