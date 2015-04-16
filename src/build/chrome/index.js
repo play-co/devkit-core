@@ -86,22 +86,26 @@ exports.build = function (api, app, config, cb) {
     }
   };
 
-  readFile(path.join(STATIC_DIR, 'localStorage.html'), 'utf8')
-    .then(function (localStorageHTML) {
+  var backgroundJS;
+
+  Promise.all([
+      readFile(path.join(STATIC_DIR, 'localStorage.html'), 'utf8'),
+      readFile(path.join(STATIC_DIR, 'background.js'), 'utf8')
+    ])
+    .spread(function (localStorageHTML, _backgroundJS) {
       // add in the custom JS to create the localStorage object
       config.browser.headHTML.push(localStorageHTML);
+
+      // Update the background js constants
+      backgroundJS = _backgroundJS
+                      .replace('%(width)s', config.browser.canvas.width)
+                      .replace('%(height)s', config.browser.canvas.height);
 
       // run a browser build, since that is all we are really doing, just with some additions
       return browserBuild.build(api, app, config);
     })
-    .then(readFile(path.join(STATIC_DIR, 'background.js'), 'utf8'))
-    .then(function (backgroundJS) {
+    .then(function () {
       logger.log('Chrome time!');
-
-      // Update the background js constants
-      backgroundJS = backgroundJS
-                      .replace('%(width)s', config.browser.canvas.width)
-                      .replace('%(height)s', config.browser.canvas.height);
 
       // App icons
       copyIcon(app, config.outputPath, 16);

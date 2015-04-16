@@ -48,12 +48,16 @@ exports.writeNativeResources = function (api, app, config, cb) {
           appendImport: false,
           includeJsio: !config.excludeJsio,
           debug: config.scheme === 'debug'
-        })
-      ]).spread(function (files, spriterResult, js) {
-
+        }),
+        readFile(path.join(__dirname, 'env.js'), 'utf8')
+      ]).spread(function (files, spriterResult, js, envJS) {
         var sourceMap = {};
-
         if (spriterResult) {
+          // remove sprited files from file list
+          files = files.filter(function (file) {
+            return !(file.originalRelativePath in spriterResult.sourceMap);
+          });
+
           files = files.concat(spriterResult.files);
           sourceMap = merge(sourceMap, spriterResult.sourceMap);
         }
@@ -77,9 +81,8 @@ exports.writeNativeResources = function (api, app, config, cb) {
         var inlineCache = new InlineCache();
         var addToInlineCache = inlineCache.add.bind(inlineCache);
         return Promise.resolve(files)
-          .map(addToInlineCache)
-          .then(readFile(path.join(__dirname, 'env.js'), 'utf8'))
-          .then(function (envJS) {
+          .filter(addToInlineCache)
+          .then(function (files) {
             files.forEach(function (file) {
               if (file.history.length > 1) {
                 sourceMap[slash(file.relative)] = file.history[0];
