@@ -76,7 +76,7 @@ exports.writeNativeResources = function (api, app, config, cb) {
         var InlineCache = require('../common/inlineCache').InlineCache;
         var inlineCache = new InlineCache();
         var addToInlineCache = inlineCache.add.bind(inlineCache);
-        Promise.resolve(files)
+        return Promise.resolve(files)
           .map(addToInlineCache)
           .then(readFile(path.join(__dirname, 'env.js'), 'utf8'))
           .then(function (envJS) {
