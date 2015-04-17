@@ -14,51 +14,55 @@
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
 
-exports.install = function (TeaLeaf, hostname) {
-    logger.log('installing native support');
+/* globals logger, CONFIG, NATIVE */
 
-	import device;
-	import lib.PubSub;
-	import .Window;
-	import .Document;
-	import .localStorage;
-	import .events;
-	import .launchInfo;
-	import .plugins;
-	import .screen;
-	import .Image;
-	Image.install();
-	import .XMLHttpRequest;
-	XMLHttpRequest.install();
-	import .Audio;
-	Audio.install();
+import lib.PubSub;
 
-    import .dom.DOMParser;
-    dom.DOMParser.install();
+exports.install = function () {
+  logger.log('installing native support');
 
+  /* jshint ignore:start */
+  import device;
+  import .Window;
+  import .Document;
+  import .localStorage;
+  import .events;
+  import .launchInfo;
+  import .plugins;
+  import .screen;
+  import platforms.native.Canvas;
+  /* jshint ignore:end */
 
-	import platforms.native.Canvas;
+  import .Image;
+  import .XMLHttpRequest;
+  import .Audio;
+  import .dom.DOMParser;
 
-	if(NATIVE.device.native_info) {
-		NATIVE.device.info = JSON.parse(NATIVE.device.native_info);
-	}
+  Image.install();
+  XMLHttpRequest.install();
+  Audio.install();
+  dom.DOMParser.install();
 
-	import .timestep;
-	timestep.install();
+  if (NATIVE.device.native_info) {
+    NATIVE.device.info = JSON.parse(NATIVE.device.native_info);
+  }
 
-	// publisher for the overlay UIWebView
-	NATIVE.overlay.delegate = new lib.PubSub();
-	CONFIG.splash = CONFIG.splash || {};
-	var oldHide = CONFIG.splash.hide || function () {};
-	CONFIG.splash.hide = function (cb) {
-		if (NATIVE.doneLoading instanceof Function) {
-			NATIVE.doneLoading();
-		}
+  import .timestep;
+  timestep.install();
 
-		if (oldHide instanceof Function) {
-			oldHide();
-		}
+  // publisher for the overlay UIWebView
+  NATIVE.overlay.delegate = new lib.PubSub();
+  CONFIG.splash = CONFIG.splash || {};
+  var oldHide = CONFIG.splash.hide || function () {};
+  CONFIG.splash.hide = function (cb) {
+    if (NATIVE.doneLoading instanceof Function) {
+      NATIVE.doneLoading();
+    }
 
-		cb && cb();
-	};
-}
+    if (oldHide instanceof Function) {
+      oldHide();
+    }
+
+    cb && cb();
+  };
+};

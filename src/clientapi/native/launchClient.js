@@ -14,17 +14,16 @@
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
 
+/* globals jsio, logging, logger */
+
 GLOBAL.console = logging.get('console');
 window.self = window;
 
-if (!window.DEV_MODE) { window.DEV_MODE = false; }
-
-//install the device so that timestep knows where to get stuff
-
-import device;
+// initialize native JS API wrappers
+/* jshint -W098 */
 import platforms.native.initialize;
 
-logger.log('getting initialize for native');
+import device;
 device.init();
 
 import .common;
@@ -39,36 +38,25 @@ startApp();
  * You can remove this or replace it with your own analytics if you like.
  */
 function analytics () {
-	var config = GLOBAL.CONFIG;
-	var params = 'appID:' + escape(config.appID || '') + '&' +
-			'bundleID:' + escape(config.bundleID || '') + '&' +
-			'appleID:' + escape(config.appleID || '') + '&' +
-			'version:' + escape(config.version || '') + '&' +
-			'sdkVersion:' + escape(config.sdkVersion || '') + '&' +
-			'isAndroid:' + (device.isAndroid ? 1 : 0) + '&' +
-			'isIOS:' + (device.isIOS ? 1 : 0);
+  var config = GLOBAL.CONFIG;
+  var params = 'appID:' + encodeURIComponent(config.appID || '') + '&' +
+      'bundleID:' + encodeURIComponent(config.bundleID || '') + '&' +
+      'appleID:' + encodeURIComponent(config.appleID || '') + '&' +
+      'version:' + encodeURIComponent(config.version || '') + '&' +
+      'sdkVersion:' + encodeURIComponent(config.sdkVersion || '') + '&' +
+      'isAndroid:' + (device.isAndroid ? 1 : 0) + '&' +
+      'isIOS:' + (device.isIOS ? 1 : 0);
 
-	var xhr = new XMLHttpRequest();
-	xhr.open('GET', 'http://www.gameclosure.com/analytics?' + params, true);
-	xhr.send();
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', 'http://www.gameclosure.com/analytics?' + params, true);
+  xhr.send();
 }
 
-function startApp (conn) {
+function startApp() {
+  import devkit;
+  GLOBAL.GC = new devkit.ClientAPI();
 
-	var type = "Client";
-	//logging.setPrefix(type);
-
-	// prefix filenames in the debugger
-	jsio.__env.debugPath = function (path) { return '[' + type + ']:' + path; };
-
-	logger.log('init debugging', jsio.__env.getCwd());
-
-	import devkit;
-	analytics();
-	GC.buildApp('launchUI');
-
-	if (conn) {
-		conn.setApp(GC.app);
-	}
+  analytics();
+  GLOBAL.GC.buildApp('launchUI');
 }
 

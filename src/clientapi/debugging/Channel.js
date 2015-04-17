@@ -13,8 +13,9 @@ exports = Class(lib.PubSub, function (supr) {
     this._onTransportMessage = this._onTransportMessage.bind(this);
   };
 
-  // returns a Promise that resolves once the channel is connected to another
-  // channel
+  /**
+   * returns a Promise that resolves once the channel is connected to another channel
+   */
   this.connect = function () {
     return new Promise(function (resolve, reject) {
       if (this._isConnected) {
@@ -38,7 +39,7 @@ exports = Class(lib.PubSub, function (supr) {
   // internal: set an underlying transport
   this.setTransport = function (transport) {
 
-    if (this._transport && this._transport !== transport) {
+    if (this._transport && this._transport != transport) {
       // tear-down an old transport
       this._transport
         .removeListener('disconnect', this._onTransportDisconnect)
@@ -58,8 +59,7 @@ exports = Class(lib.PubSub, function (supr) {
   };
 
   this._onTransportConnect = function () {
-    // transport connected, start a connect handshake (see if anyone is
-    // listening)
+    // transport connected, start a connect handshake (see if anyone is listening)
     this._sendInternalMessage('connect');
   };
 
@@ -77,7 +77,7 @@ exports = Class(lib.PubSub, function (supr) {
         this._requests[msg.res].resolve(msg.data);
       }
     } else if (msg.id) {
-      supr(this, 'emit', [msg.name, new Response(this, msg)]);
+      supr(this, 'emit', [msg.name, msg.data, new Response(this, msg.id)]);
     } else {
       supr(this, 'emit', [msg.name, msg.data]);
     }
@@ -90,8 +90,7 @@ exports = Class(lib.PubSub, function (supr) {
   };
 
   this._onInternalMessage = function (msg) {
-    // handle internal message protocol, used to determine if the receiver
-    // channel is listening to events
+    // handle internal message protocol, used to determine if the receiver channel is listening to events
     switch (msg) {
       case 'connect':
         // complete the channel connection
@@ -110,23 +109,22 @@ exports = Class(lib.PubSub, function (supr) {
   };
 
   var Response = Class(function () {
-    this.init = function (channel, req) {
+    this.init = function (channel, id) {
       this.channel = channel;
-      this.req = req;
+      this.id = id;
       this.responded = false;
     };
 
     this.error = function (err) {
       if (this.responded) { return; }
       this.responded = true;
-      this.channel._send({error: err, res: this.req.id});
+      this.channel._send({error: err, res: this.id});
     };
 
-    this.respond =
     this.send = function (data) {
       if (this.responded) { return; }
       this.responded = true;
-      this.channel._send({data: data, res: this.req.id});
+      this.channel._send({data: data, res: this.id});
     };
   });
 

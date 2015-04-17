@@ -14,33 +14,8 @@
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
 
-;(function () {
-    var repos = {
-        "modules/devkit-core/modules/timestep/": "https://cdn.rawgit.com/gameclosure/timestep/develop/",
-        "modules/devkit-core/node_modules/jsio/": "https://cdn.rawgit.com/gameclosure/js.io/develop/"
-    };
+/* globals jsio, CONFIG, DEBUG */
 
-    var repoPrefix = Object.keys(repos);
-    var repoURLs = repoPrefix.map(function (prefix) { return repos[prefix]; });
-    var numRepos = repoPrefix.length;
-
-    jsio.__env.fetch = function (filename) {
-        for (var i = 0; i < numRepos; ++i) {
-            if (filename.indexOf(repoPrefix[i]) == 0) {
-                var xhr = new XMLHttpRequest();
-                xhr.open("GET", repoURLs[i] + filename.substring(repoPrefix[i].length), false);
-                xhr.send();
-                if (xhr.status == 200) {
-                    return xhr.responseText;
-                }
-            }
-
-        }
-        return false;
-    }
-})();
-
-import device;
 import Promise;
 
 GLOBAL.Promise = Promise;
@@ -50,9 +25,10 @@ var isNative = /^native/.test(CONFIG.target);
 
 if (isSimulator) {
   // prefix filenames in the debugger
-  jsio.__env.debugPath = function (path) { return 'http://' + (CONFIG.bundleID || CONFIG.packageName) + '/' + path.replace(/^[\.\/]+/, ''); }
+  jsio.__env.debugPath = function (path) { return 'http://' + (CONFIG.bundleID || CONFIG.packageName) + '/' + path.replace(/^[\.\/]+/, ''); };
 
   if (isNative) {
+    /* jshint -W098 */
     import ..debugging.nativeShim;
   }
 }
@@ -69,6 +45,7 @@ if (!window.console) {
 }
 
 if (typeof localStorage !== 'undefined') {
+  /* jshint -W020 */
   localStorage = {
     getItem: function () {},
     setItem: function () {},
@@ -105,69 +82,54 @@ if (splash) {
 import std.uri;
 var uri = new std.uri(window.location);
 var mute = uri.hash('mute');
-CONFIG.isMuted = true; // mute != undefined && mute != "false" && mute != "0" && mute != "no";
+CONFIG.isMuted = mute !== undefined && mute !== 'false' && mute !== '0' && mute !== 'no';
 
-if (DEBUG) {
-  import ..debugging;
+var simulatorModules;
+if (DEBUG && isSimulator) {
+  simulatorModules = [];
 
-  var DEVICE_ID_KEY = '.devkit.deviceId';
-  var deviceId;
-  var deviceType;
-
-  if (isSimulator) {
-    Promise.map(CONFIG.simulator.modules, function (name) {
-        try {
-          var module = jsio(name);
-          if (module && module.init) {
-            return module.init();
+  // client API inside simulator: call onLaunch() on each simulator module,
+  // optionally block on a returned promise for up to 5 seconds
+  Promise
+    .map(CONFIG.simulator.modules, function (name) {
+      try {
+        var module = jsio(name);
+        if (module) {
+          simulatorModules.push(module);
+          if (typeof module.onLaunch == 'function') {
+            return module.onLaunch();
           }
-        } catch (e) {}
-      })
-      .timeout(5000)
-      .finally(queueStart);
-  } else {
-    // deviceId = localStorage.getItem(DEVICE_ID_KEY);
-    // if (!deviceId) {
-    //   import std.uuid;
-    //   deviceId = std.uuid.uuid();
-    //   localStorage.setItem(DEVICE_ID_KEY, deviceId);
-    // }
-
-    // if (device.isAndroid) {
-    //   deviceType = 'browser-android';
-    // } else if (device.isIOS) {
-    //   deviceType = 'browser-ios';
-    // } else {
-    //   deviceType = 'browser-mobile';
-    // }
-    queueStart();
-  }
+        }
+      } catch (e) {}
+    })
+    .timeout(5000)
+    .finally(queueStart);
 } else {
   queueStart();
 }
 
 function queueStart() {
-	if (window.GC_LIVE_EDIT && GC_LIVE_EDIT._isLiveEdit) {
-		var intervalId = setInterval(function(){
-			if (GC_LIVE_EDIT._liveEditReady) {
-				try {
-					startApp();
-				} catch(err) {
-					// In case loading fails, we will still clear the interval
-					console.error('Error while starting app', err);
-				}
-				clearInterval(intervalId);
-			}
-		}, 100);
-	} else {
-		startApp();
-	}
+  /* jshint -W117 */
+  if (window.GC_LIVE_EDIT && GC_LIVE_EDIT._isLiveEdit) {
+    var intervalId = setInterval(function(){
+      if (GC_LIVE_EDIT._liveEditReady) {
+        try {
+          startApp();
+        } catch(err) {
+          // In case loading fails, we will still clear the interval
+          console.error('Error while starting app', err);
+        }
+        clearInterval(intervalId);
+      }
+    }, 100);
+  } else {
+    startApp();
+  }
 }
 
 function startApp () {
 
   // setup timestep device API
-
   import device;
   import platforms.browser.initialize;
   device.init();
@@ -175,99 +137,18 @@ function startApp () {
   // init sets up the GC object
   import devkit;
 
-  // if (debugging.conn.getClient) {
-  //   import ..debugging.clients.viewInspector;
-  //   import ..debugging.clients.simulator;
+  GLOBAL.GC = new devkit.ClientAPI();
+  if (simulatorModules) {
+    GLOBAL.GC.on('app', function (app) {
+      // client API inside simulator: call init() on each simulator module,
+      // optionally block on a returned promise for up to 5 seconds
+      simulatorModules.forEach(function (module) {
+        if (typeof module.onApp == 'function') {
+          module.onApp(app);
+        }
+      });
+    });
+  }
 
-  //   debugging.clients.viewInspector.setConn(debugging.conn);
-  //   debugging.clients.simulator.setConn(debugging.conn);
-
-  //   if (CONFIG.splash) {
-  //     var prevHide = CONFIG.splash.hide;
-  //     var client = debugging.conn.getClient('simulator');
-  //     CONFIG.splash.hide = function () {
-  //       prevHide && prevHide.apply(this, arguments);
-  //       client.onConnect(function () {
-  //           client.sendEvent('HIDE_LOADING_IMAGE');
-  //         });
-  //     };
-  //   }
-
-  //   var initDebugging = function () {
-  //     var env = jsio.__env;
-
-  //     var originalSyntax = bind(env, env.checkSyntax);
-
-  //     env.checkSyntax = function (code, filename) {
-  //       var xhr = new XMLHttpRequest();
-  //       xhr.open('POST', '/api/syntax', false);
-  //       xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-  //       xhr.onreadystatechange = function () {
-  //         if (xhr.readyState != 4) { return; }
-
-  //         if (xhr.status == 200 && xhr.responseText) {
-  //           var err;
-  //           try {
-  //             var response = JSON.parse(xhr.responseText);
-  //             err = response[1];
-  //           } catch(e) {
-  //             err = xhr.responseText;
-  //           }
-
-  //           if (console.group) {
-  //             console.group('%c' + filename + '\n', 'color: #33F; font-weight: bold');
-  //             err.forEach(function (e) {
-  //                 if (e.err) {
-  //                   console.log('%c' + e.err.replace(/error - parse error.\s+/i, ''), 'color: #F55');
-  //                   console.log('%c' + e.line + ':%c' + e.code[0], 'color: #393', 'color: #444');
-  //                   console.log(new Array(('' + e.line).length + 2).join(' ') + e.code[1]);
-  //                 } else {
-  //                   console.log('%c ' + e.code.join('\n'), 'color: #F55');
-  //                 }
-  //               });
-  //             console.groupEnd();
-  //           } else {
-  //             console.log(filename);
-  //             err.forEach(function (e) {
-  //                 if (e.err) {
-  //                   console.log(e.err.replace(/error - parse error.\s+/i, ''));
-  //                   console.log(e.line + ':' + e.code[0]);
-  //                   console.log(new Array(('' + e.line).length + 2).join(' ') + e.code[1]);
-  //                 } else {
-  //                   console.log(e.code.join('\n'));
-  //                 }
-  //               });
-  //           }
-
-  //           document.body.innerHTML = '<pre style=\'margin-left: 10px; font: bold 12px Consolas, "Bitstream Vera Sans Mono", Monaco, "Lucida Console", Terminal, monospace; color: #FFF;\'>'
-  //             + '<span style="color:#AAF">' + filename + '</span>\n\n'
-  //             + err.map(function (e) {
-  //                 if (e.err) {
-  //                   return '<span style="color:#F55">' + e.err.replace(/error - parse error.\s+/i, '') + '</span>\n'
-  //                     + ' <span style="color:#5F5">' + e.line + '</span>: '
-  //                       + ' <span style="color:#EEE">' + e.code[0] + '</span>\n'
-  //                       + new Array(('' + e.line).length + 5).join(' ') + e.code[1];
-  //                 } else {
-  //                   return'<span style="color:#F55">' + e.code.join('\n') + '</span>';
-  //                 }
-  //               }).join('\n')
-  //             + '</pre>';
-  //         } else if (xhr.status > 0) {
-  //           originalSyntax(code, filename);
-  //         }
-  //       }
-
-  //       xhr.send('javascript=' + encodeURIComponent(code));
-  //     }
-  //   };
-
-  //   if (device.isMobileBrowser) {
-  //     // conn.initLogProxy();
-  //     // conn.initRemoteEval();
-  //   }
-
-  //   initDebugging();
-  // }
-
-  GC.buildApp('launchUI');
+  GLOBAL.GC.buildApp('launchUI');
 }

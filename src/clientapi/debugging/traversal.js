@@ -20,7 +20,9 @@
  *   GLOBAL._DEBUG = new exports();
  */
 
-exports.traverse = function (f) { return GC.app && exports.traverseView(f, GC.app.view); }
+/* globals GC, bind, logger */
+
+exports.traverse = function (f) { return GC.app && exports.traverseView(f, GC.app.view); };
 exports.traverseView = function (f, view) {
 	var data = f(view);
 	var subviews = view.getSubviews().map(bind(this, 'traverseView', f));
@@ -29,9 +31,9 @@ exports.traverseView = function (f, view) {
 		data: data,
 		subviews: subviews.length ? subviews : undefined
 	};
-}
+};
 
-exports.find = function (f) { return GC.app && exports.findView(f, GC.app.view); }
+exports.find = function (f) { return GC.app && exports.findView(f, GC.app.view); };
 exports.findView = function (f, view) {
 	if (f(view)) { return view; }
 	var subviews = view.getSubviews();
@@ -41,7 +43,7 @@ exports.findView = function (f, view) {
 	}
 
 	return false;
-}
+};
 
 var _isHighlighting = false;
 var _highlightViews = [];
@@ -86,12 +88,12 @@ var _renderHighlights = (function () {
 			ctx.strokeRect(-0.5, -0.5, pos.width + 1, pos.height + 1);
 			ctx.restore();
 		});
-	}
+	};
 })();
 
 exports.unhighlightViews = function () {
 	_highlightViews = [];
-}
+};
 
 exports.highlightView = function (view) {
 	if (_highlightViews.indexOf(view) == -1) {
@@ -101,16 +103,17 @@ exports.highlightView = function (view) {
 			GC.app.engine.on('Render', _renderHighlights);
 		}
 	}
-}
+};
 
 exports.unhighlightView = function (view) {
 	var i = _highlightViews.indexOf(view);
 	if (i != -1) {
 		_highlightViews.splice(i, 1);
 	}
-}
+};
 
-exports.getViewByID = function (uid) { return exports.find(function (view) { return view.uid == uid; }); }
+exports.getViewById =
+exports.getViewByID = function (uid) { return exports.find(function (view) { return view.uid == uid; }); };
 
 exports.getImages = function (view) {
 	import ui.ImageView;
@@ -131,39 +134,42 @@ exports.getImages = function (view) {
 	var images = Object.keys(hash);
 	images.sort();
 	return images;
-}
+};
 
-exports.pack = function () { return GC.app && exports.packView(GC.app.view); }
+exports.pack = function () { return GC.app && exports.packView(GC.app.view); };
 exports.packView = function (view) {
 	import ui.ImageView;
 	import ui.ImageScaleView;
 	import ui.TextView;
 
 	return exports.traverseView(function (view) {
-
+		var imageData;
+		var sourceSlices;
+		var destSlices;
 		if (view instanceof ui.ImageView || view instanceof ui.ImageScaleView) {
 			var img = view.getImage();
 			if (img) {
-				var imageData = img.getOriginalURL() || img.getMap();
+				imageData = img.getOriginalURL() || img.getMap();
 			}
 
 			if (view.getScaleMethod) {
 				var scaleMethod = view.getScaleMethod();
 				if (/slice$/.test(scaleMethod)) {
-					var sourceSlices = view._opts.sourceSlices;
-					var destSlices = view._opts.destSlices;
+					sourceSlices = view._opts.sourceSlices;
+					destSlices = view._opts.destSlices;
 				}
 			}
 		}
 
+		var text;
 		if (view instanceof ui.TextView) {
-			var text = view.getText();
+			text = view.getText();
 		}
 
 		var s = view.style;
 		return {
-			x: s.x != 0 ? s.x : undefined,
-			y: s.y != 0 ? s.y : undefined,
+			x: s.x ? s.x : undefined,
+			y: s.y ? s.y : undefined,
 			width: s.width,
 			height: s.height,
 			scale: s.scale != 1 ? s.scale : undefined,
@@ -177,7 +183,7 @@ exports.packView = function (view) {
 			tag: view.getTag()
 		};
 	}, view);
-}
+};
 
 exports.unpack = function (data) {
 	import ui.View;
@@ -253,7 +259,7 @@ exports.unpack = function (data) {
 	for (var i = 0, sub; sub = data.subviews[i]; ++i) {
 		buildView(GC.app.view, sub);
 	}
-}
+};
 
 exports.eachView = function (list, f) {
 	for (var i = 0, n = list.length; i < n; ++i) {
@@ -264,23 +270,23 @@ exports.eachView = function (list, f) {
 			logger.warn('view', list[i], 'not found');
 		}
 	}
-}
+};
 
 exports.hideViews = function (/* id1, id2, id3, ... */) {
 	exports.eachView(arguments, function (view) { view.style.visible = false; });
-}
+};
 
 exports.showViews = function (/* id1, id2, id3, ... */) {
 	exports.eachView(arguments, function (view) { view.style.visible = true; });
-}
+};
 
 exports.hideAllViews = function () {
 	exports.traverse(function (view) { view.style.visible = false; });
-}
+};
 
 exports.showAllViews = function () {
 	exports.traverse(function (view) { view.style.visible = true; });
-}
+};
 
 exports.hideViewRange = function (a, b) {
 	var range = [];
@@ -289,7 +295,7 @@ exports.hideViewRange = function (a, b) {
 	}
 
 	exports.hideViews.apply(this, range);
-}
+};
 
 exports.showViewRange = function (a, b) {
 	var range = [];
@@ -298,4 +304,4 @@ exports.showViewRange = function (a, b) {
 	}
 
 	exports.showViews.apply(this, range);
-}
+};
