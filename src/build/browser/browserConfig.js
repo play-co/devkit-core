@@ -1,4 +1,23 @@
+var path = require('path');
+
+var getPath = function (filePath) {
+  return path.join(__dirname, '..', '..', filePath);
+};
+
 exports.insert = function (app, config, argv) {
+
+  var copyFiles = [getPath('clientapi/browser/cache-worker.js')];
+  var webAppManifest = {
+    "name": app.manifest.title,
+    "short_name": app.manifest.shortname,
+    "icons": [{
+          "src": app.manifest.icon,
+          "sizes": "512x512",
+          "type": "image/png"
+        }],
+    "start_url": "/index.html",
+    "display": "standalone"
+  };
 
   if (config.isSimulated) {
     config.browser = {
@@ -8,9 +27,11 @@ exports.insert = function (app, config, argv) {
       appleTouchStartupImage: false,
       frame: {},
       canvas: {},
+      copy: copyFiles,
       headHTML: [],
       bodyHTML: [],
       footerHTML: [],
+      webAppManifest: webAppManifest,
       baseURL: ''
     };
     return;
@@ -33,13 +54,16 @@ exports.insert = function (app, config, argv) {
     // embed a base64 splash screen (background-size: cover)
     embedSplash: true,
     cache: [],
-    copy: [],
+    copy: copyFiles,
     desktopBodyCSS: '',
 
     // html to insert
     headHTML: [],
     bodyHTML: [],
     footerHTML: [],
+
+    // web app manifest, converted to json
+    webAppManifest: webAppManifest,
 
     // browser framing options
     frame: merge(browserConfig.frame, {width: 320, height: 480}),

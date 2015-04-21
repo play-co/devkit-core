@@ -173,6 +173,11 @@ exports.build = function (api, app, config, cb) {
 
       liveEditJS && gameHTML.addJS(liveEditJS);
 
+      var hasWebAppManifest = !!config.browser.webAppManifest;
+      if (hasWebAppManifest) {
+        config.browser.headHTML.push('<link rel="manifest" href="web-app-manifest.json">');
+      }
+
       var hasIndexPage = !isMobile;
       tasks.push(gameHTML.generate(api, app, config)
         .then(function (html) {
@@ -196,16 +201,6 @@ exports.build = function (api, app, config, cb) {
             }));
           }));
       }
-
-      // add extra resources for copying
-      config.browser.copy && config.browser.copy.forEach(function (resource) {
-        // TODO: ensure resource is a local path already or else bad
-        // things will happen
-        files.push(new File({
-          base: config.appPath,
-          path: path.join(config.appPath, resource)
-        }));
-      });
 
       var InlineCache = require('../common/inlineCache').InlineCache;
       var inlineCache = new InlineCache(logger);
@@ -245,12 +240,41 @@ exports.build = function (api, app, config, cb) {
             contents: new Buffer(JSON.stringify(sourceMap))
           }));
 
-          var js = require('./cacheWorker.js').generate(config, cacheWorkerJS);
-          files.push(new File({
-            base: baseDirectory,
-            path: path.join(baseDirectory, 'cache-worker.js'),
-            contents: new Buffer(js)
-          }));
+          if (config.browser.webAppManifest) {
+            var webAppManifest = JSON.stringify(config.browser.webAppManifest);
+            var file = new File({
+              base: baseDirectory,
+              path: path.join(baseDirectory, 'web-app-manifest.json'),
+              contents: new Buffer(webAppManifest)
+            });
+            file.inline = false;
+            files.push(file);
+          }
+
+          // add extra resources for copying
+          config.browser.copy && config.browser.copy.forEach(function (resource) {
+
+            var filePath = path.resolve(config.appPath, resource);
+            var base;
+            var relativePath = path.relative(filePath, config.appPath);
+            if (/^\.\./.test(relativePath)) {
+              base = path.dirname(filePath);
+              relativePath = path.basename(filePath);
+            } else {
+              base = config.appPath;
+            }
+
+            var f = new File({
+              base: base,
+              path: filePath,
+              contents: fs.createReadStream(filePath)
+            });
+
+            f.base = baseDirectory;
+            f.path = path.join(baseDirectory, relativePath);
+
+            files.push(f);
+          });
 
           // https://github.com/petkaantonov/bluebird/issues/332
           logger.log('Writing files...');
