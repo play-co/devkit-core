@@ -99,6 +99,22 @@ exports.ClientAPI = Class(lib.PubSub, function () {
 
   this.Application = ui.StackView;
 
+  var PluginManager = Class(function () {
+    this.init = function () {
+      this._plugins = {};
+    }
+
+    this.register = function (name, plugin) {
+      this._plugins[name] = plugin;
+    }
+
+    this.getPlugin = function (name) {
+      return this._plugins[name];
+    }
+  });
+
+  this.plugins = new PluginManager();
+
   import .UI;
   this.ui = new UI();
 
