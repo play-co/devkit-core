@@ -254,7 +254,8 @@ exports.build = function (api, app, config, cb) {
             browserIcons.forEach(function (icon) {
               files.push(new File({
                 base: baseDirectory,
-                path: path.join(baseDirectory, icon.src)
+                path: path.join(baseDirectory, icon.src),
+                contents: fs.createReadStream(path.join(app.paths.root, icon.src))
               }));
             });
           }

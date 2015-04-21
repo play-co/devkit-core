@@ -7,7 +7,7 @@ exports.insert = function (app, config, argv) {
     "name": app.manifest.title,
     "short_name": app.manifest.shortname,
     "icons": JSON.parse(JSON.stringify(app.manifest.icons || [])),
-    "start_url": "/index.html",
+    "start_url": "index.html",
     "display": "standalone"
   };
 
