@@ -34,8 +34,9 @@ exports.insert = function (app, config, argv) {
 
   // defaults
   merge(browserConfig, {
-    // include a base64-inline image for the apple-touch-icon meta tag (if
-    // webpage is saved to homescreen)
+    // include image for the apple-touch-icon meta tag (if webpage is saved to
+    // homescreen)
+    icon: true,
     appleTouchIcon: true,
     appleTouchStartupImage: true,
 

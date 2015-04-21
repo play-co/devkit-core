@@ -218,6 +218,17 @@ exports.GameHTML = Class(function () {
           html.push('<meta name="apple-mobile-web-app-capable"'
               + ' content="yes"/>');
 
+          if (config.browser.icon && app.manifest.browser && app.manifest.browser.icons) {
+            var icon = this._getClosestIcon(logger,
+                                            192,
+                                            app.paths.root,
+                                            app.manifest.browser.icons);
+            if (icon) {
+              html.push('<link rel="icon" size="192x192"'
+                        + ' href="' + icon + '">');
+            }
+          }
+
           if (config.browser.appleTouchIcon) {
             var icon = this._getClosestIcon(logger,
                                             TARGET_APPLE_TOUCH_ICON_SIZE,
@@ -225,7 +236,7 @@ exports.GameHTML = Class(function () {
                                             app.manifest.ios.icons);
             if (icon) {
               html.push('<link rel="apple-touch-icon"'
-                        + ' href="' + getBase64Image(icon) + '">');
+                        + ' href="' + icon + '">');
             }
           }
 
