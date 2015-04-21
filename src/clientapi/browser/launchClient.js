@@ -16,8 +16,10 @@
 
 /* globals jsio, CONFIG, DEBUG */
 
-import Promise;
+// no dynamic source fetching
+jsio.__env.fetch = function (filename) { return false; };
 
+import Promise;
 GLOBAL.Promise = Promise;
 
 var isSimulator = GLOBAL.CONFIG && !!CONFIG.simulator && (window.parent !== window);
