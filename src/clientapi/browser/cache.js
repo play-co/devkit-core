@@ -3,7 +3,7 @@ import device;
 var _cacheWorker;
 
 function init() {
-  return navigator.serviceWorker.register('cache-worker.js')
+  return navigator.serviceWorker.register('cache-worker.js', {scope: 'cache-worker.js'})
     .then(function(reg) {
 
       // try to grab the just-registered worker to send it the cache message
