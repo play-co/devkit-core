@@ -1,20 +1,12 @@
 var path = require('path');
 
-var getPath = function (filePath) {
-  return path.join(__dirname, '..', '..', filePath);
-};
-
 exports.insert = function (app, config, argv) {
 
-  var copyFiles = [getPath('clientapi/browser/cache-worker.js')];
+  var copyFiles = [];
   var webAppManifest = {
     "name": app.manifest.title,
     "short_name": app.manifest.shortname,
-    "icons": [{
-          "src": app.manifest.icon,
-          "sizes": "512x512",
-          "type": "image/png"
-        }],
+    "icons": JSON.parse(JSON.stringify(app.manifest.icons || [])),
     "start_url": "/index.html",
     "display": "standalone"
   };

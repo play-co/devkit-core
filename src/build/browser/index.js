@@ -240,8 +240,39 @@ exports.build = function (api, app, config, cb) {
             contents: new Buffer(JSON.stringify(sourceMap))
           }));
 
-          if (config.browser.webAppManifest) {
-            var webAppManifest = JSON.stringify(config.browser.webAppManifest);
+          // build cache-worker
+          var js = require('./cacheWorker.js').generate(config, cacheWorkerJS);
+          files.push(new File({
+            base: baseDirectory,
+            path: path.join(baseDirectory, 'cache-worker.js'),
+            contents: new Buffer(js)
+          }));
+
+          // copy icons
+          var browserIcons = app.manifest.browser && app.manifest.browser.icons;
+          if (browserIcons) {
+            browserIcons.forEach(function (icon) {
+              files.push(new File({
+                base: baseDirectory,
+                path: path.join(baseDirectory, icon.src)
+              }));
+            });
+          }
+
+          // create web app manifest json file
+          var webAppManifest = config.browser.webAppManifest;
+          if (webAppManifest) {
+            if (browserIcons) {
+              webAppManifest.icons = browserIcons;
+            }
+
+            // fixed orientation if only one is supported
+            var supportedOrientations = app.manifest.supportedOrientations;
+            if (supportedOrientations.length == 1) {
+              webAppManifest.orientation = supportedOrientations[0];
+            }
+
+            var webAppManifest = JSON.stringify(webAppManifest);
             var file = new File({
               base: baseDirectory,
               path: path.join(baseDirectory, 'web-app-manifest.json'),
