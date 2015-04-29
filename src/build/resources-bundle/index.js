@@ -33,6 +33,5 @@ exports.build = function (api, app, config, cb) {
   app.clientPaths.src = STATIC_DIR + '/src';
 
   require('../native/resources')
-    .writeNativeResources(api, app, config)
-    .nodeify(cb);
+    .writeNativeResources(api, app, config, cb);
 };
