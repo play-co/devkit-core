@@ -71,12 +71,6 @@ exports.writeNativeResources = function (api, app, config, cb) {
           }
         }
 
-        files.push(new File({
-          base: baseDirectory,
-          path: path.join(baseDirectory, 'manifest.json'),
-          contents: new Buffer(JSON.stringify(app.manifest))
-        }));
-
         var InlineCache = require('../common/inlineCache').InlineCache;
         var inlineCache = new InlineCache();
         var addToInlineCache = inlineCache.add.bind(inlineCache);
@@ -88,6 +82,12 @@ exports.writeNativeResources = function (api, app, config, cb) {
                 sourceMap[slash(file.relative)] = file.history[0];
               }
             });
+
+            files.push(new File({
+              base: baseDirectory,
+              path: path.join(baseDirectory, 'manifest.json'),
+              contents: new Buffer(JSON.stringify(app.manifest))
+            }));
 
             files.push(new File({
               base: baseDirectory,
