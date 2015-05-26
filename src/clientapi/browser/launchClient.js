@@ -30,7 +30,6 @@ if (isSimulator) {
   jsio.__env.debugPath = function (path) { return 'http://' + (CONFIG.bundleID || CONFIG.packageName) + '/' + path.replace(/^[\.\/]+/, ''); };
 
   if (isNative) {
-    /* jshint -W098 */
     import ..debugging.nativeShim;
   }
 }
@@ -53,6 +52,7 @@ if (typeof localStorage !== 'undefined') {
     setItem: function () {},
     removeItem: function () {}
   };
+  /* jshint +W020 */
 }
 
 if (!isSimulator) {
@@ -127,6 +127,7 @@ function queueStart() {
   } else {
     startApp();
   }
+  /* jshint +W117 */
 }
 
 function startApp () {
