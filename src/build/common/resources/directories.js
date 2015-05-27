@@ -22,7 +22,7 @@ exports.get = function (api, app, config) {
       if (extension && extension.getResourceDirectories) {
         extension.getResourceDirectories(api, app, config)
           .map(function (directory) {
-            var target = path.join('plugins', module.name, directory.target);
+            var target = path.join('modules', module.name, directory.target);
             builder.add(directory.src, target);
           });
       }
