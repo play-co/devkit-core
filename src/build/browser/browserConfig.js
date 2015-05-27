@@ -1,17 +1,15 @@
-var jsio = require('jsio');
-var merge = jsio("import jsio.base").merge;
-
-// keys is an array of strings specifying which keys to extract from obj.
-// Extracted keys and values are returned in a new object.
-function extract(obj, keys) {
-  var ret = {};
-  keys.forEach(function (key) {
-    ret[key] = obj[key];
-  });
-  return ret;
-}
+var path = require('path');
 
 exports.insert = function (app, config, argv) {
+
+  var copyFiles = [];
+  var webAppManifest = {
+    "name": app.manifest.title,
+    "short_name": app.manifest.shortname,
+    "icons": JSON.parse(JSON.stringify(app.manifest.icons || [])),
+    "start_url": "index.html",
+    "display": "standalone"
+  };
 
   if (config.isSimulated) {
     config.browser = {
@@ -21,9 +19,11 @@ exports.insert = function (app, config, argv) {
       appleTouchStartupImage: false,
       frame: {},
       canvas: {},
+      copy: copyFiles,
       headHTML: [],
       bodyHTML: [],
       footerHTML: [],
+      webAppManifest: webAppManifest,
       baseURL: ''
     };
     return;
@@ -34,7 +34,9 @@ exports.insert = function (app, config, argv) {
 
   // defaults
   merge(browserConfig, {
-    // include a base64-inline image for the apple-touch-icon meta tag (if webpage is saved to homescreen)
+    // include image for the apple-touch-icon meta tag (if webpage is saved to
+    // homescreen)
+    icon: true,
     appleTouchIcon: true,
     appleTouchStartupImage: true,
 
@@ -45,13 +47,16 @@ exports.insert = function (app, config, argv) {
     // embed a base64 splash screen (background-size: cover)
     embedSplash: true,
     cache: [],
-    copy: [],
+    copy: copyFiles,
     desktopBodyCSS: '',
 
     // html to insert
     headHTML: [],
     bodyHTML: [],
     footerHTML: [],
+
+    // web app manifest, converted to json
+    webAppManifest: webAppManifest,
 
     // browser framing options
     frame: merge(browserConfig.frame, {width: 320, height: 480}),
@@ -68,7 +73,11 @@ exports.insert = function (app, config, argv) {
 
   if (browserConfig.spinner) {
     // provide defaults for the browser splash screen spinner
-    merge(browserConfig.spinner, {x: '50%', y: '50%', width: '90px', height: '90px', color0: 'rgba(255, 255, 255, 0.2)', color1: '#FFF'});
+    merge(browserConfig.spinner, {
+      x: '50%', y: '50%',
+      width: '90px', height: '90px',
+      color0: 'rgba(255, 255, 255, 0.2)', color1: '#FFF'
+    });
 
     // convert numbers to numbers with units
     ['width', 'height'].forEach(function (key) {
@@ -82,4 +91,4 @@ exports.insert = function (app, config, argv) {
 
   // Exclude jsio in browser builds (we include it separately)
   config.excludeJsio = !config.isSimulated;
-}
+};

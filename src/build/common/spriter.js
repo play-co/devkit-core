@@ -1,141 +1,179 @@
 var fs = require('fs');
-var ff = require('ff');
 var crypto = require('crypto');
 var path = require('path');
-var File = require('./File');
+var File = require('vinyl');
 
 // utility function to replace any windows path separators for paths that
 // will be used for URLs
 var regexSlash = /\\/g;
-function useURISlashes (str) { return str.replace(regexSlash, "/"); }
+function useURISlashes (str) { return str.replace(regexSlash, '/'); }
 
-exports.spriteDirectory = function (api, config, directories, cb) {
+var SpriteSheetList = function () {
+  this.sheets = [];
+  this.imageMap = {};
+  this.sourceMap = {};
+};
+
+SpriteSheetList.prototype.merge = function (list) {
+  this.addSheets(list.sheets, list.imageMap, list.sourceMap);
+  return this;
+};
+
+SpriteSheetList.prototype.addSheets = function (sheets, imageMap, sourceMap) {
+  this.sheets = this.sheets.concat(sheets);
+  this.imageMap = merge(this.imageMap, imageMap);
+  this.sourceMap = merge(this.sourceMap, sourceMap);
+};
+
+exports.sprite = function (api, app, config, directories) {
+  var baseDirectory = config.outputResourcePath;
+  var relativeSpritesheetsDirectory = 'spritesheets';
+  var spritesheetsDirectory = path.join(baseDirectory,
+                                        relativeSpritesheetsDirectory);
+
+  return Promise.resolve(directories)
+    .map(function (directory) {
+      return exports.spriteDirectory(api, config, directory,
+                                     spritesheetsDirectory,
+                                     relativeSpritesheetsDirectory);
+    }, {concurrency: 1})
+    .reduce(function (allSheets, directorySheets) {
+      return allSheets.merge(directorySheets);
+    }, new SpriteSheetList())
+    .then(function (spritesheets) {
+      // create map of spritesheets to filenames
+      var filename = path.join(spritesheetsDirectory,
+                               'spritesheetSizeMap.json');
+
+      var sheetMap = {};
+      for (var i in spritesheets.imageMap) {
+        var img = spritesheets.imageMap[i];
+        if (!img || !img.sheet) {
+          continue;
+        }
+
+        var sheet = img.sheet;
+        if (!sheetMap[sheet]) {
+          sheetMap[sheet] = {
+            w: img.sheetSize[0],
+            h: img.sheetSize[1]
+          };
+        }
+      }
+
+      var sheetMapFile = new File({
+          base: baseDirectory,
+          path: filename,
+          contents: new Buffer(JSON.stringify(sheetMap))
+        });
+
+      sheetMapFile.inline = false;
+
+      return {
+        sourceMap: spritesheets.sourceMap,
+        files: [
+          // the image map maps each source image to the name of the
+          // spritesheet it was embedded in along with it's location and
+          // padding
+          new File({
+              base: baseDirectory,
+              path: path.join(spritesheetsDirectory, 'map.json'),
+              contents: new Buffer(JSON.stringify(spritesheets.imageMap))
+            }),
+          sheetMapFile
+        ]
+      };
+    });
+};
+
+exports.spriteDirectory = function (api, config, directory,
+                                    spritesheetsDirectory,
+                                    relativeSpritesheetsDirectory) {
   var logger = api.logging.get('spriter');
 
-  var f = ff(function () {
-    var md5sum = crypto.createHash('md5');
-    md5sum.update(directories.src);
-    var hash = md5sum.digest('hex');
+  var jvmExec = Promise.promisify(api.jvmtools.exec);
+  var readFile = Promise.promisify(fs.readFile);
 
-    var cmd = {
-      tool: "spriter",
-      args: [
-        "--no-clean", // don't remove unused spritesheets, since we might be spriting multiple source directories into the same target
-        "--cache-file", "spritercache-" + hash,
-        "--scale", 1,
-        "--dir", directories.src + "/",
-        "--output", directories.spritesheets,
-        "--target", config.target,
-        "--binaries", api.paths.lib,
-        "--is-simulator", config.isSimulated,
-        "--spriter-png-fallback", !!(config.argv && config.argv['spriter-png-fallback'])
-      ],
-      buffer: true
-    };
+  var spritesheets = new SpriteSheetList();
 
-    logger.log("spriter", cmd.args.map(function (arg) { return /^--/.test(arg) ? arg : '"' + arg + '"'; })
-        .join(' '));
+  return Promise
+    .try(function () {
+      var md5sum = crypto.createHash('md5');
+      md5sum.update(directory.src);
+      var hash = md5sum.digest('hex');
 
-    // forwards `[code, out, err]`
-    //   - a non-zero `code` is the error, causing build to stop
-    //   - `out` is the stdout of the tool
-    //   - `err` is the stderr of the tool, but it's printed (config.print == true) so we ignore it
-    api.jvmtools.exec(cmd, f());
-  }, function (rawSpriterOutput) {
-    try {
-      var spriterOutput = JSON.parse(rawSpriterOutput);
-    } catch (e) {
-      logger.error(rawSpriterOutput);
-      throw e;
-    }
+      var spriterPngFallback = !!(config.argv
+                                  && config.argv['spriter-png-fallback']);
+      var cmd = {
+        tool: 'spriter',
+        args: [
+          // don't remove unused spritesheets, since we might be spriting
+          // multiple source directories into the same target
+          '--no-clean',
+          '--cache-file', 'spritercache-' + hash,
+          '--scale', 1,
+          '--dir', directory.src + '/',
+          '--output', spritesheetsDirectory,
+          '--target', config.target,
+          '--binaries', api.paths.lib,
+          '--is-simulator', config.isSimulated,
+          '--spriter-png-fallback', spriterPngFallback
+        ],
+        buffer: true
+      };
 
-    // If the spriter gives an error, display it and end the process
-    if (spriterOutput.error) {
-      formatter.error(spriterOutput.error);
-      process.exit(0);
-    }
+      logger.log('spriter', cmd.args.map(function (arg) {
+            return /^--/.test(arg)
+              ? arg
+              : '"' + arg + '"';
+          })
+          .join(' '));
 
-    var files = {};
+      return jvmExec(cmd);
+    })
+    .spread(function (stdout /*, stderr */) {
+      var spriterOutput = JSON.parse(stdout);
 
-    files.spritesheets = spriterOutput.sprites.map(function (filename) {
-      var ext = path.extname(filename);
-      return new File({
-        fullPath: path.resolve(directories.spritesheets, filename),
-        target: path.join(directories.spritesheetsTarget, filename)
+      // If the spriter gives an error, throw
+      if (spriterOutput.error) {
+        throw spriterOutput.error;
+      }
+
+      var sheets = spriterOutput.sprites.map(function (filename) {
+        return new File({
+          fullPath: path.resolve(spritesheetsDirectory, filename),
+          target: path.join(relativeSpritesheetsDirectory, filename)
+        });
       });
-    });
 
-    var filteredPaths = [];
+      var mapPath = path.resolve(spritesheetsDirectory, spriterOutput.map);
+      return readFile(mapPath, 'utf8').then(function (mapContents) {
+        // rewrite JSON data, fixing slashes and appending the spritesheet
+        // directory
+        var rawMap = JSON.parse(mapContents);
+        var imageMap = {};
+        var sourceMap = {};
 
-    files.other = spriterOutput.other.map(function (filename) {
-      var fullPath = path.resolve(directories.src, filename);
+        Object
+          .keys(rawMap)
+          .forEach(function (key) {
+            if (rawMap[key].sheet) {
+              var fullSheetPath = path.join(relativeSpritesheetsDirectory,
+                                            rawMap[key].sheet);
+              rawMap[key].sheet = useURISlashes(fullSheetPath);
+            }
 
-      if (path.basename(filename) === "metadata.json") {
-        try {
-          var filedata = fs.readFileSync(fullPath, "utf8");
-          var fileobj = JSON.parse(filedata);
-          if (fileobj.package === false) {
-            var filterPath = path.dirname(fullPath);
-            logger.log("Not packaging files from", filterPath);
-            filteredPaths.push(filterPath);
-          }
-        } catch (ex) {
-          logger.error("WARNING:", filename, "format is not valid JSON so cannot parse it.");
-        }
-      }
+            var targetKey = useURISlashes(path.join(directory.target, key));
+            imageMap[targetKey] = rawMap[key];
 
-      return new File({
-        fullPath: fullPath,
-        target: path.join(directories.target, filename)
+            var relPath = path.relative(directory.target, key);
+            sourceMap[key] = path.join(directory.src, relPath);
+          });
+
+        spritesheets.addSheets(sheets, imageMap, sourceMap);
       });
+    })
+    .then(function () {
+      return spritesheets;
     });
-
-    // remove paths that have metadata package:false
-    for (var i = 0; i < files.other.length; ++i) {
-      var file = files.other[i];
-      if (path.basename(file.target) === "metadata.json") {
-        files.other.splice(i--, 1);
-        continue;
-      }
-
-      for (var fp in filteredPaths) {
-        if (filename.indexOf(fp) == 0) {
-          files.other.splice(i--, 1);
-          break;
-        }
-      }
-    }
-
-    f(files);
-    var mapPath = path.resolve(directories.spritesheets, spriterOutput.map);
-    fs.readFile(mapPath, "utf8", f());
-
-  }, function (files, mapContents) {
-    // rewrite JSON data, fixing slashes and appending the spritesheet directory
-    var rawMap = JSON.parse(mapContents);
-    var imageMap = {};
-    Object.keys(files.other).forEach(function (key) {
-      var target = files.other[key].target;
-      if (target) {
-        imageMap[target] = {};
-      }
-    });
-    Object.keys(rawMap).forEach(function (key) {
-      if (rawMap[key].sheet) {
-        rawMap[key].sheet = useURISlashes(path.join(directories.spritesheetsTarget, rawMap[key].sheet));
-      }
-
-      imageMap[useURISlashes(path.join(directories.target, key))] = rawMap[key];
-    });
-
-    if (typeof config.mapMutator === "function") {
-      config.mapMutator(imageMap);
-    }
-
-    files.imageMap = imageMap;
-
-    // pass along the files
-    f(files);
-  })
-  .cb(cb);
-}
+};

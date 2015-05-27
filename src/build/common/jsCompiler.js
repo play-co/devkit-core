@@ -18,15 +18,37 @@ var logger;
 var compressLog;
 
 exports.JSCompiler = Class(function () {
-  this.init = function (api, app, opts, jsConfig) {
+  this.init = function (api, app, config, jsConfig) {
     logger = api.logging.get('jsio-compile');
     compressLog = api.logging.get('jsio-compile');
 
     this._api = api;
     this._app = app;
-    this._opts = opts;
+    this._opts = config;
     this._jsConfig = jsConfig;
-  }
+
+    this._pathCache = {};
+    this._path = [];
+
+    if (config && config.clientPaths) {
+      this.addClientPaths(config.clientPaths);
+    }
+
+    if (app && app.clientPaths) {
+      this.addClientPaths(app.clientPaths);
+    }
+  };
+
+  this.addClientPaths = function (clientPaths) {
+    var pathCache = this._pathCache;
+    for (var key in clientPaths) {
+      if (key !== '*') {
+        pathCache[key] = clientPaths[key];
+      } else {
+        this._path.push.apply(this._path, clientPaths['*']);
+      }
+    }
+  };
 
   this.compile = function (opts, cb) {
     var opts = merge({}, opts, this._opts);
@@ -41,22 +63,14 @@ exports.JSCompiler = Class(function () {
       }
     }
 
-    var clientPaths = this._app.clientPaths;
-    var pathCache = {};
-    for (var key in clientPaths) {
-      if (key != '*') {
-        pathCache[key] = clientPaths[key];
-      }
-    }
-
     var jsioOpts = {
       cwd: opts.cwd || appPath,
       environment: opts.env,
-      path: [require('jsio').__env.getPath(), '.', 'lib'].concat(clientPaths['*']),
+      path: [require('jsio').__env.getPath(), '.', 'lib'].concat(this._path),
       includeJsio: 'includeJsio' in opts ? opts.includeJsio : true,
       appendImport: 'appendImport' in opts ? opts.appendImport : false,
       debug: argv.verbose ? 2 : 4,
-      pathCache: pathCache,
+      pathCache: this._pathCache,
       compressorCachePath: jsCachePath,
       defines: this._jsConfig.getDefines(),
       printOutput: opts.printJSIOCompileOutput,
@@ -80,11 +94,11 @@ exports.JSCompiler = Class(function () {
     // for debugging purposes, build the equivalent command that can be executed
     // from the command-line (not used for anything other than logging to the screen)
     var cmd = ["jsio_compile", JSON.stringify(importStatement)];
-    for (var key in jsioOpts) {
+    for (key in jsioOpts) {
       cmd.push('--' + key);
 
       var value = JSON.stringify(jsioOpts[key]);
-      if (typeof jsioOpts[key] != 'string') {
+      if (typeof jsioOpts[key] !== 'string') {
         value = JSON.stringify(value);
       }
       cmd.push(value);
@@ -95,13 +109,13 @@ exports.JSCompiler = Class(function () {
     // The DevKitJsioInterface implements platform-specific functions that the js.io
     // compiler needs like basic control flow and compression.  It's really more
     // like a controller that conforms to the js.io-compiler's (controller) interface.
-    jsioOpts['interface'] = new DevKitJsioInterface(this)
+    jsioOpts.interface = new DevKitJsioInterface(this)
       .on('error', cb)
       .on('code', function (code) {
         cb && cb(null, code);
       });
 
-    jsioOpts['preCompress'] = opts.preCompress;//this.precompress.bind(this);
+    jsioOpts.preCompress = opts.preCompress;//this.precompress.bind(this);
 
     // start the compile by passing something equivalent to argv (first argument is
     // ignored, but traditionally should be the name of the executable?)
@@ -109,7 +123,7 @@ exports.JSCompiler = Class(function () {
     mkdirp(jsCachePath, function () {
       compiler.start(['jsio_compile', jsioOpts.cwd || '.', importStatement], jsioOpts);
     });
-  }
+  };
 
    /**
     * use the class opts to compress source code directly
@@ -117,7 +131,7 @@ exports.JSCompiler = Class(function () {
 
   this.strip = function (src, cb) {
     exports.strip(src, this.opts, cb);
-  }
+  };
 
   this.compress = function (filename, src, opts, cb) {
 
@@ -128,7 +142,7 @@ exports.JSCompiler = Class(function () {
     ];
 
     this._api.jvmtools.exec({
-      tool: "closure",
+      tool: 'closure',
       args: closureOpts,
       stdin: src,
       buffer: true
@@ -138,8 +152,6 @@ exports.JSCompiler = Class(function () {
         if (stderr.length) {
           var showLog = opts.showWarnings;
           if (showLog === false) {
-            var lines = stderr.split('\n');
-            var lastLine = lines[lines.length - 1];
             var numErrors = stderr.match(/(\d+) error/);
             numErrors = numErrors && numErrors[1];
             if (numErrors > 0) {
@@ -157,20 +169,20 @@ exports.JSCompiler = Class(function () {
         var compressedSrc = stdout;
         cb(null, compressedSrc);
       } else {
-        compressLog.error("exited with code", err.code);
+        compressLog.error('exited with code', err.code);
         cb({'code': err.code}, src);
       }
     });
-  }
+  };
 
   this.strip = function (src, opts, cb) {
     var defines = {};
     for (var key in opts.defines) {
 
       var type = 'string';
-      if (typeof opts.defines[key] == 'boolean') {
+      if (typeof opts.defines[key] === 'boolean') {
         type = 'name';
-      } else if (typeof opts.defines[key] == 'number') {
+      } else if (typeof opts.defines[key] === 'number') {
         type = 'number';
       }
 
@@ -187,33 +199,33 @@ exports.JSCompiler = Class(function () {
     } catch (e) {
       cb && cb(e);
     }
-  }
+  };
 });
 
 var DevKitJsioInterface = Class(EventEmitter, function () {
 
   this.init = function (bridge) {
     this._bridge = bridge;
-  }
+  };
 
   // interface methods for jsioCompile hooks
 
   this.setCompiler = function (compiler) {
     this._compiler = compiler;
-  }
+  };
 
   this.run = function (args, opts) {
     this._compiler.run(args, opts);
-  }
+  };
 
   this.onError = function (e) {
     logger.error(e);
     this.emit('error', e);
-  }
+  };
 
   this.onFinish = function (opts, src) {
     this.emit('code', src);
-  }
+  };
 
   /**
    * Create a custom compression option.
@@ -224,19 +236,22 @@ var DevKitJsioInterface = Class(EventEmitter, function () {
 
     if (opts.compressorCachePath && filename) {
       try {
-        var cacheFilename = (/^\.\//.test(filename) ? 'R-' + filename.substring(2) : 'A-' + filename)
+        var cacheFilename = (/^\.\//.test(filename)
+                                ? 'R-' + filename.substring(2)
+                                : 'A-' + filename)
           .replace(/\.\.\//g, '--U--')
           .replace(/\//g, '---');
 
         cachePath = path.join(opts.compressorCachePath, cacheFilename);
 
+        var checksum;
         if (crypto) {
           var hash = crypto.createHash('md5');
           hash.update(src);
-          var checksum = hash.digest('hex');
+          checksum = hash.digest('hex');
         } else {
           var stat = fs.statSync(filename);
-          var checksum = '' + stat.mtime;
+          checksum = '' + stat.mtime;
         }
 
         if (fs.existsSync(cachePath)) {
@@ -246,12 +261,12 @@ var DevKitJsioInterface = Class(EventEmitter, function () {
             } else {
               var i = cachedContents.indexOf('\n');
               var cachedChecksum = cachedContents.substring(0, i);
-              if (checksum == cachedChecksum) {
+              if (checksum === cachedChecksum) {
                 // Cache hit!
                 onCacheResult(null, cachedContents.substring(i + 1), false);
               } else {
                 // File changed, need to compress
-                onCacheResult("cache mismatch", src, true);
+                onCacheResult(null, src, true);
               }
             }
           }.bind(this));
@@ -267,11 +282,14 @@ var DevKitJsioInterface = Class(EventEmitter, function () {
 
     function onCacheResult(err, src, cacheMiss) {
       if (cacheMiss) {
-        if (err) {
+        if (err === 'cache mismatch') {
+          // pass
+        } else if (err) {
           compressLog.error(err);
         }
 
-        compressLog.log("compressing JS" + (filename ? ' for ' + filename : '') + '...');
+        compressLog.log('compressing JS' + (filename ? ' for ' + filename : '')
+            + '...');
         bridge.compress(filename, src, opts, onCompress);
       } else {
         // Set cache path to false so it will not be updated in onCompress()
@@ -297,7 +315,7 @@ var DevKitJsioInterface = Class(EventEmitter, function () {
         cb(src);
       });
     }
-  }
+  };
 });
 
 

@@ -43,7 +43,7 @@ exports.configure = function (api, app, config, cb) {
   } else {
     cb && cb();
   }
-}
+};
 
 // takes a app, subtarget(android/ios), additional opts.
 exports.build = function (api, app, config, cb) {

@@ -19,8 +19,6 @@ import device;
 
 merge(NATIVE.input, lib.PubSub.prototype);
 
-console.log(NATIVE.input, NATIVE.input.openPrompt);
-
 NATIVE.events.registerHandler('InputPromptSubmit', function (evt) {
 	NATIVE.input.publish('InputPromptSubmit', evt);
 });
