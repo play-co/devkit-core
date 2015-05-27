@@ -87,7 +87,7 @@ var mute = uri.hash('mute');
 CONFIG.isMuted = mute !== undefined && mute !== 'false' && mute !== '0' && mute !== 'no';
 
 var simulatorModules;
-if (DEBUG && isSimulator) {
+if (DEBUG && isSimulator && Array.isArray(CONFIG.simulator.modules)) {
   simulatorModules = [];
 
   // client API inside simulator: call onLaunch() on each simulator module,
