@@ -51,19 +51,14 @@ exports.InlineCache = Class(function () {
           try {
             contents = JSON.stringify(JSON.parse(contents.toString('utf8')));
           } catch (e) {
-            this._logger.warn('invalid JSON in', file.path);
+            this._logger.error('invalid JSON in', file.path);
+            throw e;
           }
         }
 
         this._cache[file.relative] = contents;
 
         return false;
-      })
-      .catch(function (e) {
-        // ignore errors inlining, just copy the file
-        this._logger.warn('inline cache failed to process file, falling back to'
-                  + ' copying:', file.path, e.stack);
-        return true;
       });
   };
 

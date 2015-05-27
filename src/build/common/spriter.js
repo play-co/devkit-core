@@ -83,19 +83,6 @@ exports.sprite = function (api, app, config, directories) {
           sheetMapFile
         ]
       };
-
-      /*
-      return fontsheetMap
-        .create(path.join(appPath, 'resources', 'fonts'),
-            'resources/fonts')
-        .then(function (fontsheet) {
-          new File({
-            base: baseDirectory,
-            path: path.join(baseDirectory, 'resources/fonts/fontsheetSizeMap.json'),
-            contents: fontsheet
-          });
-        });
-      */
     });
 };
 
