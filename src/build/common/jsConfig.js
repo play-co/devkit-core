@@ -41,6 +41,7 @@ exports.JSConfig = Class(function () {
       BUILD_ENV: {
           'browser-mobile': 'browser',
           'browser-desktop': 'browser',
+          'native-bundle': 'native',
           'native-ios': 'native',
           'native-android': 'native'
         }[config.target] || 'browser',

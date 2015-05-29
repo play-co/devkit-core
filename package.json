@@ -8,9 +8,11 @@
     "url": "http://github.com/gameclosure/devkit-core.git"
   },
   "dependencies": {
+    "adm-zip": "^0.4.7",
     "cli-color": "^0.3.2",
     "etags": "git+https://github.com/gameclosure/etags#1.0.0",
     "ff": "^0.2.0",
+    "fs-extra": "^0.18.4",
     "glob": "^5.0.2",
     "graceful-fs": "^3.0.2",
     "image-size": "0.3.2",
@@ -37,6 +39,7 @@
       "live-edit": "src/build/browser/",
       "native-ios": "src/build/native/native-ios",
       "native-android": "src/build/native/native-android",
+      "native-archive": "src/build/native/native-archive",
       "chrome": "src/build/chrome",
       "resources-bundle": "src/build/resources-bundle"
     },
