@@ -39,8 +39,7 @@ exports.build = function (api, app, config, cb) {
     fs.mkdirsSync(outPath);
   }
 
-  require('./resources')
-  .writeNativeResources(api, app, config, function (err) {
+  require('./resources').writeNativeResources(api, app, config, function (err) {
     // do nothing if err
     if (err) { return cb && cb(err); }
 
@@ -52,23 +51,26 @@ exports.build = function (api, app, config, cb) {
     var archiveName = app.manifest.shortName + '.zip';
     var archivePath = path.join(outPath, archiveName);
 
-    console.log(app);
+    return glob(path.join(outPath, '**', '*'))
+      .map(function (file) {
+        var zipPath = file.replace(outPath + path.sep, '');
+        // Skip any existing archive file
+        if (zipPath === archiveName) {
+          return;
+        }
 
-    return glob(path.join(outPath, '**', '*')).map(function (file) {
-      var zipPath = file.replace(outPath + path.sep, '');
-      // Skip any existing archive file
-      if (zipPath === archiveName) {
-        return;
-      }
-
-      return readFile(file).then(function (buffer) {
-        archive.addFile(zipPath, buffer);
-      }).catch(function (err) {
-        // Ignore EISDIR (throw anything that's not an EISDIR)
-        if (err.errno !== 28) { throw err; }
-      });
-    }).then(function () {
-      archive.writeZip(archivePath);
-    }).nodeify(cb);
+        return readFile(file)
+          .then(function (buffer) {
+            archive.addFile(zipPath, buffer);
+          })
+          .catch(function (err) {
+            // Ignore EISDIR (throw anything that's not an EISDIR)
+            if (err.errno !== 28) { throw err; }
+          });
+      })
+      .then(function () {
+        archive.writeZip(archivePath);
+      })
+      .nodeify(cb);
   });
 };
