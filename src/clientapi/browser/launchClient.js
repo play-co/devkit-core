@@ -22,7 +22,7 @@ jsio.__env.fetch = function (filename) { return false; };
 import Promise;
 GLOBAL.Promise = Promise;
 
-var isSimulator = GLOBAL.CONFIG && !!CONFIG.simulator && (window.parent !== window);
+var isSimulator = GLOBAL.CONFIG && !!CONFIG.simulator;
 var isNative = /^native/.test(CONFIG.target);
 
 if (isSimulator) {
@@ -102,7 +102,9 @@ if (DEBUG && isSimulator && Array.isArray(CONFIG.simulator.modules)) {
             return module.onLaunch();
           }
         }
-      } catch (e) {}
+      } catch (e) {
+        console.warn(e);
+      }
     })
     .timeout(5000)
     .finally(queueStart);
