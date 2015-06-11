@@ -1,7 +1,4 @@
 var path = require('path');
-var fs = require('fs');
-var clc = require('cli-color');
-var ff = require('ff');
 
 exports.opts = require('optimist')(process.argv)
     .alias('help', 'h').describe('help', 'Display this help menu')
@@ -12,17 +9,7 @@ exports.opts = require('optimist')(process.argv)
     .alias('provision', 'p').describe('provision', '(required for --ipa) Path to .mobileprovision profile file').string('provision')
     .alias('developer', 'v').describe('developer', '(required for --ipa) Name of developer').string('developer')
     .alias('open', 'o').describe('open', 'Open the XCode project after building, defaults to true for non-ipa builds, pass --no-open to override')
-    .describe('reveal').describe('reveal', 'Shows ipa or XCode project in Finder after build')
-
-exports.build = function (api, app, buildTarget, opts, cb) {
-  var argv = exports.opts.argv;
-
-  // Merge command-line arguments into build options
-  opts.argv = argv;
-
-  // builder.common.track("BasilBuildNativeIOS", {"clean":argv.clean, "debug":argv.debug, "compress":opts.compress});
-  ios.build(api, app, buildTarget, opts, cb);
-};
+    .describe('reveal').describe('reveal', 'Shows ipa or XCode project in Finder after build');
 
 exports.configure = function (api, app, config, cb) {
   logger = api.logging.get('build-native');
@@ -67,7 +54,7 @@ exports.configure = function (api, app, config, cb) {
   } else {
     cb && cb();
   }
-}
+};
 
 // takes a app, subtarget(android/ios), additional opts.
 exports.build = function (api, app, config, cb) {
@@ -76,7 +63,7 @@ exports.build = function (api, app, config, cb) {
 
   // doesn't build ios - builds the js that it would use, then you shim out NATIVE
   if (config.isTestApp) {
-    require('./resources').writeNativeResources(build, app, config, cb);
+    require('./resources').writeNativeResources(api, app, config, cb);
   } else if (config.isSimulated) {
     // Build simulated version
     //
@@ -85,10 +72,16 @@ exports.build = function (api, app, config, cb) {
     // features, so that the code can be tested in the browser without modification.
     require('../browser/').build(api, app, config, cb);
   } else {
-    var f = ff(function () {
-      require('./resources').writeNativeResources(api, app, config, f());
-    }, function () {
-      require('../../../modules/native-ios/build').build(api, app, config, f());
-    }).cb(cb);
+    var iosBuild = require('../../../modules/native-ios/build');
+    return iosBuild
+      .createXcodeProject(config)
+      .then(function () {
+        var nativeResources = require('./resources');
+        return Promise.fromNode(nativeResources.writeNativeResources.bind(nativeResources, api, app, config));
+      })
+      .then(function () {
+        return require('../../../modules/native-ios/build').build(api, app, config);
+      })
+      .nodeify(cb);
   }
 };
