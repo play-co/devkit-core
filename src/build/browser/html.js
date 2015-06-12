@@ -64,7 +64,7 @@ exports.IndexHTML = Class(function () {
         '        s.width = "1px";',
         '        s.height = "1px";',
         '        s.marginTop = ((height - game.height) / 2) + "px";',
-        '        smarginLeft = ((width - game.width) / 2) + "px";',
+        '        s.marginLeft = ((width - game.width) / 2) + "px";',
         '      };',
         '',
         '      onResize(true);',
