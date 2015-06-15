@@ -44,12 +44,21 @@ exports.build = function (api, app, config, cb) {
     if (err) { return cb && cb(err); }
 
     // Find files in the output directory
-    var Zip = require('adm-zip');
+    var archiver = require('archiver');
     var glob = Promise.promisify(require('glob'));
     var readFile = Promise.promisify(fs.readFile);
-    var archive = new Zip();
+    var stat = Promise.promisify(fs.stat);
     var archiveName = app.manifest.shortName + '.zip';
     var archivePath = path.join(outPath, archiveName);
+
+    var archive = archiver.create('zip', {});
+    var output = fs.createWriteStream(archivePath);
+    archive.pipe(output);
+
+    var done = new Promise(function (resolve, reject) {
+      output.on('close', resolve);
+      archive.on('error', reject);
+    });
 
     return glob(path.join(outPath, '**', '*'))
       .map(function (file) {
@@ -59,17 +68,21 @@ exports.build = function (api, app, config, cb) {
           return;
         }
 
-        return readFile(file)
-          .then(function (buffer) {
-            archive.addFile(zipPath, buffer);
-          })
-          .catch(function (err) {
-            // Ignore EISDIR (throw anything that's not an EISDIR)
-            if (err.errno !== 28) { throw err; }
+        return stat(file)
+          .then(function (stats) {
+            if (stats.isDirectory()) {
+              return;
+            }
+
+            return readFile(file)
+              .then(function (buffer) {
+                archive.append(buffer, {name: zipPath});
+              });
           });
       })
       .then(function () {
-        archive.writeZip(archivePath);
+        archive.finalize();
+        return done;
       })
       .nodeify(cb);
   });
