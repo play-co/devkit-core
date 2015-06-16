@@ -43,7 +43,8 @@ exports.configure = function (api, app, config, cb) {
 
   // TODO: if cocos2d or other, change this
   if (!config.isSimulated) {
-    config.outputResourcePath = path.join(config.outputPath, "xcodeproject", "resources", "resources.bundle");
+    config.xcodeResourcesPath = path.join('resources', 'resources.bundle');
+    config.outputResourcePath = path.join(config.outputPath, "xcodeproject", config.xcodeResourcesPath);
   }
 
   // add in native-specific config keys
@@ -73,8 +74,13 @@ exports.build = function (api, app, config, cb) {
     require('../browser/').build(api, app, config, cb);
   } else {
     var iosBuild = require('../../../modules/native-ios/build');
-    return iosBuild
-      .createXcodeProject(config)
+    return Promise
+      .resolve()
+      .then(function () {
+        if (!config.repack) {
+          return iosBuild.createXcodeProject(config);
+        }
+      })
       .then(function () {
         var nativeResources = require('./resources');
         return Promise.fromNode(nativeResources.writeNativeResources.bind(nativeResources, api, app, config));
