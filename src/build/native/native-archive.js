@@ -61,7 +61,10 @@ exports.build = function (api, app, config, cb) {
     });
 
     return glob(path.join(outPath, '**', '*'))
-      .map(function (file) {
+      .call('sort', function(a, b) {
+        return a.localeCompare(b);
+      })
+      .each(function (file) {
         var zipPath = file.replace(outPath + path.sep, '');
         // Skip any existing archive file
         if (zipPath === archiveName) {
@@ -71,6 +74,7 @@ exports.build = function (api, app, config, cb) {
         return stat(file)
           .then(function (stats) {
             if (stats.isDirectory()) {
+              archive.append(new Buffer(0), {name: zipPath + '/'});
               return;
             }
 
