@@ -229,7 +229,7 @@ exports.GameHTML = Class(function () {
             }
           }
 
-          if (config.browser.appleTouchIcon) {
+          if (config.browser.appleTouchIcon && app.manifest.ios && app.manifest.ios.icons) {
             var icon = this._getClosestIcon(logger,
                                             TARGET_APPLE_TOUCH_ICON_SIZE,
                                             app.paths.root,
