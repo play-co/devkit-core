@@ -87,6 +87,10 @@ exports.JSCompiler = Class(function () {
     var importStatement = 'import ' + opts.initialImport;
     logger.log('compiling', importStatement);
 
+    if (opts.scheme == 'debug') {
+      importStatement += ', util.syntax';
+    }
+
     var _jsio = jsio.clone();
     _jsio.path.add(path.join(_jsio.__env.getPath(), '..', 'compilers'));
     var compiler = _jsio('import jsio_compile.compiler');
