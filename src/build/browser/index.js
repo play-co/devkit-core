@@ -49,7 +49,7 @@ exports.configure = function (api, app, config, cb) {
   // add in browser-specific config keys
   require('./browserConfig').insert(app, config, exports.opts.argv);
 
-  cb && cb();
+  return Promise.resolve().nodeify(cb);
 };
 
 exports.build = function (api, app, config, cb) {
@@ -111,14 +111,14 @@ exports.build = function (api, app, config, cb) {
 
   resources.getDirectories(api, app, config)
     .then(function (directories) {
-      return Promise.all([
+      return [
           resources.getFiles(baseDirectory, directories),
           readFile(getLocalFilePath('../../clientapi/browser/cache-worker.js'), 'utf8'),
           getPreloadJS(),
           readFile(STATIC_BOOTSTRAP_CSS, 'utf8'),
           readFile(STATIC_BOOTSTRAP_JS, 'utf8'),
           isLiveEdit && readFile(STATIC_LIVE_EDIT_JS, 'utf8'),
-          config.spriteImages !== false && sprite(directories),
+          config.spritesheets || config.spriteImages !== false && sprite(directories),
           compileJS({
             env: 'browser',
             initialImport: [INITIAL_IMPORT].concat(config.imports).join(', '),
@@ -127,7 +127,7 @@ exports.build = function (api, app, config, cb) {
             debug: config.scheme === 'debug',
             preCompress: config.preCompressCallback
           })
-        ]);
+        ];
     })
     .spread(function (files, cacheWorkerJS, preloadJS, bootstrapCSS, bootstrapJS,
                       liveEditJS, spriterResult, jsSrc) {
@@ -276,7 +276,7 @@ exports.build = function (api, app, config, cb) {
               webAppManifest.orientation = supportedOrientations[0];
             }
 
-            var webAppManifest = JSON.stringify(webAppManifest);
+            webAppManifest = JSON.stringify(webAppManifest);
             var file = new File({
               base: baseDirectory,
               path: path.join(baseDirectory, 'web-app-manifest.json'),
@@ -311,17 +311,22 @@ exports.build = function (api, app, config, cb) {
             files.push(f);
           });
 
-          // https://github.com/petkaantonov/bluebird/issues/332
-          logger.log('Writing files...');
-          return new Promise(function (resolve, reject) {
-            streamFromArray.obj(files)
-              // .pipe(newer(baseDirectory))
-              .pipe(vfs.dest(baseDirectory))
-              .on('end', resolve)
-              .on('error', reject);
-          });
+          return {
+            files: files,
+            spritesheets: spriterResult
+          };
         });
-    }).then(function () {
-      logger.log('Done');
-    }).nodeify(cb);
+    })
+    .tap(function (buildResult) {
+      // https://github.com/petkaantonov/bluebird/issues/332
+      logger.log('Writing files...');
+      return new Promise(function (resolve, reject) {
+        streamFromArray.obj(buildResult.files)
+          // .pipe(newer(baseDirectory))
+          .pipe(vfs.dest(baseDirectory))
+          .on('end', resolve)
+          .on('error', reject);
+      });
+    })
+    .nodeify(cb);
 };

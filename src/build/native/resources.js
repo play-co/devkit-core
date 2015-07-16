@@ -108,14 +108,21 @@ exports.writeNativeResources = function (api, app, config, cb) {
             contents: new Buffer(JSON.stringify(sourceMap))
           }));
 
-          logger.log('writing files to', config.outputResourcePath);
-          return new Promise(function (resolve, reject) {
-            streamFromArray.obj(files)
-              .pipe(vfs.dest(baseDirectory))
-              .on('end', resolve)
-              .on('error', reject);
-          });
+          return {
+            files: files,
+            spritesheets: spriterResult
+          };
         });
+    })
+    .tap(function writeFiles(buildResult) {
+      logger.log('writing', buildResult.files.length, 'files to', config.outputResourcePath);
+      return new Promise(function (resolve, reject) {
+        streamFromArray.obj(buildResult.files)
+          .pipe(vfs.dest(baseDirectory))
+          .on('end', resolve)
+          .on('error', function (e) { console.error(e); })
+          .on('error', reject);
+      });
     })
     .nodeify(cb);
 };
