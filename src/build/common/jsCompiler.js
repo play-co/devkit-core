@@ -65,6 +65,7 @@ exports.JSCompiler = Class(function () {
 
     var jsioOpts = {
       cwd: opts.cwd || appPath,
+      outputPath: opts.outputPath,
       environment: opts.env,
       path: [require('jsio').__env.getPath(), '.', 'lib'].concat(this._path),
       includeJsio: 'includeJsio' in opts ? opts.includeJsio : true,
@@ -223,8 +224,43 @@ var DevKitJsioInterface = Class(EventEmitter, function () {
     this.emit('error', e);
   };
 
-  this.onFinish = function (opts, src) {
-    this.emit('code', src);
+  this.onFinish = function (opts, src, table) {
+    if (opts.individualCompile) {
+      var binPath = path.join(opts.outputPath, 'bin');
+
+      mkdirp(binPath, function () {
+        var keys = Object.keys(table);
+        logger.info('Writing individual compile files: ' + keys.length);
+
+        var complete = 0;
+
+        var onFileWrite = function(err) {
+          if (err) throw err;
+          complete++;
+          if (complete === keys.length) {
+            this.emit('code', src);
+          }
+        }.bind(this);
+
+        keys.forEach(function(key) {
+          var fname = path.join(binPath, key.replace(/\//g, '.'));
+          // Check the bin dir
+          fs.stat(fname, function(err, binStat) {
+            if (!err) {
+              var srcStat = fs.statSync(path.join(opts.cwd, key));
+              if (srcStat.mtime < binStat.mtime) {
+                logger.info('Already in bin, skipping based on modified time: ' + key);
+                onFileWrite();
+                return;
+              }
+            }
+            fs.writeFile(fname, JSON.stringify(table[key]), onFileWrite);
+          })
+        });
+      }.bind(this));
+    } else {
+      this.emit('code', src);
+    }
   };
 
   /**
