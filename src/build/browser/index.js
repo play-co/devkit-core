@@ -180,6 +180,7 @@ exports.build = function (api, app, config, cb) {
 
       if (config.isSimulated) {
         config.browser.headHTML.push('<script src="bin/jsio.js"></script>');
+        config.browser.headHTML.push('<script src="bin/jsio_path.js"></script>');
       }
 
       var hasIndexPage = !isMobile;

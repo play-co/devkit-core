@@ -229,9 +229,15 @@ var DevKitJsioInterface = Class(EventEmitter, function () {
   };
 
   this._writeJsioBin = function(binPath) {
-    var destPath = path.join(binPath, 'jsio.js');
+    // Write the jsio_path.js
+    var destPath = path.join(binPath, 'jsio_path.js');
+    logger.info('\n\n\ngetting the path')
+    logger.info(jsio.__env.getCwd())
+    var src = this._compiler.getCompiler().getPathJS();
+    fs.writeFileSync(destPath, src);
 
     // Dont overwrite existing if mtime check fails
+    var destPath = path.join(binPath, 'jsio.js');
     if (fs.existsSync(destPath)) {
       var srcPath = require.resolve('jsio');
       var srcStat = fs.statSync(srcPath);
