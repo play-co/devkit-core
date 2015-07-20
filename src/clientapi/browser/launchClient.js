@@ -17,9 +17,9 @@
 /* globals jsio, CONFIG, DEBUG */
 
 // no dynamic source fetching
-jsio.__env.fetch = function (filename) { return false; };
+// jsio.__env.fetch = function (filename) { return false; };
 
-import Promise;
+import ..api.Promise as Promise;
 GLOBAL.Promise = Promise;
 
 var isSimulator = GLOBAL.CONFIG && !!CONFIG.simulator;
@@ -133,7 +133,6 @@ function queueStart() {
 }
 
 function startApp () {
-
   // setup timestep device API
   import device;
   import platforms.browser.initialize;

@@ -121,7 +121,11 @@ exports.JSCompiler = Class(function () {
     // start the compile by passing something equivalent to argv (first argument is
     // ignored, but traditionally should be the name of the executable?)
 
+    // Compile the game code
     mkdirp(jsCachePath, function () {
+      jsioOpts.noCompile = true;
+      jsioOpts.includeJsio = false;
+      jsioOpts.separateJsio = true;
       compiler.start(['jsio_compile', jsioOpts.cwd || '.', importStatement], jsioOpts);
     });
   };
@@ -224,40 +228,69 @@ var DevKitJsioInterface = Class(EventEmitter, function () {
     this.emit('error', e);
   };
 
+  this._writeJsioBin = function(binPath) {
+    var destPath = path.join(binPath, 'jsio.js');
+
+    // Dont overwrite existing if mtime check fails
+    if (fs.existsSync(destPath)) {
+      var srcPath = require.resolve('jsio');
+      var srcStat = fs.statSync(srcPath);
+      var existingStat = fs.statSync(destPath);
+      if (existingStat.mtime > srcStat.mtime) {
+        return;
+      }
+    }
+
+    // Write the new src
+    var src = jsio.__jsio.__init__.toString(-1);
+    if (src.substring(0, 8) == 'function') {
+      src = 'jsio=(' + src + ')();';
+    }
+    fs.writeFileSync(destPath, src);
+  };
+
   this.onFinish = function (opts, src, table) {
+    var binPath = path.join(opts.outputPath, 'bin');
+
+    // Only call mkdirp once
+    if (opts.separateJsio || opts.individualCompile) {
+      mkdirp.sync(binPath);
+    }
+
+    // maybe write out a new jsio
+    if (opts.separateJsio) {
+      this._writeJsioBin(binPath);
+    }
+
     if (opts.individualCompile) {
-      var binPath = path.join(opts.outputPath, 'bin');
+      var keys = Object.keys(table);
+      logger.info('Writing individual compile files: ' + keys.length);
 
-      mkdirp(binPath, function () {
-        var keys = Object.keys(table);
-        logger.info('Writing individual compile files: ' + keys.length);
+      var complete = 0;
 
-        var complete = 0;
+      var onFileWrite = function(err) {
+        if (err) throw err;
+        complete++;
+        if (complete === keys.length) {
+          this.emit('code', src);
+        }
+      }.bind(this);
 
-        var onFileWrite = function(err) {
-          if (err) throw err;
-          complete++;
-          if (complete === keys.length) {
-            this.emit('code', src);
-          }
-        }.bind(this);
-
-        keys.forEach(function(key) {
-          var fname = path.join(binPath, key.replace(/\//g, '.'));
-          // Check the bin dir
-          fs.stat(fname, function(err, binStat) {
-            if (!err) {
-              var srcStat = fs.statSync(path.join(opts.cwd, key));
-              if (srcStat.mtime < binStat.mtime) {
-                logger.info('Already in bin, skipping based on modified time: ' + key);
-                onFileWrite();
-                return;
-              }
+      keys.forEach(function(key) {
+        var fname = path.join(binPath, key.replace(/\//g, '.'));
+        // Check the bin dir
+        fs.stat(fname, function(err, binStat) {
+          if (!err) {
+            var srcStat = fs.statSync(path.join(opts.cwd, key));
+            if (srcStat.mtime < binStat.mtime) {
+              logger.info('Already in bin, skipping based on modified time: ' + key);
+              onFileWrite();
+              return;
             }
-            fs.writeFile(fname, JSON.stringify(table[key]), onFileWrite);
-          })
-        });
-      }.bind(this));
+          }
+          fs.writeFile(fname, JSON.stringify(table[key]), onFileWrite);
+        })
+      });
     } else {
       this.emit('code', src);
     }

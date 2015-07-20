@@ -136,6 +136,7 @@ function bootstrap(initialImport, target) {
 	w._continueLoad = function() {
 		if (!loaded) {
 			loaded = true;
+			// Include the game code
 			var el = d.createElement('script');
 			el.src = target + '.js';
 			d.getElementsByTagName('head')[0].appendChild(el);

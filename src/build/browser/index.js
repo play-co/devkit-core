@@ -77,7 +77,7 @@ exports.build = function (api, app, config, cb) {
   function getPreloadJS() {
     // get preload JS
     if (/^native/.test(config.target)) {
-      return Promise.resolve('jsio=function(){window._continueLoad()}');
+      return Promise.resolve('(window.jsio) ? (window._continueLoad()) : (jsio=function(){window._continueLoad()})');
     }
 
     var isLiveEdit = (config.target === 'live-edit');
@@ -178,6 +178,10 @@ exports.build = function (api, app, config, cb) {
         config.browser.headHTML.push('<link rel="manifest" href="web-app-manifest.json">');
       }
 
+      if (config.isSimulated) {
+        config.browser.headHTML.push('<script src="bin/jsio.js"></script>');
+      }
+
       var hasIndexPage = !isMobile;
       tasks.push(gameHTML.generate(api, app, config)
         .then(function (html) {
@@ -218,7 +222,7 @@ exports.build = function (api, app, config, cb) {
               contents: new Buffer('NATIVE=false;'
                 + 'CACHE=' + JSON.stringify(inlineCache) + ';\n'
                 + jsSrc + ';'
-                + 'jsio("import ' + INITIAL_IMPORT + '");')
+                + 'jsio.__env.preloadModules(function() { jsio("import ' + INITIAL_IMPORT + '"); });')
             }));
 
           files.forEach(function (file) {
