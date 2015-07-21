@@ -5,12 +5,11 @@ var crypto = require('crypto');
 var argv = require('optimist').argv;
 var mkdirp = require('mkdirp');
 var EventEmitter = require('events').EventEmitter;
-var color = require('cli-color');
 
 // clone to modify the path for this jsio but not any others
-var jsio = require('jsio').clone();
+var jsio = require('jsio').clone(); // ~10ms
 
-var uglify = require('uglify-js');
+var FileGenerator = require('./FileGenerator');
 
 function deepCopy(obj) { return obj && JSON.parse(JSON.stringify(obj)); }
 
@@ -51,6 +50,7 @@ exports.JSCompiler = Class(function () {
   };
 
   this.compile = function (opts, cb) {
+    console.time('JS_COMPILE')
     var opts = merge({}, opts, this._opts);
 
     var appPath = this._app.paths.root;
@@ -77,7 +77,10 @@ exports.JSCompiler = Class(function () {
       printOutput: opts.printJSIOCompileOutput,
       gcManifest: path.join(appPath, 'manifest.json'),
       gcDebug: opts.debug,
-      preprocessors: ['cls', 'logger']
+      preprocessors: ['cls', 'logger'],
+
+      noCompile: opts.noCompile,
+      separateJsio: opts.separateJsio
     };
 
     if (opts.compress) {
@@ -113,6 +116,7 @@ exports.JSCompiler = Class(function () {
     jsioOpts.interface = new DevKitJsioInterface(this)
       .on('error', cb)
       .on('code', function (code) {
+        console.timeEnd('JS_COMPILE')
         cb && cb(null, code);
       });
 
@@ -123,22 +127,16 @@ exports.JSCompiler = Class(function () {
 
     // Compile the game code
     mkdirp(jsCachePath, function () {
-      jsioOpts.noCompile = true;
-      jsioOpts.includeJsio = false;
-      jsioOpts.separateJsio = true;
       compiler.start(['jsio_compile', jsioOpts.cwd || '.', importStatement], jsioOpts);
     });
   };
 
-   /**
-    * use the class opts to compress source code directly
-    */
-
-  this.strip = function (src, cb) {
-    exports.strip(src, this.opts, cb);
-  };
-
+  /**
+   * use the class opts to compress source code directly
+   */
   this.compress = function (filename, src, opts, cb) {
+    // Import here because it takes a while, ~70ms
+    var color = require('cli-color');
 
     var closureOpts = [
       '--compilation_level', 'SIMPLE_OPTIMIZATIONS',
@@ -195,6 +193,8 @@ exports.JSCompiler = Class(function () {
     }
 
     try {
+      // Import here because it takes a while, ~70ms
+      var uglify = require('uglify-js');
       var result = uglify.minify(src, {
         fromString: true,
         global_defs: defines
@@ -231,28 +231,19 @@ var DevKitJsioInterface = Class(EventEmitter, function () {
   this._writeJsioBin = function(binPath) {
     // Write the jsio_path.js
     var destPath = path.join(binPath, 'jsio_path.js');
-    logger.info('\n\n\ngetting the path')
-    logger.info(jsio.__env.getCwd())
     var src = this._compiler.getCompiler().getPathJS();
     fs.writeFileSync(destPath, src);
 
     // Dont overwrite existing if mtime check fails
+    var srcPath = require.resolve('jsio');
     var destPath = path.join(binPath, 'jsio.js');
-    if (fs.existsSync(destPath)) {
-      var srcPath = require.resolve('jsio');
-      var srcStat = fs.statSync(srcPath);
-      var existingStat = fs.statSync(destPath);
-      if (existingStat.mtime > srcStat.mtime) {
-        return;
+    FileGenerator.sync(srcPath, destPath, function() {
+      var src = jsio.__jsio.__init__.toString(-1);
+      if (src.substring(0, 8) == 'function') {
+        src = 'jsio=(' + src + ')();';
       }
-    }
-
-    // Write the new src
-    var src = jsio.__jsio.__init__.toString(-1);
-    if (src.substring(0, 8) == 'function') {
-      src = 'jsio=(' + src + ')();';
-    }
-    fs.writeFileSync(destPath, src);
+      return src;
+    });
   };
 
   this.onFinish = function (opts, src, table) {
@@ -283,19 +274,16 @@ var DevKitJsioInterface = Class(EventEmitter, function () {
       }.bind(this);
 
       keys.forEach(function(key) {
+        var srcFname = path.join(opts.cwd, key);
         var fname = path.join(binPath, key.replace(/\//g, '.'));
-        // Check the bin dir
-        fs.stat(fname, function(err, binStat) {
-          if (!err) {
-            var srcStat = fs.statSync(path.join(opts.cwd, key));
-            if (srcStat.mtime < binStat.mtime) {
-              logger.info('Already in bin, skipping based on modified time: ' + key);
-              onFileWrite();
-              return;
-            }
-          }
-          fs.writeFile(fname, JSON.stringify(table[key]), onFileWrite);
-        })
+        FileGenerator(
+          srcFname,
+          fname,
+          function(cb) {
+            cb(JSON.stringify(table[key]));
+          },
+          onFileWrite
+        );
       });
     } else {
       this.emit('code', src);

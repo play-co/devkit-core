@@ -14,15 +14,6 @@
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
 var path = require('path');
-var printf = require('printf');
-var fs = require('graceful-fs');
-var File = require('vinyl');
-var vfs = require('vinyl-fs');
-// var newer = require('gulp-newer');
-var slash = require('slash');
-var streamFromArray = require('stream-from-array');
-
-var readFile = Promise.promisify(fs.readFile);
 
 var logger;
 var INITIAL_IMPORT = 'devkit.browser.launchClient';
@@ -52,27 +43,76 @@ exports.configure = function (api, app, config, cb) {
   cb && cb();
 };
 
+var _timeLogger = null;
+var _times = {};
+function startTime(name) {
+  _times[name] = new Date().getTime();
+}
+function endTime(name) {
+  _timeLogger.info(name + ': ' + (new Date().getTime() - _times[name]));
+  delete _times[name];
+}
+
 exports.build = function (api, app, config, cb) {
+
+  var printf = require('printf');
+  var fs = require('graceful-fs');
+  var File = require('vinyl');
+  var vfs = require('vinyl-fs');
+  // var newer = require('gulp-newer');
+  var slash = require('slash');
+  var streamFromArray = require('stream-from-array');
+
+  var readFile = Promise.promisify(fs.readFile);
+
+  // config.spriteImages = false;
   logger = api.logging.get('build-browser');
+  _timeLogger = api.logging.get('--------TIMER--------');
+
+  startTime('browser-main');
+  startTime('setup-require');
 
   var isMobile = (config.target !== 'browser-desktop');
   var isLiveEdit = (config.target === 'live-edit');
+  //console.time('import-1')
   var resources = require('../common/resources');
+  //console.timeEnd('import-1')
+  //console.time('import-2')
   var CSSFontList = require('./fonts').CSSFontList;
+  //console.timeEnd('import-2')
+  //console.time('import-3')
   var JSConfig = require('../common/jsConfig').JSConfig;
+  //console.timeEnd('import-3')
+  //console.time('import-4')
   var JSCompiler = require('../common/jsCompiler').JSCompiler;
+  //console.timeEnd('import-4')
 
-  var sprite = require('../common/spriter')
-                            .sprite
-                            .bind(null, api, app, config);
+  var sprite = null;
+  if (config.spriteImages) {
+    sprite = require('../common/spriter')
+                              .sprite
+                              .bind(null, api, app, config);
+  }
 
+  //console.time('import-5')
   var html = require('./html');
-  var gameHTML = new html.GameHTML();
+  //console.timeEnd('import-5')
+  //console.time('import-6')
+  var gameHTML = new html.GameHTML(config);
+  //console.timeEnd('import-6')
+  //console.time('import-7')
   var fontList = new CSSFontList();
+  //console.timeEnd('import-7')
+  //console.time('import-8')
   var jsConfig = new JSConfig(api, app, config);
+  //console.timeEnd('import-8')
+  //console.time('import-9')
   var jsCompiler = new JSCompiler(api, app, config, jsConfig);
+  //console.timeEnd('import-9')
 
+  //console.time('import-10')
   var compileJS = Promise.promisify(jsCompiler.compile, jsCompiler);
+  //console.timeEnd('import-10')
 
   function getPreloadJS() {
     // get preload JS
@@ -100,37 +140,52 @@ exports.build = function (api, app, config, cb) {
       };
     }
 
-    return compileJS({
+    var compileOpts = {
       initialImport: 'devkit.browser.bootstrap.launchBrowser',
       appendImport: false,
       preCompress: config.preCompressCallback
-    });
+    };
+    if (config.isSimulated) {
+      compileOpts.noCompile = true;
+      compileOpts.includeJsio = false;
+      compileOpts.separateJsio = true;
+    }
+    return compileJS(compileOpts);
   }
 
   var baseDirectory = config.outputResourcePath;
 
+  endTime('setup-require');
+  startTime('main-spread');
+
   resources.getDirectories(api, app, config)
     .then(function (directories) {
+      var compileOpts = {
+        env: 'browser',
+        initialImport: [INITIAL_IMPORT].concat(config.imports).join(', '),
+        appendImport: false,
+        includeJsio: !config.excludeJsio,
+        debug: config.scheme === 'debug',
+        preCompress: config.preCompressCallback
+      };
+      if (config.isSimulated) {
+        compileOpts.noCompile = true;
+        compileOpts.includeJsio = false;
+        compileOpts.separateJsio = true;
+      }
       return Promise.all([
           resources.getFiles(baseDirectory, directories),
           readFile(getLocalFilePath('../../clientapi/browser/cache-worker.js'), 'utf8'),
           getPreloadJS(),
-          readFile(STATIC_BOOTSTRAP_CSS, 'utf8'),
           readFile(STATIC_BOOTSTRAP_JS, 'utf8'),
           isLiveEdit && readFile(STATIC_LIVE_EDIT_JS, 'utf8'),
           config.spriteImages !== false && sprite(directories),
-          compileJS({
-            env: 'browser',
-            initialImport: [INITIAL_IMPORT].concat(config.imports).join(', '),
-            appendImport: false,
-            includeJsio: !config.excludeJsio,
-            debug: config.scheme === 'debug',
-            preCompress: config.preCompressCallback
-          })
+          compileJS(compileOpts)
         ]);
     })
-    .spread(function (files, cacheWorkerJS, preloadJS, bootstrapCSS, bootstrapJS,
+    .spread(function (files, cacheWorkerJS, preloadJS, bootstrapJS,
                       liveEditJS, spriterResult, jsSrc) {
+      endTime('main-spread');
       logger.log('Creating HTML and JavaScript...');
 
       jsConfig.add('embeddedFonts', fontList.getNames());
@@ -150,18 +205,22 @@ exports.build = function (api, app, config, cb) {
 
       var tasks = [];
 
-      // We need to generate a couple different files if this is going to be a
-      gameHTML.addCSS(bootstrapCSS);
-      gameHTML.addCSS(fontList.getCSS({
+      // ----- ----- GENERATE CSS ----- ----- //
+
+      gameHTML.addCSSFile(STATIC_BOOTSTRAP_CSS);
+
+      gameHTML.addCSS('fontList', fontList.getCSS({
         embedFonts: config.browser.embedFonts,
         formats: require('./fonts').getFormatsForTarget(config.target)
       }));
 
       if (config.browser.canvas.css) {
-        gameHTML.addCSS('#timestep_onscreen_canvas{'
+        gameHTML.addCSS('canvas', '#timestep_onscreen_canvas{'
                       + config.browser.canvas.css
                       + '}');
       }
+
+      // ----- ----- GENERATE JS ----- ----- //
 
       gameHTML.addJS(jsConfig.toString());
       gameHTML.addJS(bootstrapJS);
@@ -172,6 +231,8 @@ exports.build = function (api, app, config, cb) {
       gameHTML.addJS(preloadJS);
 
       liveEditJS && gameHTML.addJS(liveEditJS);
+
+      // ----- ----- //
 
       var hasWebAppManifest = !!config.browser.webAppManifest;
       if (hasWebAppManifest) {
@@ -207,6 +268,7 @@ exports.build = function (api, app, config, cb) {
           }));
       }
 
+      startTime('inline-cache');
       var InlineCache = require('../common/inlineCache').InlineCache;
       var inlineCache = new InlineCache(logger);
       var addToInlineCache = inlineCache.add.bind(inlineCache);
@@ -217,6 +279,8 @@ exports.build = function (api, app, config, cb) {
             .filter(addToInlineCache);
         })
         .then(function (files) {
+          endTime('inline-cache');
+          startTime('files');
           files.push(new File({
               base: baseDirectory,
               path: path.join(baseDirectory, config.target + '.js'),
@@ -317,16 +381,22 @@ exports.build = function (api, app, config, cb) {
           });
 
           // https://github.com/petkaantonov/bluebird/issues/332
-          logger.log('Writing files...');
+          logger.log('Writing files...' + files.length);
+          startTime('files-write');
           return new Promise(function (resolve, reject) {
             streamFromArray.obj(files)
               // .pipe(newer(baseDirectory))
               .pipe(vfs.dest(baseDirectory))
-              .on('end', resolve)
+              .on('end', function() {
+                endTime('files-write');
+                endTime('files');
+                resolve();
+              })
               .on('error', reject);
           });
         });
     }).then(function () {
+      endTime('browser-main');
       logger.log('Done');
     }).nodeify(cb);
 };
