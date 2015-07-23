@@ -154,7 +154,7 @@ module.exports.dynamic = function(sourceContents, output, generateFn, cb) {
   runGenerator({
     sourceContents: sourceContents,
     outputPath: output,
-    generateFn: generateFn,
+    generateFn: generateFn || function(cb) { cb(null, sourceContents); },
     cb: cb
   });
 

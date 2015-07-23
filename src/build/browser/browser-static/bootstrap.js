@@ -92,12 +92,39 @@ function bootstrap(initialImport, target) {
 
 	var loaded = false;
 	w._continueLoad = function() {
-		if (!loaded) {
-			loaded = true;
-			// Include the game code
-			var el = d.createElement('script');
-			el.src = target + '.js';
-			d.getElementsByTagName('head')[0].appendChild(el);
+		var doThings = function() {
+			if (!loaded) {
+				loaded = true;
+				// Include the game code
+				var el = d.createElement('script');
+				el.src = target + '.js';
+				d.getElementsByTagName('head')[0].appendChild(el);
+			}
+		};
+
+		var _continueLoadDefer;
+
+		w.addEventListener('message', function(event) {
+			if (event.data === 'partialLoadContinue') {
+				if (_continueLoadDefer) {
+					_continueLoadDefer.resolve();
+					_continueLoadDefer = undefined;
+				}
+			}
+		});
+		// Preload suggestions and then tell the parent bootstrapping is complete
+		jsio.__env.preloadModules(function() {
+			w.parent.postMessage('bootstrapping', '*');
+		});
+
+		var partialLoadKey = jsio.__env.getNamespace('partialLoad');
+		if (localStorage && localStorage.getItem(partialLoadKey)) {
+			localStorage.removeItem(partialLoadKey);
+
+			_continueLoadDefer = Promise.defer();
+			_continueLoadDefer.promise.then(doThings);
+		} else {
+			doThings();
 		}
 	};
 
@@ -192,6 +219,6 @@ function bootstrap(initialImport, target) {
 				if (h > min) { increased = true; }
 				min = h;
 			// }
-		}, 50);
+		}, 20);
 	}
 }

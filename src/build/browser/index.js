@@ -117,7 +117,13 @@ exports.build = function (api, app, config, cb) {
   function getPreloadJS() {
     // get preload JS
     if (/^native/.test(config.target)) {
-      return Promise.resolve('(window.jsio) ? (window._continueLoad()) : (jsio=function(){window._continueLoad()})');
+      var preloadSrc;
+      if (config.isSimulated) {
+        preloadSrc = '';
+      } else {
+        preloadSrc = '(window.jsio) ? (window._continueLoad()) : (jsio=function(){window._continueLoad()})';
+      }
+      return Promise.resolve(preloadSrc);
     }
 
     var isLiveEdit = (config.target === 'live-edit');
@@ -287,7 +293,7 @@ exports.build = function (api, app, config, cb) {
               contents: new Buffer('NATIVE=false;'
                 + 'CACHE=' + JSON.stringify(inlineCache) + ';\n'
                 + jsSrc + ';'
-                + 'jsio.__env.preloadModules(function() { jsio("import ' + INITIAL_IMPORT + '"); });')
+                + 'jsio("import ' + INITIAL_IMPORT + '");')
             }));
 
           files.forEach(function (file) {

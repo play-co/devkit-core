@@ -229,25 +229,36 @@ var DevKitJsioInterface = Class(EventEmitter, function () {
   };
 
   this._writeJsioBin = function(binPath) {
-    // Write the jsio_path.js
+    var tasks = [];
+
+    // Write jsio_path.js
     var destPath = path.join(binPath, 'jsio_path.js');
     var src = this._compiler.getCompiler().getPathJS();
-    fs.writeFileSync(destPath, src);
+    tasks.push(
+      FileGenerator.dynamic(src, destPath)
+    );
 
-    // Dont overwrite existing if mtime check fails
+    // Write jsio.js
     var srcPath = require.resolve('jsio');
     var destPath = path.join(binPath, 'jsio.js');
-    FileGenerator.sync(srcPath, destPath, function() {
-      var src = jsio.__jsio.__init__.toString(-1);
-      if (src.substring(0, 8) == 'function') {
-        src = 'jsio=(' + src + ')();';
+    tasks.push(FileGenerator(
+      srcPath,
+      destPath,
+      function(cb) {
+        var src = jsio.__jsio.__init__.toString(-1);
+        if (src.substring(0, 8) == 'function') {
+          src = 'jsio=(' + src + ')();';
+        }
+        cb(null, src);
       }
-      return src;
-    });
+    ));
+
+    return tasks;
   };
 
   this.onFinish = function (opts, src, table) {
     var binPath = path.join(opts.outputPath, 'bin');
+    var tasks = [];
 
     // Only call mkdirp once
     if (opts.separateJsio || opts.individualCompile) {
@@ -256,38 +267,31 @@ var DevKitJsioInterface = Class(EventEmitter, function () {
 
     // maybe write out a new jsio
     if (opts.separateJsio) {
-      this._writeJsioBin(binPath);
+      tasks.concat(this._writeJsioBin(binPath));
     }
 
     if (opts.individualCompile) {
       var keys = Object.keys(table);
       logger.info('Writing individual compile files: ' + keys.length);
 
-      var complete = 0;
-
-      var onFileWrite = function(err) {
-        if (err) throw err;
-        complete++;
-        if (complete === keys.length) {
-          this.emit('code', src);
-        }
-      }.bind(this);
-
       keys.forEach(function(key) {
         var srcFname = path.join(opts.cwd, key);
         var fname = path.join(binPath, key.replace(/\//g, '.'));
-        FileGenerator(
+        tasks.push(FileGenerator(
           srcFname,
           fname,
           function(cb) {
             cb(JSON.stringify(table[key]));
-          },
-          onFileWrite
-        );
+          }
+        ));
       });
-    } else {
-      this.emit('code', src);
     }
+
+    Promise.all(tasks)
+      .bind(this)
+      .then(function() {
+        this.emit('code', src);
+      });
   };
 
   /**
