@@ -180,7 +180,6 @@ exports.GameHTML = Class(function () {
       return total += src + '\n';
     }, '');
 
-
     var js = this._js.join(';');
     var jsCompiler = new JSCompiler(api, app);
     var compileJS = Promise.promisify(jsCompiler.compress, jsCompiler);
