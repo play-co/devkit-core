@@ -62,6 +62,7 @@ exports.build = function (api, app, config, cb) {
   // var newer = require('gulp-newer');
   var slash = require('slash');
   var streamFromArray = require('stream-from-array');
+  var FileGenerator = require('../common/FileGenerator');
 
   var readFile = Promise.promisify(fs.readFile);
 
@@ -253,13 +254,10 @@ exports.build = function (api, app, config, cb) {
       var hasIndexPage = !isMobile;
       tasks.push(gameHTML.generate(api, app, config)
         .then(function (html) {
-          files.push(new File({
-            base: baseDirectory,
-            path: path.join(baseDirectory, hasIndexPage
+          var destPath = path.join(baseDirectory, hasIndexPage
                                                  ? 'game.html'
-                                                 : 'index.html'),
-            contents: new Buffer(html)
-          }));
+                                                 : 'index.html')
+          return FileGenerator.dynamic(html, destPath);
         }));
 
       if (hasIndexPage) {
@@ -287,14 +285,6 @@ exports.build = function (api, app, config, cb) {
         .then(function (files) {
           endTime('inline-cache');
           startTime('files');
-          files.push(new File({
-              base: baseDirectory,
-              path: path.join(baseDirectory, config.target + '.js'),
-              contents: new Buffer('NATIVE=false;'
-                + 'CACHE=' + JSON.stringify(inlineCache) + ';\n'
-                + jsSrc + ';'
-                + 'jsio("import ' + INITIAL_IMPORT + '");')
-            }));
 
           files.forEach(function (file) {
             if (file.history.length > 1) {
@@ -400,6 +390,14 @@ exports.build = function (api, app, config, cb) {
               })
               .on('error', reject);
           });
+        })
+        .then(function() {
+          var src = 'NATIVE=false;' +
+            'CACHE=' + JSON.stringify(inlineCache) + ';\n' +
+            jsSrc + ';' +
+            'jsio("import ' + INITIAL_IMPORT + '");';
+          var destPath = path.join(baseDirectory, config.target + '.js');
+          return FileGenerator.dynamic(src, destPath);
         });
     }).then(function () {
       endTime('browser-main');
