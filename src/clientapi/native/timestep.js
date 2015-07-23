@@ -42,6 +42,17 @@ function installNativeView() {
 	animate.setViewAnimator(NATIVE.timestep.Animator);
 	merge(NATIVE.timestep.Animator.prototype, {
 		subscribe: function () {},
+		once: function (signal, cb) {
+			if (signal === "Finish") {
+				this._finishCallback = cb;
+			}
+		},
+		onAnimationFinish: function () {
+			if (this._finishCallback) {
+				this._finishCallback();
+				this._finishCallback = null;
+			}
+		},
 		pause: function () {},
 		resume: function () {},
 		__finish: function () {},
