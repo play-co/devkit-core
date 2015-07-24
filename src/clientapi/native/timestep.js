@@ -15,6 +15,7 @@
  */
 
 import device;
+import lib.PubSub as PubSub;
 
 var hasNativeViews = GLOBAL.NATIVE && NATIVE.timestep && NATIVE.timestep.View;
 
@@ -40,25 +41,11 @@ function installNativeView() {
 
 	var animate = device.importUI('animate');
 	animate.setViewAnimator(NATIVE.timestep.Animator);
-	merge(NATIVE.timestep.Animator.prototype, {
-		subscribe: function () {},
-		once: function (signal, cb) {
-			if (signal === "Finish") {
-				this._finishCallback = cb;
-			}
-		},
-		onAnimationFinish: function () {
-			if (this._finishCallback) {
-				this._finishCallback();
-				this._finishCallback = null;
-			}
-		},
-		pause: function () {},
-		resume: function () {},
-		__finish: function () {},
-		_isRunning: function () {}
-	});
-	
+	merge(NATIVE.timestep.Animator.prototype, PubSub.prototype);
+	NATIVE.timestep.Animator.prototype.onAnimationFinish = function () {
+		this.publish('Finish');
+	};
+
 	// add some properties to View and ImageView to defer to native rendering
 	import ui.View as View;
 	View.prototype.__type = VIEW_TYPES.DEFAULT;
