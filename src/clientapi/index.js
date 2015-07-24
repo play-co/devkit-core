@@ -118,18 +118,25 @@ exports.ClientAPI = Class(lib.PubSub, function () {
   import .UI;
   this.ui = new UI();
 
-
-  // this.track({
-  //  name: "campaignID",
-  //  category: "campaign",
-  //  subcategory: "id",
-  //  data: campaign
-  // });
-
   var map;
   try {
     if (GLOBAL.CACHE) {
       map = JSON.parse(GLOBAL.CACHE['spritesheets/map.json']);
+
+      // Add some defaults
+      for (var key in map) {
+        var entry = map[key];
+        entry.marginLeft = entry.marginLeft !== undefined ? entry.marginLeft : 0;
+        entry.marginRight = entry.marginRight !== undefined ? entry.marginRight : 0;
+        entry.marginTop = entry.marginTop !== undefined ? entry.marginTop : 0;
+        entry.marginBottom = entry.marginBottom !== undefined ? entry.marginBottom : 0;
+
+        entry.x = entry.x !== undefined ? entry.x : 0;
+        entry.y = entry.y !== undefined ? entry.y : 0;
+        entry.scale = entry.scale !== undefined ? entry.scale : 0;
+
+        entry.sheet = entry.sheet !== undefined ? entry.sheet : key;
+      }
     }
   } catch (e) {
     logger.warn("spritesheet map failed to parse", e);

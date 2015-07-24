@@ -50,7 +50,6 @@ exports.JSCompiler = Class(function () {
   };
 
   this.compile = function (opts, cb) {
-    console.time('JS_COMPILE')
     var opts = merge({}, opts, this._opts);
 
     var appPath = this._app.paths.root;
@@ -116,7 +115,6 @@ exports.JSCompiler = Class(function () {
     jsioOpts.interface = new DevKitJsioInterface(this)
       .on('error', cb)
       .on('code', function (code) {
-        console.timeEnd('JS_COMPILE')
         cb && cb(null, code);
       });
 

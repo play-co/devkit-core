@@ -43,17 +43,9 @@ exports.configure = function (api, app, config, cb) {
   cb && cb();
 };
 
-var _timeLogger = null;
-var _times = {};
-function startTime(name) {
-  _times[name] = new Date().getTime();
-}
-function endTime(name) {
-  _timeLogger.info(name + ': ' + (new Date().getTime() - _times[name]));
-  delete _times[name];
-}
-
 exports.build = function (api, app, config, cb) {
+
+  config.spriteImages = false;
 
   var printf = require('printf');
   var fs = require('graceful-fs');
@@ -66,54 +58,33 @@ exports.build = function (api, app, config, cb) {
 
   var readFile = Promise.promisify(fs.readFile);
 
-  // config.spriteImages = false;
   logger = api.logging.get('build-browser');
-  _timeLogger = api.logging.get('--------TIMER--------');
-
-  startTime('browser-main');
-  startTime('setup-require');
 
   var isMobile = (config.target !== 'browser-desktop');
   var isLiveEdit = (config.target === 'live-edit');
-  //console.time('import-1')
   var resources = require('../common/resources');
-  //console.timeEnd('import-1')
-  //console.time('import-2')
   var CSSFontList = require('./fonts').CSSFontList;
-  //console.timeEnd('import-2')
-  //console.time('import-3')
   var JSConfig = require('../common/jsConfig').JSConfig;
-  //console.timeEnd('import-3')
-  //console.time('import-4')
   var JSCompiler = require('../common/jsCompiler').JSCompiler;
-  //console.timeEnd('import-4')
 
   var sprite = null;
   if (config.spriteImages) {
     sprite = require('../common/spriter')
-                              .sprite
-                              .bind(null, api, app, config);
+                .sprite
+                .bind(null, api, app, config);
+  } else {
+    sprite = require('../common/spritesheetMapGenerator')
+                .sprite
+                .bind(null, api, app, config);
   }
 
-  //console.time('import-5')
   var html = require('./html');
-  //console.timeEnd('import-5')
-  //console.time('import-6')
   var gameHTML = new html.GameHTML(config);
-  //console.timeEnd('import-6')
-  //console.time('import-7')
   var fontList = new CSSFontList();
-  //console.timeEnd('import-7')
-  //console.time('import-8')
   var jsConfig = new JSConfig(api, app, config);
-  //console.timeEnd('import-8')
-  //console.time('import-9')
   var jsCompiler = new JSCompiler(api, app, config, jsConfig);
-  //console.timeEnd('import-9')
 
-  //console.time('import-10')
   var compileJS = Promise.promisify(jsCompiler.compile, jsCompiler);
-  //console.timeEnd('import-10')
 
   function getPreloadJS() {
     // get preload JS
@@ -162,9 +133,6 @@ exports.build = function (api, app, config, cb) {
 
   var baseDirectory = config.outputResourcePath;
 
-  endTime('setup-require');
-  startTime('main-spread');
-
   resources.getDirectories(api, app, config)
     .then(function (directories) {
       var compileOpts = {
@@ -180,19 +148,19 @@ exports.build = function (api, app, config, cb) {
         compileOpts.includeJsio = false;
         compileOpts.separateJsio = true;
       }
+
       return Promise.all([
-          resources.getFiles(baseDirectory, directories),
+          config.isSimulated ? resources.getFiles(baseDirectory, directories) : [],
           readFile(getLocalFilePath('../../clientapi/browser/cache-worker.js'), 'utf8'),
           getPreloadJS(),
           readFile(STATIC_BOOTSTRAP_JS, 'utf8'),
           isLiveEdit && readFile(STATIC_LIVE_EDIT_JS, 'utf8'),
-          config.spriteImages !== false && sprite(directories),
+          sprite(directories),
           compileJS(compileOpts)
         ]);
     })
     .spread(function (files, cacheWorkerJS, preloadJS, bootstrapJS,
                       liveEditJS, spriterResult, jsSrc) {
-      endTime('main-spread');
       logger.log('Creating HTML and JavaScript...');
 
       jsConfig.add('embeddedFonts', fontList.getNames());
@@ -272,7 +240,6 @@ exports.build = function (api, app, config, cb) {
           }));
       }
 
-      startTime('inline-cache');
       var InlineCache = require('../common/inlineCache').InlineCache;
       var inlineCache = new InlineCache(logger);
       var addToInlineCache = inlineCache.add.bind(inlineCache);
@@ -283,9 +250,6 @@ exports.build = function (api, app, config, cb) {
             .filter(addToInlineCache);
         })
         .then(function (files) {
-          endTime('inline-cache');
-          startTime('files');
-
           files.forEach(function (file) {
             if (file.history.length > 1) {
               sourceMap[slash(file.relative)] = file.history[0];
@@ -377,15 +341,12 @@ exports.build = function (api, app, config, cb) {
           });
 
           // https://github.com/petkaantonov/bluebird/issues/332
-          logger.log('Writing files...' + files.length);
-          startTime('files-write');
+          logger.log('Writing ' + files.length + ' files...');
           return new Promise(function (resolve, reject) {
             streamFromArray.obj(files)
               // .pipe(newer(baseDirectory))
               .pipe(vfs.dest(baseDirectory))
               .on('end', function() {
-                endTime('files-write');
-                endTime('files');
                 resolve();
               })
               .on('error', reject);
@@ -400,7 +361,6 @@ exports.build = function (api, app, config, cb) {
           return FileGenerator.dynamic(src, destPath);
         });
     }).then(function () {
-      endTime('browser-main');
       logger.log('Done');
     }).nodeify(cb);
 };
