@@ -258,11 +258,6 @@ var DevKitJsioInterface = Class(EventEmitter, function () {
     var binPath = path.join(opts.outputPath, 'bin');
     var tasks = [];
 
-    // Only call mkdirp once
-    if (opts.separateJsio || opts.individualCompile) {
-      mkdirp.sync(binPath);
-    }
-
     // maybe write out a new jsio
     if (opts.separateJsio) {
       tasks.concat(this._writeJsioBin(binPath));

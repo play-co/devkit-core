@@ -45,8 +45,6 @@ exports.configure = function (api, app, config, cb) {
 
 exports.build = function (api, app, config, cb) {
 
-  config.spriteImages = false;
-
   var printf = require('printf');
   var fs = require('graceful-fs');
   var File = require('vinyl');
@@ -68,7 +66,7 @@ exports.build = function (api, app, config, cb) {
   var JSCompiler = require('../common/jsCompiler').JSCompiler;
 
   var sprite = null;
-  if (config.spriteImages) {
+  if (config.spriteImages && !config.isSimulated) {
     sprite = require('../common/spriter')
                 .sprite
                 .bind(null, api, app, config);
@@ -88,13 +86,9 @@ exports.build = function (api, app, config, cb) {
 
   function getPreloadJS() {
     // get preload JS
-    if (/^native/.test(config.target)) {
-      var preloadSrc;
-      if (config.isSimulated) {
-        preloadSrc = '';
-      } else {
-        preloadSrc = '(window.jsio) ? (window._continueLoad()) : (jsio=function(){window._continueLoad()})';
-      }
+    if (/^native/.test(config.target) && !config.isSimulated) {
+      var preloadSrc = '(window.jsio) ? (window._continueLoad()) : (jsio=function(){window._continueLoad()})';
+
       return Promise.resolve(preloadSrc);
     }
 
@@ -143,11 +137,6 @@ exports.build = function (api, app, config, cb) {
         debug: config.scheme === 'debug',
         preCompress: config.preCompressCallback
       };
-      if (config.isSimulated) {
-        compileOpts.noCompile = true;
-        compileOpts.includeJsio = false;
-        compileOpts.separateJsio = true;
-      }
 
       return Promise.all([
           config.isSimulated ? resources.getFiles(baseDirectory, directories) : [],
@@ -156,7 +145,7 @@ exports.build = function (api, app, config, cb) {
           readFile(STATIC_BOOTSTRAP_JS, 'utf8'),
           isLiveEdit && readFile(STATIC_LIVE_EDIT_JS, 'utf8'),
           sprite(directories),
-          compileJS(compileOpts)
+          config.isSimulated ? '' : compileJS(compileOpts)
         ]);
     })
     .spread(function (files, cacheWorkerJS, preloadJS, bootstrapJS,
