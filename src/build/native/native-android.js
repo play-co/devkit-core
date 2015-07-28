@@ -1,7 +1,4 @@
 var path = require('path');
-var fs = require('fs');
-var clc = require('cli-color');
-var ff = require('ff');
 
 exports.helpText = 'For release builds, please set the environment variables '
  + 'DEVKIT_ANDROID_KEYSTORE, DEVKIT_ANDROID_STOREPASS, DEVKIT_ANDROID_KEYPASS, '
@@ -52,7 +49,9 @@ exports.build = function (api, app, config, cb) {
 
   // doesn't build ios - builds the js that it would use, then you shim out NATIVE
   if (config.isTestApp) {
-    require('./resources').writeNativeResources(build, app, config, cb);
+    require('./resources')
+      .writeNativeResources(api, app, config)
+      .nodeify(cb);
   } else if (config.isSimulated) {
     // Build simulated version
     //
@@ -61,12 +60,14 @@ exports.build = function (api, app, config, cb) {
     // features, so that the code can be tested in the browser without modification.
     require('../browser/').build(api, app, config, cb);
   } else {
-    var f = ff(function () {
-      require('./resources').writeNativeResources(api, app, config, f());
-    }, function () {
-      if (!config.resourcesOnly) {
-        require('../../../modules/native-android/build').build(api, app, config, f());
-      }
-    }).cb(cb);
+    return require('./resources')
+      .writeNativeResources(api, app, config)
+      .then(function () {
+        if (!config.resourcesOnly) {
+          var nativeBuild = require('../../../modules/native-android/build');
+          return Promise.promisify(nativeBuild.build, nativeBuild)(api, app, config);
+        }
+      })
+      .nodeify(cb);
   }
 };

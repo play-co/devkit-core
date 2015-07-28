@@ -40,7 +40,7 @@ exports.configure = function (api, app, config, cb) {
   // add in browser-specific config keys
   require('./browserConfig').insert(app, config, exports.opts.argv);
 
-  cb && cb();
+  return Promise.resolve().nodeify(cb);
 };
 
 exports.build = function (api, app, config, cb) {
@@ -144,7 +144,7 @@ exports.build = function (api, app, config, cb) {
           getPreloadJS(),
           readFile(STATIC_BOOTSTRAP_JS, 'utf8'),
           isLiveEdit && readFile(STATIC_LIVE_EDIT_JS, 'utf8'),
-          sprite(directories),
+          config.spritesheets || config.spriteImages !== false && sprite(directories),
           config.isSimulated ? '' : compileJS(compileOpts)
         ]);
     })
@@ -294,7 +294,7 @@ exports.build = function (api, app, config, cb) {
               webAppManifest.orientation = supportedOrientations[0];
             }
 
-            var webAppManifest = JSON.stringify(webAppManifest);
+            webAppManifest = JSON.stringify(webAppManifest);
             var file = new File({
               base: baseDirectory,
               path: path.join(baseDirectory, 'web-app-manifest.json'),
@@ -335,9 +335,7 @@ exports.build = function (api, app, config, cb) {
             streamFromArray.obj(files)
               // .pipe(newer(baseDirectory))
               .pipe(vfs.dest(baseDirectory))
-              .on('end', function() {
-                resolve();
-              })
+              .on('end', resolve)
               .on('error', reject);
           });
         })
@@ -349,7 +347,6 @@ exports.build = function (api, app, config, cb) {
           var destPath = path.join(baseDirectory, config.target + '.js');
           return FileGenerator.dynamic(src, destPath);
         });
-    }).then(function () {
-      logger.log('Done');
-    }).nodeify(cb);
+    })
+    .nodeify(cb);
 };
