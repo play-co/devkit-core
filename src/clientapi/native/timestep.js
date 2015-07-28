@@ -41,9 +41,20 @@ function installNativeView() {
 
 	var animate = device.importUI('animate');
 	animate.setViewAnimator(NATIVE.timestep.Animator);
+
+	// native view animators inherit from PubSub (Emitter) to match JS
 	merge(NATIVE.timestep.Animator.prototype, PubSub.prototype);
-	NATIVE.timestep.Animator.prototype.onAnimationFinish = function () {
-		this.publish('Finish');
+
+	// native view animators need to add themselves to animate groups in JS
+	NATIVE.timestep.Animator.prototype._addToGroup = function () {
+		var group = animate.getGroup(this.groupID);
+		group && group.add(this);
+	};
+
+	// native view animators need to remove themselves from animate groups in JS
+	NATIVE.timestep.Animator.prototype._removeFromGroup = function () {
+		var group = animate.getGroup(this.groupID);
+		group && group.remove(this);
 	};
 
 	// add some properties to View and ImageView to defer to native rendering
