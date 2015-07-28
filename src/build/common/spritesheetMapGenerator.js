@@ -7,7 +7,8 @@ var sizeOf = require('image-size');
 var spritePattern  = /((?:.*)\/.*?)[-_ ](.*?)[-_ ](\d+)/;
 var allowedPattern = /\.png$|\.jpg$|\.jpeg$/;
 
-// TODO: implement source map
+/** Don't actually sprite these directories, just build the map in the same way the
+ spriter would (so that the client knows what sprites are available) */
 exports.sprite = function (api, app, config, directories) {
   var baseDirectory = config.outputResourcePath;
   var relativeSpritesheetsDirectory = 'spritesheets';
@@ -21,7 +22,6 @@ exports.sprite = function (api, app, config, directories) {
     .map(exports.spriteDirectory.bind(exports, api, config))
     .each(function (allFiles) {
       allFiles.forEach(function(file) {
-        // TODO: Put all the files in to a single object, then return it
         if (file.info) {
           sheetMap[file.target] = file.info;
         }
