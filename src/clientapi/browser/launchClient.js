@@ -19,7 +19,7 @@
 // no dynamic source fetching
 // jsio.__env.fetch = function (filename) { return false; };
 
-import ..api.Promise as Promise;
+import Promise;
 GLOBAL.Promise = Promise;
 
 var isSimulator = GLOBAL.CONFIG && !!CONFIG.simulator;

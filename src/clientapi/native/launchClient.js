@@ -20,7 +20,7 @@ GLOBAL.console = logging.get('console');
 window.self = window;
 
 // add bluebird promise implementation to global scope
-import ..api.Promise as Promise;
+import Promise;
 GLOBAL.Promise = Promise;
 
 // initialize native JS API wrappers
