@@ -5,7 +5,7 @@ var printf = require('printf');
 var JSCompiler = require('../common/jsCompiler').JSCompiler;
 var getBase64Image = require('./datauri').getBase64Image;
 
-var FileGenerator = require('../common/FileGenerator');
+var fileGenerator = require('../common/fileGenerator');
 
 var TARGET_APPLE_TOUCH_ICON_SIZE = 152;
 
@@ -105,7 +105,7 @@ exports.GameHTML = Class(function () {
     var dest = path.join(this._binPath, 'css', name.replace(/\//g, '_'));
     var shouldCompress = this._config.compress;
 
-    this._css.push(FileGenerator.dynamic(
+    this._css.push(fileGenerator.dynamic(
       css,
       dest,
       function(cb) {
@@ -118,7 +118,7 @@ exports.GameHTML = Class(function () {
     var dest = path.join(this._binPath, 'css', cssPath.replace(/\//g, '_'));
     var shouldCompress = this._config.compress;
 
-    this._css.push(FileGenerator(
+    this._css.push(fileGenerator(
       cssPath,
       dest,
       function(cb) {

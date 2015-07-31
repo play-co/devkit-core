@@ -52,7 +52,7 @@ exports.build = function (api, app, config, cb) {
   // var newer = require('gulp-newer');
   var slash = require('slash');
   var streamFromArray = require('stream-from-array');
-  var FileGenerator = require('../common/FileGenerator');
+  var fileGenerator = require('../common/fileGenerator');
 
   var readFile = Promise.promisify(fs.readFile);
 
@@ -214,7 +214,7 @@ exports.build = function (api, app, config, cb) {
           var destPath = path.join(baseDirectory, hasIndexPage
                                                  ? 'game.html'
                                                  : 'index.html')
-          return FileGenerator.dynamic(html, destPath);
+          return fileGenerator.dynamic(html, destPath);
         }));
 
       if (hasIndexPage) {
@@ -345,7 +345,7 @@ exports.build = function (api, app, config, cb) {
             jsSrc + ';' +
             'jsio("import ' + INITIAL_IMPORT + '");';
           var destPath = path.join(baseDirectory, config.target + '.js');
-          return FileGenerator.dynamic(src, destPath);
+          return fileGenerator.dynamic(src, destPath);
         });
     })
     .nodeify(cb);

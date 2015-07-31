@@ -9,7 +9,7 @@ var EventEmitter = require('events').EventEmitter;
 // clone to modify the path for this jsio but not any others
 var jsio = require('jsio').clone(); // ~10ms
 
-var FileGenerator = require('./FileGenerator');
+var fileGenerator = require('./fileGenerator');
 
 function deepCopy(obj) { return obj && JSON.parse(JSON.stringify(obj)); }
 
@@ -237,13 +237,13 @@ var DevKitJsioInterface = Class(EventEmitter, function () {
     var destPath = path.join(binPath, 'jsio_path.js');
     var src = this._compiler.getCompiler().getPathJS();
     tasks.push(
-      FileGenerator.dynamic(src, destPath)
+      fileGenerator.dynamic(src, destPath)
     );
 
     // Write jsio.js
     var srcPath = require.resolve('jsio');
     var destPath = path.join(binPath, 'jsio.js');
-    tasks.push(FileGenerator(
+    tasks.push(fileGenerator(
       srcPath,
       destPath,
       function(cb) {
@@ -274,7 +274,7 @@ var DevKitJsioInterface = Class(EventEmitter, function () {
       keys.forEach(function(key) {
         var srcFname = path.join(opts.cwd, key);
         var fname = path.join(binPath, key.replace(/\//g, '.'));
-        tasks.push(FileGenerator(
+        tasks.push(fileGenerator(
           srcFname,
           fname,
           function(cb) {
