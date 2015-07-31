@@ -92,7 +92,7 @@ function bootstrap(initialImport, target) {
 
 	var loaded = false;
 	w._continueLoad = function() {
-		var doThings = function() {
+		var loadTargetJS = function() {
 			if (!loaded) {
 				loaded = true;
 				// Include the game code
@@ -122,9 +122,9 @@ function bootstrap(initialImport, target) {
 			localStorage.removeItem(partialLoadKey);
 
 			_continueLoadDefer = Promise.defer();
-			_continueLoadDefer.promise.then(doThings);
+			_continueLoadDefer.promise.then(loadTargetJS);
 		} else {
-			doThings();
+			loadTargetJS();
 		}
 	};
 
