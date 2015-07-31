@@ -13,22 +13,22 @@ var hashString = function(str) {
   return md5sum.digest('hex');
 };
 
-var runGenerator = function(opts) {
+var runGenerator = function(opts, cb) {
   var doWrite = function(err, src) {
     mkdirp(path.dirname(opts.outputPath), function(err) {
-      if (err) { opts.cb(err); return; }
+      if (err) { cb(err); return; }
 
       fs.writeFile(opts.outputPath, src, function(err) {
-        if (err) { opts.cb(err); return; }
+        if (err) { cb(err); return; }
 
         // For dynamic calls the hash should be that of the input string, not the output file
         if (opts.useInputHash) {
           fs.writeFile(opts.outputHashPath, opts.inputHash, function(err) {
-            if (err) { opts.cb(err); return; }
-            opts.cb(null, src);
+            if (err) { cb(err); return; }
+            cb(null, src);
           });
         } else {
-          opts.cb(null, src);
+          cb(null, src);
         }
       });
 
@@ -38,18 +38,18 @@ var runGenerator = function(opts) {
   var useOldOutput = function() {
     // Old one is still good, just read it
     fs.readFile(opts.outputPath, 'utf8', function(err, src) {
-      if (err) { opts.cb(err); return; }
+      if (err) { cb(err); return; }
 
-      opts.cb(null, src);
+      cb(null, src);
     });
   }
 
   var checkModifiedTimes = function() {
     fs.stat(opts.sourcePath, function(err, srcStat) {
-      if (err) { opts.cb(err); return; }
+      if (err) { cb(err); return; }
 
       fs.stat(opts.outputPath, function(err, existingStat) {
-        if (err) { opts.cb(err); return; }
+        if (err) { cb(err); return; }
 
         if (existingStat.mtime > srcStat.mtime) {
           useOldOutput();
@@ -73,7 +73,7 @@ var runGenerator = function(opts) {
 
         // Check the hashes
         fs.readFile(opts.outputHashPath, 'utf-8', function(err, outputHash) {
-          if (err) { opts.cb(err); return; }
+          if (err) { cb(err); return; }
 
           if (opts.inputHash === outputHash) {
             useOldOutput();
@@ -127,9 +127,8 @@ module.exports = function(source, output, generateFn, cb) {
   runGenerator({
     sourcePath: source,
     outputPath: output,
-    generateFn: generateFn,
-    cb: cb
-  });
+    generateFn: generateFn
+  }, cb);
 
   return def ? def.promise : undefined;
 };
@@ -154,9 +153,8 @@ module.exports.dynamic = function(sourceContents, output, generateFn, cb) {
   runGenerator({
     sourceContents: sourceContents,
     outputPath: output,
-    generateFn: generateFn || function(cb) { cb(null, sourceContents); },
-    cb: cb
-  });
+    generateFn: generateFn || function(cb) { cb(null, sourceContents); }
+  }, cb);
 
   return def ? def.promise : undefined;
 };
