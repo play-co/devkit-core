@@ -102,13 +102,13 @@ function bootstrap(initialImport, target) {
 			}
 		};
 
-		var _continueLoadDefer;
+		var _continueLoadCallback;
 
 		w.addEventListener('message', function(event) {
 			if (event.data === 'partialLoadContinue') {
-				if (_continueLoadDefer) {
-					_continueLoadDefer.resolve();
-					_continueLoadDefer = undefined;
+				if (_continueLoadCallback) {
+					_continueLoadCallback();
+					_continueLoadCallback = undefined;
 				}
 			}
 		});
@@ -120,9 +120,7 @@ function bootstrap(initialImport, target) {
 		var partialLoadKey = jsio.__env.getNamespace('partialLoad');
 		if (localStorage && localStorage.getItem(partialLoadKey)) {
 			localStorage.removeItem(partialLoadKey);
-
-			_continueLoadDefer = Promise.defer();
-			_continueLoadDefer.promise.then(loadTargetJS);
+			_continueLoadCallback = loadTargetJS;
 		} else {
 			loadTargetJS();
 		}
