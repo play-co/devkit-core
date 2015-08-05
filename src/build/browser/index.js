@@ -53,6 +53,7 @@ exports.build = function (api, app, config, cb) {
   var slash = require('slash');
   var streamFromArray = require('stream-from-array');
   var fileGenerator = require('../common/fileGenerator');
+  var glob = require('glob');
 
   var readFile = Promise.promisify(fs.readFile);
 
@@ -204,36 +205,27 @@ exports.build = function (api, app, config, cb) {
           JSCompiler.writeJsioBin(binPath)
         );
 
-        // TODO: MOVE THIS SOMEWHERE ELSE
-        var jsioPath = require('jsio').__env.getPath();
-        var _path = [jsioPath, '.', 'lib'];
-        var _pathCache = {
-          'jsio': jsioPath
-        };
-        var addClientPaths = function (clientPaths) {
-          for (var key in clientPaths) {
-            if (key !== '*') {
-              _pathCache[key] = clientPaths[key];
-            } else {
-              _path.push.apply(_path, clientPaths['*']);
+        var pathAndCache = JSCompiler.getPathAndCache(app, config);
+        // Walk module dirs and add to the path cache (for fewer client side 404's)
+        pathAndCache.path.forEach(function(modulePath) {
+          var files = glob.sync(path.join(app.paths.root, modulePath, '**/*.js'), { });
+          files.forEach(function(filePath) {
+            var relative = path.relative(path.join(app.paths.root, modulePath), filePath);
+            relative = relative.replace(/^\/|\.js$/g, ''); // replace leading slash and trailing .js
+            var key = relative.replace(/\//g, '.');
+            if (!pathAndCache.pathCache[key]) {
+              pathAndCache.pathCache[key] = path.join(modulePath, relative);
             }
-          }
-        };
-        if (config && config.clientPaths) {
-          addClientPaths(config.clientPaths);
-        }
-
-        if (app && app.clientPaths) {
-          addClientPaths(app.clientPaths);
-        }
+          });
+        });
         // TODO: THE PATH MAP SHOULD PROBABLY COME IN ON THE API OBJECT
         var _pathMap = {};
         _pathMap[api.paths.devkit] = '/devkit';
         tasks.push(
           JSCompiler.writeJsioPath({
             cwd: app.paths.root,
-            path: _path,
-            pathCache: _pathCache,
+            path: pathAndCache.path,
+            pathCache: pathAndCache.pathCache,
             pathMap: _pathMap,
             binPath: binPath
           })

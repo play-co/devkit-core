@@ -77,8 +77,7 @@ exports.JSCompiler = Class(function () {
       gcDebug: opts.debug,
       preprocessors: ['cls', 'logger'],
 
-      noCompile: opts.noCompile,
-      separateJsio: opts.separateJsio
+      noCompile: opts.noCompile
     };
 
     if (opts.compress) {
@@ -208,7 +207,10 @@ exports.JSCompiler = Class(function () {
   };
 });
 
-/** binPath is where the output should go */
+/**
+ * @param  {String}  binPath Where jsio.js should be written to
+ * @return {Promise} FileGenerator promise
+ */
 exports.writeJsioBin = function(binPath) {
   var srcPath = require.resolve('jsio');
   var destPath = path.join(binPath, 'jsio.js');
@@ -230,9 +232,49 @@ function replaceSlashes(str) {
   return str.replace(/\\+/g, '/').replace(/\/{2,}/g, '/');
 }
 
-/** path is the array of wildcards
-    pathCache is a dictionary of exact paths
-    binPath is where the output should go */
+/**
+ * @param  {Object} app
+ * @param  {Object} config
+ * @return {Object} object with path and pathCache variables
+ */
+exports.getPathAndCache = function(app, config) {
+  var jsioPath = jsio.__env.getPath();
+  var _path = [];
+  var _pathCache = {
+    jsio: jsioPath
+  };
+  var addClientPaths = function (clientPaths) {
+    for (var key in clientPaths) {
+      if (key !== '*') {
+        _pathCache[key] = clientPaths[key];
+      } else {
+        _path.push.apply(_path, clientPaths['*']);
+      }
+    }
+  };
+  if (config && config.clientPaths) {
+    addClientPaths(config.clientPaths);
+  }
+
+  if (app && app.clientPaths) {
+    addClientPaths(app.clientPaths);
+  }
+
+  return {
+    path: _path,
+    pathCache: _pathCache
+  };
+};
+
+/**
+ * @param  {Object}   opts
+ * @param  {String}   [opts.cwd]
+ * @param  {String[]} [path] The array of wildcards
+ * @param  {Object}   [pathCache] A dictionary of exact paths
+ * @param  {String}   binPath Where the output should go
+ * @param  {Object}   [pathMap] Map pathCache results somewhere else
+ * @return {Promise}  FileGenerator promise
+ */
 exports.writeJsioPath = function(opts) {
   var cwd = opts.cwd || jsio.__env.getCwd();
   var _path = opts.path || [];
@@ -240,8 +282,9 @@ exports.writeJsioPath = function(opts) {
   var pathMap = opts.pathMap || null;
   var binPath = opts.binPath;
 
-  // TODO: FINISH THIS FUNCTION
   var util = jsio.__jsio.__util;
+
+  _path = [jsio.__env.getPath(), '.', 'lib'].concat(_path);
 
   var cache = {};
   Object.keys(pathCache).forEach(function (key) {
@@ -295,31 +338,9 @@ var DevKitJsioInterface = Class(EventEmitter, function () {
     this.emit('error', e);
   };
 
-  this._writeJsioBin = function(binPath) {
-    var tasks = [];
-
-    // Write jsio_path.js
-    // TODO: use exports.writeJsioPath
-    var destPath = path.join(binPath, 'jsio_path.js');
-    var src = this._compiler.getCompiler().getPathJS();
-    tasks.push(
-      fileGenerator.dynamic(src, destPath)
-    );
-
-    // Write jsio.js
-    tasks.push(exports.writeJsioBin(binPath));
-
-    return tasks;
-  };
-
   this.onFinish = function (opts, src, table) {
     var binPath = path.join(opts.outputPath, 'bin');
     var tasks = [];
-
-    // maybe write out a new jsio
-    if (opts.separateJsio) {
-      tasks.concat(this._writeJsioBin(binPath));
-    }
 
     if (opts.individualCompile) {
       var keys = Object.keys(table);
