@@ -1,9 +1,8 @@
 var path = require('path');
-var fs = require('fs');
+var fs = require('fs-extra');
 var crypto = require('crypto');
 
 var argv = require('optimist').argv;
-var mkdirp = require('mkdirp');
 var EventEmitter = require('events').EventEmitter;
 
 // clone to modify the path for this jsio but not any others
@@ -128,7 +127,7 @@ exports.JSCompiler = Class(function () {
     // ignored, but traditionally should be the name of the executable?)
 
     // Compile the game code
-    mkdirp(jsCachePath, function () {
+    fs.mkdirp(jsCachePath, function () {
       compiler.start(['jsio_compile', jsioOpts.cwd || '.', importStatement], jsioOpts);
     });
   };

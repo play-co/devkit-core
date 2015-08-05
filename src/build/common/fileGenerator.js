@@ -1,7 +1,6 @@
 
-var fs = require('fs');
+var fs = require('fs-extra');
 var path = require('path');
-var mkdirp = require('mkdirp');
 
 var crypto = require('crypto');
 
@@ -15,7 +14,7 @@ var hashString = function(str) {
 
 var runGenerator = function(opts, cb) {
   var doWrite = function(err, src) {
-    mkdirp(path.dirname(opts.outputPath), function(err) {
+    fs.mkdirp(path.dirname(opts.outputPath), function(err) {
       if (err) { cb(err); return; }
 
       fs.writeFile(opts.outputPath, src, function(err) {
