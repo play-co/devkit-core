@@ -208,13 +208,15 @@ exports.build = function (api, app, config, cb) {
         var pathAndCache = JSCompiler.getPathAndCache(app, config);
         // Walk module dirs and add to the path cache (for fewer client side 404's)
         pathAndCache.path.forEach(function(modulePath) {
-          var files = glob.sync(path.join(app.paths.root, modulePath, '**/*.js'), { });
+          // Note: We could probably just look for folders 1 level deep
+          var files = glob.sync(path.join(app.paths.root, modulePath, '**/*.js'));
           files.forEach(function(filePath) {
-            var relative = path.relative(path.join(app.paths.root, modulePath), filePath);
-            relative = relative.replace(/^\/|\.js$/g, ''); // replace leading slash and trailing .js
-            var key = relative.replace(/\//g, '.');
+            var key = path.relative(path.join(app.paths.root, modulePath), filePath);
+            key = key.replace(/^\/|\.js$/g, ''); // replace leading slash and trailing .js
+            key = key.split('/', 1)[0]; // Get the top level
+
             if (!pathAndCache.pathCache[key]) {
-              pathAndCache.pathCache[key] = path.join(modulePath, relative);
+              pathAndCache.pathCache[key] = path.join(modulePath, key);
             }
           });
         });
