@@ -63,7 +63,7 @@ exports.build = function (api, app, config, cb) {
   var resources = require('../common/resources');
   var CSSFontList = require('./fonts').CSSFontList;
   var JSConfig = require('../common/jsConfig').JSConfig;
-  var JSCompiler = require('../common/jsCompiler').JSCompiler;
+  var JSCompiler = require('../common/jsCompiler');
 
   var sprite = null;
   if (config.spriteImages && !config.isSimulated) {
@@ -80,13 +80,12 @@ exports.build = function (api, app, config, cb) {
   var gameHTML = new html.GameHTML(config);
   var fontList = new CSSFontList();
   var jsConfig = new JSConfig(api, app, config);
-  var jsCompiler = new JSCompiler(api, app, config, jsConfig);
+  var jsCompiler = new JSCompiler.JSCompiler(api, app, config, jsConfig);
 
   var compileJS = Promise.promisify(jsCompiler.compile, jsCompiler);
 
   function getPreloadJS() {
-    // get preload JS
-    if (/^native/.test(config.target) && !config.isSimulated) {
+    if (/^native/.test(config.target)) {
       var preloadSrc = '(window.jsio) ? (window._continueLoad()) : (jsio=function(){window._continueLoad()})';
 
       return Promise.resolve(preloadSrc);
@@ -117,11 +116,6 @@ exports.build = function (api, app, config, cb) {
       appendImport: false,
       preCompress: config.preCompressCallback
     };
-    if (config.isSimulated) {
-      compileOpts.noCompile = true;
-      compileOpts.includeJsio = false;
-      compileOpts.separateJsio = true;
-    }
     return compileJS(compileOpts);
   }
 
@@ -141,7 +135,7 @@ exports.build = function (api, app, config, cb) {
       return Promise.all([
           config.isSimulated ? resources.getFiles(baseDirectory, directories) : [],
           readFile(getLocalFilePath('../../clientapi/browser/cache-worker.js'), 'utf8'),
-          getPreloadJS(),
+          config.isSimulated ? '' : getPreloadJS(),
           readFile(STATIC_BOOTSTRAP_JS, 'utf8'),
           isLiveEdit && readFile(STATIC_LIVE_EDIT_JS, 'utf8'),
           config.spritesheets || config.spriteImages !== false && sprite(directories),
@@ -204,6 +198,47 @@ exports.build = function (api, app, config, cb) {
       }
 
       if (config.isSimulated) {
+        // Write the jsio.js and jsio_path.js files
+        var binPath = path.join(config.outputPath, 'bin');
+        tasks.push(
+          JSCompiler.writeJsioBin(binPath)
+        );
+
+        // TODO: MOVE THIS SOMEWHERE ELSE
+        var jsioPath = require('jsio').__env.getPath();
+        var _path = [jsioPath, '.', 'lib'];
+        var _pathCache = {
+          'jsio': jsioPath
+        };
+        var addClientPaths = function (clientPaths) {
+          for (var key in clientPaths) {
+            if (key !== '*') {
+              _pathCache[key] = clientPaths[key];
+            } else {
+              _path.push.apply(_path, clientPaths['*']);
+            }
+          }
+        };
+        if (config && config.clientPaths) {
+          addClientPaths(config.clientPaths);
+        }
+
+        if (app && app.clientPaths) {
+          addClientPaths(app.clientPaths);
+        }
+        // TODO: THE PATH MAP SHOULD PROBABLY COME IN ON THE API OBJECT
+        var _pathMap = {};
+        _pathMap[api.paths.devkit] = '/devkit';
+        tasks.push(
+          JSCompiler.writeJsioPath({
+            cwd: app.paths.root,
+            path: _path,
+            pathCache: _pathCache,
+            pathMap: _pathMap,
+            binPath: binPath
+          })
+        );
+
         config.browser.headHTML.push('<script src="bin/jsio.js"></script>');
         config.browser.headHTML.push('<script src="bin/jsio_path.js"></script>');
       }

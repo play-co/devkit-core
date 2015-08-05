@@ -208,6 +208,72 @@ exports.JSCompiler = Class(function () {
   };
 });
 
+/** binPath is where the output should go */
+exports.writeJsioBin = function(binPath) {
+  var srcPath = require.resolve('jsio');
+  var destPath = path.join(binPath, 'jsio.js');
+  return fileGenerator(
+    srcPath,
+    destPath,
+    function(cb) {
+      var src = jsio.__jsio.__init__.toString(-1);
+      if (src.substring(0, 8) == 'function') {
+        src = 'jsio=(' + src + ')();';
+      }
+      cb(null, src);
+    }
+  );
+};
+
+
+function replaceSlashes(str) {
+  return str.replace(/\\+/g, '/').replace(/\/{2,}/g, '/');
+}
+
+/** path is the array of wildcards
+    pathCache is a dictionary of exact paths
+    binPath is where the output should go */
+exports.writeJsioPath = function(opts) {
+  var cwd = opts.cwd || jsio.__env.getCwd();
+  var _path = opts.path || [];
+  var pathCache = opts.pathCache || {};
+  var pathMap = opts.pathMap || null;
+  var binPath = opts.binPath;
+
+  // TODO: FINISH THIS FUNCTION
+  var util = jsio.__jsio.__util;
+
+  var cache = {};
+  Object.keys(pathCache).forEach(function (key) {
+    var pathCacheValue = pathCache[key];
+
+    var resultPath;
+    if (path.isAbsolute(pathCacheValue)) {
+      // Check for a path mapping
+      for (var p in pathMap) {
+        if (pathCacheValue.indexOf(p) === 0) {
+          resultPath = pathCacheValue.replace(p, pathMap[p]);
+          break;
+        }
+      }
+    }
+
+    if (!resultPath) {
+      resultPath = util.relative(cwd, pathCacheValue);
+    }
+
+    cache[key] = replaceSlashes(resultPath) || './';
+  });
+
+  var contents = 'jsio.path.set('
+      + JSON.stringify(_path.map(function (value) {
+          return replaceSlashes(util.relative(cwd, value));
+      })) + ');jsio.path.cache=' + JSON.stringify(cache) + ';';
+
+  var destPath = path.join(binPath, 'jsio_path.js');
+  return fileGenerator.dynamic(contents, destPath);
+}
+
 var DevKitJsioInterface = Class(EventEmitter, function () {
 
   this.init = function (bridge) {
@@ -233,6 +299,7 @@ var DevKitJsioInterface = Class(EventEmitter, function () {
     var tasks = [];
 
     // Write jsio_path.js
+    // TODO: use exports.writeJsioPath
     var destPath = path.join(binPath, 'jsio_path.js');
     var src = this._compiler.getCompiler().getPathJS();
     tasks.push(
@@ -240,19 +307,7 @@ var DevKitJsioInterface = Class(EventEmitter, function () {
     );
 
     // Write jsio.js
-    var srcPath = require.resolve('jsio');
-    var destPath = path.join(binPath, 'jsio.js');
-    tasks.push(fileGenerator(
-      srcPath,
-      destPath,
-      function(cb) {
-        var src = jsio.__jsio.__init__.toString(-1);
-        if (src.substring(0, 8) == 'function') {
-          src = 'jsio=(' + src + ')();';
-        }
-        cb(null, src);
-      }
-    ));
+    tasks.push(exports.writeJsioBin(binPath));
 
     return tasks;
   };
