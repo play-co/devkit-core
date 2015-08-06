@@ -4,36 +4,6 @@ function bootstrap(initialImport, target) {
 	var loc = w.location;
 	var q = loc.search + loc.hash;
 
-	// check to see if we need chrome frame
-	// if (target && (target=="desktop" || target=="facebook") && /MSIE/i.test(navigator.userAgent) && !d.createElement('canvas').getContext) {
-	// 	var chromeframe_url = 'chromeframe.html' + (loc.search ? loc.search + "&" : "?") + "target="+ target;
-	// 	bootstrap = function() {};
-	// 	try {
-	// 		var obj = new ActiveXObject('ChromeTab.ChromeFrame');
-	// 		if (!obj) {
-	// 			throw "bad object";
-	// 		}
-	// 		loc.replace(chromeframe_url);
-	// 	} catch(e) {
-	// 		w.onload = function() {
-	// 			var e = d.createElement('script');
-	// 			e.async = true;
-	// 		    e.src = "http://ajax.googleapis.com/ajax/libs/chrome-frame/1/CFInstall.min.js";
-	// 			e.onreadystatechange= function () {
-	// 				if (this.readyState == 'loaded') {
-	// 					CFInstall.check({
-	// 						mode: "overlay",
-	// 						oninstall: function() { loc.replace(chromeframe_url) },
-	// 						url: "http://www.google.com/chromeframe/eula.html?user=true"
-	// 					});
-	// 				}
-	// 			}
-	// 			d.getElementsByTagName('head')[0].appendChild(e);
-	// 		}
-	// 	}
-	// 	return;
-	// }
-
 	// for tracking when the page started loading
 	w.__initialTime = +new Date();
 
@@ -74,18 +44,6 @@ function bootstrap(initialImport, target) {
 	var ua = navigator.userAgent;
 	var mobile = (/(iPod|iPhone|iPad)/i.test(ua) ? 'ios' : /BlackBerry/.test(ua) ? 'blackberry' : /Mobile Safari/.test(ua) ? 'android' : '');
 	var isKik = /Kik\/\d/.test(ua);
-
-	// if (loc.search.match(/exportSettings=true/)) {
-	// 	// just export localStorage
-	// 	exportSettings();
-	// } else if (mobile != 'blackberry' && !w.CONFIG.noRedirect) {
-	// 	// redirect based on device
-	// 	if (mobile && target != 'browser-mobile') {
-	// 		return loc.replace('//' + loc.host + '/browser-mobile/' + loc.hash);
-	// 	} else if (!mobile && target == 'browser-mobile') {
-	// 		return loc.replace('//' + loc.host + '/browser-desktop/' + loc.hash);
-	// 	}
-	// }
 
 	// set the viewport
 	if (mobile == 'ios') {
@@ -134,11 +92,37 @@ function bootstrap(initialImport, target) {
 
 	var loaded = false;
 	w._continueLoad = function() {
-		if (!loaded) {
-			loaded = true;
-			var el = d.createElement('script');
-			el.src = target + '.js';
-			d.getElementsByTagName('head')[0].appendChild(el);
+		var loadTargetJS = function() {
+			if (!loaded) {
+				loaded = true;
+				// Include the game code
+				var el = d.createElement('script');
+				el.src = target + '.js';
+				d.getElementsByTagName('head')[0].appendChild(el);
+			}
+		};
+
+		var _continueLoadCallback;
+
+		w.addEventListener('message', function(event) {
+			if (event.data === 'partialLoadContinue') {
+				if (_continueLoadCallback) {
+					_continueLoadCallback();
+					_continueLoadCallback = undefined;
+				}
+			}
+		});
+		// Preload suggestions and then tell the parent bootstrapping is complete
+		jsio.__env.preloadModules(function() {
+			w.parent.postMessage('bootstrapping', '*');
+		});
+
+		var partialLoadKey = jsio.__env.getNamespace('partialLoad');
+		if (localStorage && localStorage.getItem(partialLoadKey)) {
+			localStorage.removeItem(partialLoadKey);
+			_continueLoadCallback = loadTargetJS;
+		} else {
+			loadTargetJS();
 		}
 	};
 
@@ -173,16 +157,6 @@ function bootstrap(initialImport, target) {
 
 	if (mobile && supportedOrientations) {
 		checkOrientation();
-		// if (!orientationOk) {
-		// 	var el = d.body.appendChild(d.createElement('div'));
-		// 	el.innerHTML = 'please rotate your phone<br><span style="font-size:200%">\u21bb</span>';
-		// 	var width = d.body.offsetWidth;
-		// 	el.style.cssText = 'opacity:0;z-index:9000;color:#FFF;background:rgba(40,40,40,0.8);border-radius:25px;text-align:center;padding:' + width / 10 + 'px;font-size:' + width / 20 + 'px;position:absolute;left:50%;width:' + width * 5 / 8 + 'px;margin-left:-' + width * 5 / 16 + 'px;margin-top:80px;pointer-events:none';
-		// 	w.addEventListener('resize', function () {
-		// 		checkOrientation();
-		// 		el.style.display = orientationOk ? 'none': 'block';
-		// 	});
-		// }
 	}
 
 	var appCache = window.applicationCache;
@@ -190,55 +164,14 @@ function bootstrap(initialImport, target) {
 		appCache.addEventListener(evt, handleCacheEvent, false);
 	});
 
-	// status 0 == UNCACHED
-	// if (appCache.status) {
-
-	// 	appCache.update(); // Attempt to update the user's cache.
-	// }
-
 	function handleCacheEvent(evt) {
 		if (evt.type == 'updateready') {
-			// var el = d.body.appendChild(d.createElement('div'));
-			// el.style.cssText = 'opacity:0;position:absolute;z-index:9900000;top:-20px;margin:0px auto'
-			// 	+ 'height:20px;width:200px;'
-			// 	+ '-webkit-border-radius:0px 0px 5px 5px;'
-			// 	+ '-webkit-transition:all 0.7s ease-in-out;'
-			// 	+ '-webkit-transform:scale(' + w.devicePixelRatio + ');'
-			// 	+ '-webkit-transform-origin:50% 0%;'
-			// 	+ '-webkit-box-shadow:0px 2px 3px rgba(0, 0, 0, 0.4);'
-			// 	+ 'background:rgba(0,0,0,0.7);color:#FFF;'
-			// 	+ 'padding:10px 15px;'
-			// 	+ 'font-size: 15px;';
-			// 	+ 'text-align: center;';
-			// 	+ 'cursor:pointer;';
-
-			// if (CONFIG.embeddedFonts && CONFIG.embeddedFonts.length) {
-			// 	el.style.fontFamily = CONFIG.embeddedFonts[0];
-			// }
-
-			// el.innerText = 'game updated! tap here';
-			// el.style.left = (d.body.offsetWidth - 200) / 2 + 'px';
-
-			// el.setAttribute('noCapture', true); // prevent DevKit from stopping clicks on this event
-			// el.addEventListener('click', reload, true);
-			// el.addEventListener('touchstart', reload, true);
-
-			// setTimeout(function () {
-			// 	el.style.top='0px';
-			// 	el.style.opacity='1';
-			// }, 0);
-
-			// setTimeout(function () {
-			// 	el.style.top='-20px';
-			// 	el.style.opacity='0';
-			// }, 30000);
 			console.log("update ready");
 
 			// reload immediately if splash is still visible
 			var splash = d.getElementById('_GCSplash');
 			if (splash && splash.parentNode) {
 				try { appCache.swapCache(); } catch (e) {}
-				//location.reload();
 			}
 		}
 	}
@@ -284,6 +217,6 @@ function bootstrap(initialImport, target) {
 				if (h > min) { increased = true; }
 				min = h;
 			// }
-		}, 50);
+		}, 20);
 	}
 }

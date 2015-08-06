@@ -10,6 +10,3 @@
 [submodule "modules/squill"]
 	path = modules/squill
 	url = https://github.com/gameclosure/squill
-[submodule "node_modules/jsio"]
-	path = node_modules/jsio
-	url = https://github.com/gameclosure/js.io

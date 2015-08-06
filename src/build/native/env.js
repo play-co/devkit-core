@@ -602,6 +602,27 @@ var JSIO_ENV_CTOR = function() {
 	this.getPath = function() { return './sdk/jsio/'; };
 	this.eval = function(code, path) { return NATIVE.eval(code, path); };
 	this.fetch = function(filePath) { return false; }
+
+  this.getNamespace = function(key) { return CONFIG.shortName + ':' + key };
+  this.hasFetchFailed = function() { return false; };
+  this.setFetchFailed = function() {};
+  this.registerFoundModule = function() {};
+  this.preloadModules = function(cb) { cb(); };
+
+  var srcCache;
+  this.setCache = function(cache) { srcCache = cache; };
+
+  this.setCachedSrc = function(path, src, locked) {
+    if (srcCache[path] && srcCache[path].locked) {
+      console.warn('Cache is ignoring (already present and locked) src ' + path);
+      return;
+    }
+    srcCache[path] = { path: path, src: src, locked: locked };
+  };
+  this.getCachedSrc = function(path) {
+    return srcCache[path];
+  };
+
 };
 
 NATIVE.console.log(NATIVE.location);

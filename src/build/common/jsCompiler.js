@@ -1,16 +1,14 @@
 var path = require('path');
-var fs = require('fs');
+var fs = require('fs-extra');
 var crypto = require('crypto');
 
 var argv = require('optimist').argv;
-var mkdirp = require('mkdirp');
 var EventEmitter = require('events').EventEmitter;
-var color = require('cli-color');
 
 // clone to modify the path for this jsio but not any others
-var jsio = require('jsio').clone();
+var jsio = require('jsio').clone(); // ~10ms
 
-var uglify = require('uglify-js');
+var fileGenerator = require('./fileGenerator');
 
 function deepCopy(obj) { return obj && JSON.parse(JSON.stringify(obj)); }
 
@@ -65,6 +63,7 @@ exports.JSCompiler = Class(function () {
 
     var jsioOpts = {
       cwd: opts.cwd || appPath,
+      outputPath: opts.outputPath,
       environment: opts.env,
       path: [require('jsio').__env.getPath(), '.', 'lib'].concat(this._path),
       includeJsio: 'includeJsio' in opts ? opts.includeJsio : true,
@@ -76,7 +75,9 @@ exports.JSCompiler = Class(function () {
       printOutput: opts.printJSIOCompileOutput,
       gcManifest: path.join(appPath, 'manifest.json'),
       gcDebug: opts.debug,
-      preprocessors: ['cls', 'logger']
+      preprocessors: ['cls', 'logger'],
+
+      noCompile: opts.noCompile
     };
 
     if (opts.compress) {
@@ -124,20 +125,18 @@ exports.JSCompiler = Class(function () {
     // start the compile by passing something equivalent to argv (first argument is
     // ignored, but traditionally should be the name of the executable?)
 
-    mkdirp(jsCachePath, function () {
+    // Compile the game code
+    fs.mkdirp(jsCachePath, function () {
       compiler.start(['jsio_compile', jsioOpts.cwd || '.', importStatement], jsioOpts);
     });
   };
 
-   /**
-    * use the class opts to compress source code directly
-    */
-
-  this.strip = function (src, cb) {
-    exports.strip(src, this.opts, cb);
-  };
-
+  /**
+   * use the class opts to compress source code directly
+   */
   this.compress = function (filename, src, opts, cb) {
+    // Import here because it takes a while, ~70ms
+    var color = require('cli-color');
 
     var closureOpts = [
       '--compilation_level', 'SIMPLE_OPTIMIZATIONS',
@@ -194,6 +193,8 @@ exports.JSCompiler = Class(function () {
     }
 
     try {
+      // Import here because it takes a while, ~70ms
+      var uglify = require('uglify-js');
       var result = uglify.minify(src, {
         fromString: true,
         global_defs: defines
@@ -205,6 +206,116 @@ exports.JSCompiler = Class(function () {
     }
   };
 });
+
+/**
+ * @param  {String}  binPath Where jsio.js should be written to
+ * @return {Promise} FileGenerator promise
+ */
+exports.writeJsioBin = function(binPath) {
+  var srcPath = require.resolve('jsio');
+  var destPath = path.join(binPath, 'jsio.js');
+  return fileGenerator(
+    srcPath,
+    destPath,
+    function(cb) {
+      var src = jsio.__jsio.__init__.toString(-1);
+      if (src.substring(0, 8) == 'function') {
+        src = 'jsio=(' + src + ')();';
+      }
+      cb(null, src);
+    }
+  );
+};
+
+
+function replaceSlashes(str) {
+  return str.replace(/\\+/g, '/').replace(/\/{2,}/g, '/');
+}
+
+/**
+ * @param  {Object} app
+ * @param  {Object} config
+ * @return {Object} object with path and pathCache variables
+ */
+exports.getPathAndCache = function(app, config) {
+  var jsioPath = jsio.__env.getPath();
+  var _path = [];
+  var _pathCache = {
+    jsio: jsioPath
+  };
+  var addClientPaths = function (clientPaths) {
+    for (var key in clientPaths) {
+      if (key !== '*') {
+        _pathCache[key] = clientPaths[key];
+      } else {
+        _path.push.apply(_path, clientPaths['*']);
+      }
+    }
+  };
+  if (config && config.clientPaths) {
+    addClientPaths(config.clientPaths);
+  }
+
+  if (app && app.clientPaths) {
+    addClientPaths(app.clientPaths);
+  }
+
+  return {
+    path: _path,
+    pathCache: _pathCache
+  };
+};
+
+/**
+ * @param  {Object}   opts
+ * @param  {String}   [opts.cwd]
+ * @param  {String[]} [path] The array of wildcards
+ * @param  {Object}   [pathCache] A dictionary of exact paths
+ * @param  {String}   binPath Where the output should go
+ * @param  {Object}   [pathMap] Map pathCache results somewhere else
+ * @return {Promise}  FileGenerator promise
+ */
+exports.writeJsioPath = function(opts) {
+  var cwd = opts.cwd || jsio.__env.getCwd();
+  var _path = opts.path || [];
+  var pathCache = opts.pathCache || {};
+  var pathMap = opts.pathMap || null;
+  var binPath = opts.binPath;
+
+  var util = jsio.__jsio.__util;
+
+  _path = [jsio.__env.getPath(), '.', 'lib'].concat(_path);
+
+  var cache = {};
+  Object.keys(pathCache).forEach(function (key) {
+    var pathCacheValue = pathCache[key];
+
+    var resultPath;
+    if (path.isAbsolute(pathCacheValue)) {
+      // Check for a path mapping
+      for (var p in pathMap) {
+        if (pathCacheValue.indexOf(p) === 0) {
+          resultPath = pathCacheValue.replace(p, pathMap[p]);
+          break;
+        }
+      }
+    }
+
+    if (!resultPath) {
+      resultPath = util.relative(cwd, pathCacheValue);
+    }
+
+    cache[key] = replaceSlashes(resultPath) || './';
+  });
+
+  var contents = 'jsio.path.set('
+      + JSON.stringify(_path.map(function (value) {
+          return replaceSlashes(util.relative(cwd, value));
+      })) + ');jsio.path.cache=' + JSON.stringify(cache) + ';';
+
+  var destPath = path.join(binPath, 'jsio_path.js');
+  return fileGenerator.dynamic(contents, destPath);
+}
 
 var DevKitJsioInterface = Class(EventEmitter, function () {
 
@@ -227,8 +338,32 @@ var DevKitJsioInterface = Class(EventEmitter, function () {
     this.emit('error', e);
   };
 
-  this.onFinish = function (opts, src) {
-    this.emit('code', src);
+  this.onFinish = function (opts, src, table) {
+    var binPath = path.join(opts.outputPath, 'bin');
+    var tasks = [];
+
+    if (opts.individualCompile) {
+      var keys = Object.keys(table);
+      logger.info('Writing individual compile files: ' + keys.length);
+
+      keys.forEach(function(key) {
+        var srcFname = path.join(opts.cwd, key);
+        var fname = path.join(binPath, key.replace(/\//g, '.'));
+        tasks.push(fileGenerator(
+          srcFname,
+          fname,
+          function(cb) {
+            cb(JSON.stringify(table[key]));
+          }
+        ));
+      });
+    }
+
+    Promise.all(tasks)
+      .bind(this)
+      .then(function() {
+        this.emit('code', src);
+      });
   };
 
   /**

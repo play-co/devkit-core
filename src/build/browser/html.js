@@ -1,11 +1,11 @@
 var path = require('path');
 var fs = require('fs');
-var stylus = require('stylus');
-var nib = require('nib');
 var printf = require('printf');
 
 var JSCompiler = require('../common/jsCompiler').JSCompiler;
 var getBase64Image = require('./datauri').getBase64Image;
+
+var fileGenerator = require('../common/fileGenerator');
 
 var TARGET_APPLE_TOUCH_ICON_SIZE = 152;
 
@@ -76,14 +76,64 @@ exports.IndexHTML = Class(function () {
   };
 });
 
+var renderStylus = function(cssString, shouldCompress) {
+  // Only import if used, otherwise it takes forever
+  var stylus = require('stylus');
+  var nib = require('nib');
+
+  // process the stylus into css
+  var stylusRenderer = stylus(cssString)
+    .set('compress', shouldCompress)
+    .use(nib());
+  return stylusRenderer.render();
+};
+
 exports.GameHTML = Class(function () {
-  this.init = function () {
+  this.init = function (config) {
     this._css = [];
     this._js = [];
+
+    this._config = config;
+    this._binPath = path.join(config.outputPath, 'bin', 'html');
   };
 
-  this.addCSS = function (css) { this._css.push(css); };
-  this.addJS = function (js) { this._js.push(js); };
+  /**
+   * @param {string} css Path to some stylus file
+   */
+  // TODO: Actually should be "addStylus"
+  this.addCSS = function (name, css) {
+    var dest = path.join(this._binPath, 'css', name.replace(/\//g, '_'));
+    var shouldCompress = this._config.compress;
+
+    this._css.push(fileGenerator.dynamic(
+      css,
+      dest,
+      function(cb) {
+        cb(null, renderStylus(css, shouldCompress));
+      }
+    ));
+  };
+
+  this.addCSSFile = function(cssPath) {
+    var dest = path.join(this._binPath, 'css', cssPath.replace(/\//g, '_'));
+    var shouldCompress = this._config.compress;
+
+    this._css.push(fileGenerator(
+      cssPath,
+      dest,
+      function(cb) {
+        fs.readFile(cssPath, 'utf8', function(err, cssSrc) {
+          if (err) { reject(err); return; }
+
+          cb(null, renderStylus(cssSrc, shouldCompress));
+        });
+      }
+    ));
+  };
+
+  this.addJS = function (js) {
+    this._js.push(js);
+  };
 
   // return smallest icon size larger than targetSize or the largest icon if
   // none are larger than targetSize
@@ -126,16 +176,16 @@ exports.GameHTML = Class(function () {
   this.generate = function (api, app, config) {
     var logger = api.logging.get('build-html');
 
-    var css = this._css.join('\n');
+    var theCss = Promise.reduce(this._css, function(total, src) {
+      return total += src + '\n';
+    }, '');
+
     var js = this._js.join(';');
-    var stylusRenderer = stylus(css)
-          .set('compress', config.compress)
-          .use(nib());
     var jsCompiler = new JSCompiler(api, app);
-    var renderCSS = Promise.promisify(stylusRenderer.render, stylusRenderer);
     var compileJS = Promise.promisify(jsCompiler.compress, jsCompiler);
+
     return Promise.all([
-        renderCSS(),
+        theCss,
         config.compress
           ? compileJS('[bootstrap]', js, {showWarnings: false})
           : js

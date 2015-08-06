@@ -14,15 +14,6 @@
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
 var path = require('path');
-var printf = require('printf');
-var fs = require('graceful-fs');
-var File = require('vinyl');
-var vfs = require('vinyl-fs');
-// var newer = require('gulp-newer');
-var slash = require('slash');
-var streamFromArray = require('stream-from-array');
-
-var readFile = Promise.promisify(fs.readFile);
 
 var logger;
 var INITIAL_IMPORT = 'devkit.browser.launchClient';
@@ -53,6 +44,19 @@ exports.configure = function (api, app, config, cb) {
 };
 
 exports.build = function (api, app, config, cb) {
+
+  var printf = require('printf');
+  var fs = require('graceful-fs');
+  var File = require('vinyl');
+  var vfs = require('vinyl-fs');
+  // var newer = require('gulp-newer');
+  var slash = require('slash');
+  var streamFromArray = require('stream-from-array');
+  var fileGenerator = require('../common/fileGenerator');
+  var glob = require('glob');
+
+  var readFile = Promise.promisify(fs.readFile);
+
   logger = api.logging.get('build-browser');
 
   var isMobile = (config.target !== 'browser-desktop');
@@ -60,24 +64,32 @@ exports.build = function (api, app, config, cb) {
   var resources = require('../common/resources');
   var CSSFontList = require('./fonts').CSSFontList;
   var JSConfig = require('../common/jsConfig').JSConfig;
-  var JSCompiler = require('../common/jsCompiler').JSCompiler;
+  var JSCompiler = require('../common/jsCompiler');
 
-  var sprite = require('../common/spriter')
-                            .sprite
-                            .bind(null, api, app, config);
+  var sprite = null;
+  if (config.spriteImages && !config.isSimulated) {
+    sprite = require('../common/spriter')
+                .sprite
+                .bind(null, api, app, config);
+  } else {
+    sprite = require('../common/spritesheetMapGenerator')
+                .sprite
+                .bind(null, api, app, config);
+  }
 
   var html = require('./html');
-  var gameHTML = new html.GameHTML();
+  var gameHTML = new html.GameHTML(config);
   var fontList = new CSSFontList();
   var jsConfig = new JSConfig(api, app, config);
-  var jsCompiler = new JSCompiler(api, app, config, jsConfig);
+  var jsCompiler = new JSCompiler.JSCompiler(api, app, config, jsConfig);
 
   var compileJS = Promise.promisify(jsCompiler.compile, jsCompiler);
 
   function getPreloadJS() {
-    // get preload JS
     if (/^native/.test(config.target)) {
-      return Promise.resolve('jsio=function(){window._continueLoad()}');
+      var preloadSrc = '(window.jsio) ? (window._continueLoad()) : (jsio=function(){window._continueLoad()})';
+
+      return Promise.resolve(preloadSrc);
     }
 
     var isLiveEdit = (config.target === 'live-edit');
@@ -100,36 +112,38 @@ exports.build = function (api, app, config, cb) {
       };
     }
 
-    return compileJS({
+    var compileOpts = {
       initialImport: 'devkit.browser.bootstrap.launchBrowser',
       appendImport: false,
       preCompress: config.preCompressCallback
-    });
+    };
+    return compileJS(compileOpts);
   }
 
   var baseDirectory = config.outputResourcePath;
 
   resources.getDirectories(api, app, config)
     .then(function (directories) {
-      return [
-          resources.getFiles(baseDirectory, directories),
+      var compileOpts = {
+        env: 'browser',
+        initialImport: [INITIAL_IMPORT].concat(config.imports).join(', '),
+        appendImport: false,
+        includeJsio: !config.excludeJsio,
+        debug: config.scheme === 'debug',
+        preCompress: config.preCompressCallback
+      };
+
+      return Promise.all([
+          config.isSimulated ? resources.getFiles(baseDirectory, directories) : [],
           readFile(getLocalFilePath('../../clientapi/browser/cache-worker.js'), 'utf8'),
-          getPreloadJS(),
-          readFile(STATIC_BOOTSTRAP_CSS, 'utf8'),
+          config.isSimulated ? '' : getPreloadJS(),
           readFile(STATIC_BOOTSTRAP_JS, 'utf8'),
           isLiveEdit && readFile(STATIC_LIVE_EDIT_JS, 'utf8'),
           config.spritesheets || config.spriteImages !== false && sprite(directories),
-          compileJS({
-            env: 'browser',
-            initialImport: [INITIAL_IMPORT].concat(config.imports).join(', '),
-            appendImport: false,
-            includeJsio: !config.excludeJsio,
-            debug: config.scheme === 'debug',
-            preCompress: config.preCompressCallback
-          })
-        ];
+          config.isSimulated ? '' : compileJS(compileOpts)
+        ]);
     })
-    .spread(function (files, cacheWorkerJS, preloadJS, bootstrapCSS, bootstrapJS,
+    .spread(function (files, cacheWorkerJS, preloadJS, bootstrapJS,
                       liveEditJS, spriterResult, jsSrc) {
       logger.log('Creating HTML and JavaScript...');
 
@@ -150,18 +164,22 @@ exports.build = function (api, app, config, cb) {
 
       var tasks = [];
 
-      // We need to generate a couple different files if this is going to be a
-      gameHTML.addCSS(bootstrapCSS);
-      gameHTML.addCSS(fontList.getCSS({
+      // ----- ----- GENERATE CSS ----- ----- //
+
+      gameHTML.addCSSFile(STATIC_BOOTSTRAP_CSS);
+
+      gameHTML.addCSS('fontList', fontList.getCSS({
         embedFonts: config.browser.embedFonts,
         formats: require('./fonts').getFormatsForTarget(config.target)
       }));
 
       if (config.browser.canvas.css) {
-        gameHTML.addCSS('#timestep_onscreen_canvas{'
+        gameHTML.addCSS('canvas', '#timestep_onscreen_canvas{'
                       + config.browser.canvas.css
                       + '}');
       }
+
+      // ----- ----- GENERATE JS ----- ----- //
 
       gameHTML.addJS(jsConfig.toString());
       gameHTML.addJS(bootstrapJS);
@@ -173,21 +191,59 @@ exports.build = function (api, app, config, cb) {
 
       liveEditJS && gameHTML.addJS(liveEditJS);
 
+      // ----- ----- //
+
       var hasWebAppManifest = !!config.browser.webAppManifest;
       if (hasWebAppManifest) {
         config.browser.headHTML.push('<link rel="manifest" href="web-app-manifest.json">');
       }
 
+      if (config.isSimulated) {
+        // Write the jsio.js and jsio_path.js files
+        var binPath = path.join(config.outputPath, 'bin');
+        tasks.push(
+          JSCompiler.writeJsioBin(binPath)
+        );
+
+        var pathAndCache = JSCompiler.getPathAndCache(app, config);
+        // Walk module dirs and add to the path cache (for fewer client side 404's)
+        pathAndCache.path.forEach(function(modulePath) {
+          // Note: We could probably just look for folders 1 level deep
+          var files = glob.sync(path.join(app.paths.root, modulePath, '**/*.js'));
+          files.forEach(function(filePath) {
+            var key = path.relative(path.join(app.paths.root, modulePath), filePath);
+            key = key.replace(/^\/|\.js$/g, ''); // replace leading slash and trailing .js
+            key = key.split('/', 1)[0]; // Get the top level
+
+            if (!pathAndCache.pathCache[key]) {
+              pathAndCache.pathCache[key] = path.join(modulePath, key);
+            }
+          });
+        });
+        // TODO: THE PATH MAP SHOULD PROBABLY COME IN ON THE API OBJECT
+        var _pathMap = {};
+        _pathMap[api.paths.devkit] = '/devkit';
+        tasks.push(
+          JSCompiler.writeJsioPath({
+            cwd: app.paths.root,
+            path: pathAndCache.path,
+            pathCache: pathAndCache.pathCache,
+            pathMap: _pathMap,
+            binPath: binPath
+          })
+        );
+
+        config.browser.headHTML.push('<script src="bin/jsio.js"></script>');
+        config.browser.headHTML.push('<script src="bin/jsio_path.js"></script>');
+      }
+
       var hasIndexPage = !isMobile;
       tasks.push(gameHTML.generate(api, app, config)
         .then(function (html) {
-          files.push(new File({
-            base: baseDirectory,
-            path: path.join(baseDirectory, hasIndexPage
+          var destPath = path.join(baseDirectory, hasIndexPage
                                                  ? 'game.html'
-                                                 : 'index.html'),
-            contents: new Buffer(html)
-          }));
+                                                 : 'index.html')
+          return fileGenerator.dynamic(html, destPath);
         }));
 
       if (hasIndexPage) {
@@ -212,15 +268,6 @@ exports.build = function (api, app, config, cb) {
             .filter(addToInlineCache);
         })
         .then(function (files) {
-          files.push(new File({
-              base: baseDirectory,
-              path: path.join(baseDirectory, config.target + '.js'),
-              contents: new Buffer('NATIVE=false;'
-                + 'CACHE=' + JSON.stringify(inlineCache) + ';\n'
-                + jsSrc + ';'
-                + 'jsio("import ' + INITIAL_IMPORT + '");')
-            }));
-
           files.forEach(function (file) {
             if (file.history.length > 1) {
               sourceMap[slash(file.relative)] = file.history[0];
@@ -311,22 +358,24 @@ exports.build = function (api, app, config, cb) {
             files.push(f);
           });
 
-          return {
-            files: files,
-            spritesheets: spriterResult
-          };
+          // https://github.com/petkaantonov/bluebird/issues/332
+          logger.log('Writing ' + files.length + ' files...');
+          return new Promise(function (resolve, reject) {
+            streamFromArray.obj(files)
+              // .pipe(newer(baseDirectory))
+              .pipe(vfs.dest(baseDirectory))
+              .on('end', resolve)
+              .on('error', reject);
+          });
+        })
+        .then(function() {
+          var src = 'NATIVE=false;' +
+            'CACHE=' + JSON.stringify(inlineCache) + ';\n' +
+            jsSrc + ';' +
+            'jsio("import ' + INITIAL_IMPORT + '");';
+          var destPath = path.join(baseDirectory, config.target + '.js');
+          return fileGenerator.dynamic(src, destPath);
         });
-    })
-    .tap(function (buildResult) {
-      // https://github.com/petkaantonov/bluebird/issues/332
-      logger.log('Writing files...');
-      return new Promise(function (resolve, reject) {
-        streamFromArray.obj(buildResult.files)
-          // .pipe(newer(baseDirectory))
-          .pipe(vfs.dest(baseDirectory))
-          .on('end', resolve)
-          .on('error', reject);
-      });
     })
     .nodeify(cb);
 };
