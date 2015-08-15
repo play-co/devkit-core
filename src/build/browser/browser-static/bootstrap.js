@@ -6,6 +6,9 @@ function bootstrap(initialImport, target) {
 	// for tracking when the page started loading
 	w.__initialTime = +new Date();
 
+	// mobile safari resets device pixel ratio when we mess with the viewport
+	w.originalDevicePixelRatio = w.devicePixelRatio || 1;
+
 	try {
 		// override any config params provided already
 		if (w.CONFIG_OVERRIDES) {
