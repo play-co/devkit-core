@@ -2,37 +2,6 @@ function bootstrap(initialImport, target) {
 	var w = window;
 	var d = document;
 	var loc = w.location;
-	var q = loc.search + loc.hash;
-
-	// check to see if we need chrome frame
-	// if (target && (target=="desktop" || target=="facebook") && /MSIE/i.test(navigator.userAgent) && !d.createElement('canvas').getContext) {
-	// 	var chromeframe_url = 'chromeframe.html' + (loc.search ? loc.search + "&" : "?") + "target="+ target;
-	// 	bootstrap = function() {};
-	// 	try {
-	// 		var obj = new ActiveXObject('ChromeTab.ChromeFrame');
-	// 		if (!obj) {
-	// 			throw "bad object";
-	// 		}
-	// 		loc.replace(chromeframe_url);
-	// 	} catch(e) {
-	// 		w.onload = function() {
-	// 			var e = d.createElement('script');
-	// 			e.async = true;
-	// 		    e.src = "http://ajax.googleapis.com/ajax/libs/chrome-frame/1/CFInstall.min.js";
-	// 			e.onreadystatechange= function () {
-	// 				if (this.readyState == 'loaded') {
-	// 					CFInstall.check({
-	// 						mode: "overlay",
-	// 						oninstall: function() { loc.replace(chromeframe_url) },
-	// 						url: "http://www.google.com/chromeframe/eula.html?user=true"
-	// 					});
-	// 				}
-	// 			}
-	// 			d.getElementsByTagName('head')[0].appendChild(e);
-	// 		}
-	// 	}
-	// 	return;
-	// }
 
 	// for tracking when the page started loading
 	w.__initialTime = +new Date();
@@ -74,18 +43,6 @@ function bootstrap(initialImport, target) {
 	var ua = navigator.userAgent;
 	var mobile = (/(iPod|iPhone|iPad)/i.test(ua) ? 'ios' : /BlackBerry/.test(ua) ? 'blackberry' : /Mobile Safari/.test(ua) ? 'android' : '');
 	var isKik = /Kik\/\d/.test(ua);
-
-	// if (loc.search.match(/exportSettings=true/)) {
-	// 	// just export localStorage
-	// 	exportSettings();
-	// } else if (mobile != 'blackberry' && !w.CONFIG.noRedirect) {
-	// 	// redirect based on device
-	// 	if (mobile && target != 'browser-mobile') {
-	// 		return loc.replace('//' + loc.host + '/browser-mobile/' + loc.hash);
-	// 	} else if (!mobile && target == 'browser-mobile') {
-	// 		return loc.replace('//' + loc.host + '/browser-desktop/' + loc.hash);
-	// 	}
-	// }
 
 	// set the viewport
 	if (mobile == 'ios') {
