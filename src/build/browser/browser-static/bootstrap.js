@@ -35,14 +35,7 @@ function bootstrap(initialImport, target) {
 		d.write('<base href="' + w.CONFIG.CDNURL + '">');
 	}
 
-	// figure out the dpr
-	if (w.CONFIG.scaleDPR === false) {
-		var scale = 1;
-	} else {
-		var scale = (1 / (w.devicePixelRatio || 1));
-	}
-
-	// figure out the device type
+	var scale = w.CONFIG.scaleDPR === false ? 1 : 1 / w.originalDevicePixelRatio;
 	var ua = navigator.userAgent;
 	var mobile = (/(iPod|iPhone|iPad)/i.test(ua) ? 'ios' : /BlackBerry/.test(ua) ? 'blackberry' : /Mobile Safari/.test(ua) ? 'android' : '');
 	var isKik = /Kik\/\d/.test(ua);
@@ -87,7 +80,7 @@ function bootstrap(initialImport, target) {
 		}
 
 		d.body.offsetHeight;
-	}
+	};
 
 	hideAddressBar();
 	var min = w.innerHeight;
