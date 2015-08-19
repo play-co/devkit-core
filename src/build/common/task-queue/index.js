@@ -9,8 +9,14 @@ exports.DEFAULT_NUM_WORKERS = DEFAULT_NUM_WORKERS;
 exports.DEFAULT_TASKS_PER_WORKER = DEFAULT_TASKS_PER_WORKER;
 
 function TaskQueue(numWorkers, tasksPerWorker) {
-  this._maxWorkers = numWorkers || DEFAULT_NUM_WORKERS;
-  this._tasksPerWorker = tasksPerWorker || DEFAULT_TASKS_PER_WORKER;
+  if (numWorkers === 0) {
+    this._isLocal = true;
+    this._maxWorkers = 0;
+    this._tasksPerWorker = 0;
+  } else {
+    this._maxWorkers = numWorkers || DEFAULT_NUM_WORKERS;
+    this._tasksPerWorker = tasksPerWorker || DEFAULT_TASKS_PER_WORKER;
+  }
 
   this._eventId = 0;
   this._callbacks = {};
@@ -20,12 +26,20 @@ function TaskQueue(numWorkers, tasksPerWorker) {
   this._workerScript = path.join(__dirname, 'worker');
 }
 
+TaskQueue.prototype.shutdown = function () {
+  this._workers.forEach(function (worker) {
+    worker.child.disconnect();
+  });
+  this._workers = [];
+};
+
 TaskQueue.prototype._createWorker = function () {
   var child = fork(this._workerScript);
   var worker = {
     tasks: 0,
     child: child
   };
+
   child.on('message', this._onMessage.bind(this, worker));
   this._workers.push(worker);
   return worker;
@@ -51,6 +65,10 @@ TaskQueue.prototype._onMessage = function (worker, message) {
 };
 
 TaskQueue.prototype.run = function (task, opts) {
+  if (this._isLocal) {
+    return require(task).run(opts);
+  }
+
   var id = this._eventId++;
   var callbacks = this._callbacks;
 

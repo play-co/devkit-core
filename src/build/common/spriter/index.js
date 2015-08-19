@@ -115,6 +115,7 @@ var DevKitSpriter = Class(function () {
           });
       })
       .then(function () {
+        this._taskQueue.shutdown();
         addFile('spritesheets/map-v2.json', JSON.stringify(sheets));
         addFile('spritesheets/spritesheetSizeMap.json', JSON.stringify(sizes));
       })
