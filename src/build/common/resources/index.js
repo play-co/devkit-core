@@ -6,6 +6,11 @@ var through2 = require('through2');
 var File = require('vinyl');
 var glob = Promise.promisify(require('glob'));
 
+// utility function to replace any windows path separators for paths that
+// will be used for URLs
+var regexSlash = /\\/g;
+function useURISlashes (str) { return str.replace(regexSlash, '/'); }
+
 // vinyl-fs reads all files as buffers or streams. Many files we don't actually
 // end up copying, so we want to be somewhat lazy about them. The StreamFile
 // class generates the content stream only on first use, which also helps
@@ -58,7 +63,7 @@ exports.createFileStream = function (api, app, config, outputDirectory) {
           });
 
           file.originalRelativePath = filename;
-          file.targetRelativePath = path.join(directory.target, file.originalRelativePath);
+          file.targetRelativePath = useURISlashes(path.join(directory.target, file.originalRelativePath));
           file.base = outputDirectory;
           file.path = path.join(outputDirectory, file.targetRelativePath);
 
