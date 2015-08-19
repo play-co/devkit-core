@@ -15,12 +15,24 @@
  */
 var path = require('path');
 var printf = require('printf');
+
 var fs = require('graceful-fs');
+fs.gracefulify(require('fs'));
+
 var File = require('vinyl');
 var vfs = require('vinyl-fs');
-// var newer = require('gulp-newer');
+
+var fonts = require('./fonts');
+var JSConfig = require('../common/jsConfig').JSConfig;
+var buildStreamAPI = require('../common/build-stream-api');
+var offlineManifest = require('./offlineManifest');
+var resources = require('../common/resources');
+var JSCompiler = require('../common/jsCompiler').JSCompiler;
+var cacheWorker = require('./cacheWorker');
+var webAppManifest = require('./webAppManifest');
+var devkitSpriter = require('../common/spriter');
+
 var slash = require('slash');
-var streamFromArray = require('stream-from-array');
 
 var readFile = Promise.promisify(fs.readFile);
 
@@ -52,105 +64,183 @@ exports.configure = function (api, app, config, cb) {
   return Promise.resolve().nodeify(cb);
 };
 
+function createSourceMap(api, filename) {
+  var sourceMap = {};
+  return api.createFilterStream(function (file) {
+    if (file.history.length > 1) {
+      sourceMap[slash(file.relative)] = file.history[0];
+    }
+  }, function (addFile, cb) {
+    addFile(filename, JSON.stringify(sourceMap));
+    cb();
+  });
+}
+
 exports.build = function (api, app, config, cb) {
   logger = api.logging.get('build-browser');
+  var outputDirectory = config.outputResourcePath;
+  buildStreamAPI.addToAPI(api, outputDirectory);
 
-  var isMobile = (config.target !== 'browser-desktop');
-  var isLiveEdit = (config.target === 'live-edit');
-  var resources = require('../common/resources');
-  var CSSFontList = require('./fonts').CSSFontList;
-  var JSConfig = require('../common/jsConfig').JSConfig;
-  var JSCompiler = require('../common/jsCompiler').JSCompiler;
-
-  var sprite = require('../common/spriter')
-                            .sprite
-                            .bind(null, api, app, config);
-
-  var html = require('./html');
-  var gameHTML = new html.GameHTML();
-  var fontList = new CSSFontList();
+  var spriter = devkitSpriter.sprite(api, path.join(outputDirectory, 'spritesheets'));
+  var fontList = fonts.create(api);
   var jsConfig = new JSConfig(api, app, config);
   var jsCompiler = new JSCompiler(api, app, config, jsConfig);
-
   var compileJS = Promise.promisify(jsCompiler.compile, jsCompiler);
 
-  function getPreloadJS() {
-    // get preload JS
-    if (/^native/.test(config.target)) {
-      return Promise.resolve('jsio=function(){window._continueLoad()}');
+  var inlineCache = require('../common/inlineCache').create(logger);
+  var compileAppJS = compileJS({
+        env: 'browser',
+        initialImport: [INITIAL_IMPORT].concat(config.imports).join(', '),
+        appendImport: false,
+        includeJsio: !config.excludeJsio,
+        debug: config.scheme === 'debug',
+        preCompress: config.preCompressCallback
+      });
+
+  function getAppJS(addFile, cb) {
+    // insertFilesStream defers this call until the end of the stream, so
+    // inlineCache will be fully populated. Still need to wait on the compiler.
+    compileAppJS
+      .then(function (jsSrc) {
+        addFile(config.target + '.js', 'NATIVE=false;'
+            + 'CACHE=' + JSON.stringify(inlineCache) + ';\n'
+            + jsSrc + ';'
+            + 'jsio("import ' + INITIAL_IMPORT + '");');
+        cb();
+      });
+  }
+
+  var stream = resources.createFileStream(api, app, config, outputDirectory)
+    .pipe(createSourceMap(api, 'resource_source_map.json'))
+    .pipe(spriter)
+    .pipe(fontList)
+    .pipe(inlineCache)
+    .pipe(generateHTML(api, app, config, compileJS, fontList, jsConfig))
+    .pipe(offlineManifest.create(api, app, config, config.target + '.manifest'))
+    .pipe(api.insertFilesStream([
+        cacheWorker.generate(config),
+        webAppManifest.create(api, app, config),
+        getAppJS
+      ]
+      .concat(copyFiles(config, outputDirectory))
+      .concat(getBrowserIcons(app, outputDirectory))))
+    .pipe(api.createFilterStream(function (file) {
+      console.log('writing', file.path);
+    }))
+    .pipe(vfs.dest(outputDirectory));
+
+  // https://github.com/petkaantonov/bluebird/issues/332
+  return new Promise(function (resolve, reject) {
+      stream.on('end', resolve).on('error', reject);
+    })
+    .nodeify(cb);
+};
+
+/**
+ * get extra resources for copying
+ *
+ * @returns {File[]} the files specified in an app's manifest for copying
+ */
+function copyFiles(config, outputDirectory) {
+  return config.browser.copy && config.browser.copy.map(function (resource) {
+
+    var filePath = path.resolve(config.appPath, resource);
+    var base;
+    var relativePath = path.relative(filePath, config.appPath);
+    if (/^\.\./.test(relativePath)) {
+      base = path.dirname(filePath);
+      relativePath = path.basename(filePath);
+    } else {
+      base = config.appPath;
     }
 
-    var isLiveEdit = (config.target === 'live-edit');
-    if (isLiveEdit && !config.preCompressCallback) {
-      config.preCompressCallback = function(sourceTable) {
-        for (var fullPath in sourceTable) {
-          var fileValues = sourceTable[fullPath];
-          if (fileValues.friendlyPath === 'ui.resource.Image') {
-            logger.log('Patching ui.resource.Image to look for'
-                     + 'GC_LIVE_EDIT._imgBase');
+    var f = new File({
+      base: base,
+      path: filePath,
+      contents: fs.createReadStream(filePath)
+    });
 
-            var regex = /(this._setSrcImg.+{)/;
-            var insert = 'if(url&&GC_LIVE_EDIT._imgBase){'
-                       + 'url=GC_LIVE_EDIT._imgBase+url;'
-                       + '}';
+    f.base = outputDirectory;
+    f.path = path.join(outputDirectory, relativePath);
+    return f;
+  }) || [];
+}
 
-            fileValues.src = fileValues.src.replace(regex, '$1' + insert);
-          }
-        }
-      };
-    }
-
-    return compileJS({
-      initialImport: 'devkit.browser.bootstrap.launchBrowser',
-      appendImport: false,
-      preCompress: config.preCompressCallback
+function getBrowserIcons(app, outputDirectory) {
+  // add browser icons
+  var browserIcons = app.manifest.browser && app.manifest.browser.icons;
+  var icons = [];
+  if (browserIcons) {
+    browserIcons.forEach(function (icon) {
+      var srcPath = path.join(app.paths.root, icon.src);
+      if (fs.existsSync(srcPath)) {
+        icons.push(new File({
+          base: outputDirectory,
+          path: path.join(outputDirectory, icon.src),
+          contents: fs.createReadStream(srcPath)
+        }));
+      }
     });
   }
 
-  var baseDirectory = config.outputResourcePath;
+  return icons;
+}
 
-  resources.getDirectories(api, app, config)
-    .then(function (directories) {
-      return [
-          resources.getFiles(baseDirectory, directories),
-          readFile(getLocalFilePath('../../clientapi/browser/cache-worker.js'), 'utf8'),
-          getPreloadJS(),
-          readFile(STATIC_BOOTSTRAP_CSS, 'utf8'),
-          readFile(STATIC_BOOTSTRAP_JS, 'utf8'),
-          isLiveEdit && readFile(STATIC_LIVE_EDIT_JS, 'utf8'),
-          config.spritesheets || config.spriteImages !== false && sprite(directories),
-          compileJS({
-            env: 'browser',
-            initialImport: [INITIAL_IMPORT].concat(config.imports).join(', '),
-            appendImport: false,
-            includeJsio: !config.excludeJsio,
-            debug: config.scheme === 'debug',
-            preCompress: config.preCompressCallback
-          })
-        ];
-    })
-    .spread(function (files, cacheWorkerJS, preloadJS, bootstrapCSS, bootstrapJS,
-                      liveEditJS, spriterResult, jsSrc) {
-      logger.log('Creating HTML and JavaScript...');
+function getPreloadJS(config, compileJS) {
+  // get preload JS
+  if (/^native/.test(config.target)) {
+    return Promise.resolve('jsio=function(){window._continueLoad()}');
+  }
 
+  var isLiveEdit = (config.target === 'live-edit');
+  if (isLiveEdit && !config.preCompressCallback) {
+    config.preCompressCallback = function(sourceTable) {
+      for (var fullPath in sourceTable) {
+        var fileValues = sourceTable[fullPath];
+        if (fileValues.friendlyPath === 'ui.resource.Image') {
+          logger.log('Patching ui.resource.Image to look for'
+                   + 'GC_LIVE_EDIT._imgBase');
+
+          var regex = /(this._setSrcImg.+{)/;
+          var insert = 'if(url&&GC_LIVE_EDIT._imgBase){'
+                     + 'url=GC_LIVE_EDIT._imgBase+url;'
+                     + '}';
+
+          fileValues.src = fileValues.src.replace(regex, '$1' + insert);
+        }
+      }
+    };
+  }
+
+  return compileJS({
+    initialImport: 'devkit.browser.bootstrap.launchBrowser',
+    appendImport: false,
+    preCompress: config.preCompressCallback
+  });
+}
+
+function generateHTML(api, app, config, compileJS, fontList, jsConfig) {
+  var html = require('./html');
+  var isMobile = (config.target !== 'browser-desktop');
+  var isLiveEdit = (config.target === 'live-edit');
+
+  var gameHTML = new html.GameHTML();
+
+  // start file-system tasks in background immediately
+  var tasks = Promise.all([
+    getPreloadJS(config, compileJS),
+    readFile(STATIC_BOOTSTRAP_CSS, 'utf8'),
+    readFile(STATIC_BOOTSTRAP_JS, 'utf8'),
+    isLiveEdit && readFile(STATIC_LIVE_EDIT_JS, 'utf8')
+  ]);
+
+  // generate html when stream ends
+  var stream = api.createEndStream(function (addFile, cb) {
+
+    // wait for file-system tasks to finish
+    tasks.spread(function (preloadJS, bootstrapCSS, bootstrapJS, liveEditJS) {
       jsConfig.add('embeddedFonts', fontList.getNames());
 
-      var sourceMap = {};
-      if (spriterResult) {
-        // remove sprited files from file list
-        files = files.filter(function (file) {
-          return !(file.originalRelativePath in spriterResult.sourceMap);
-        });
-
-        files = files.concat(spriterResult.files);
-        sourceMap = merge(sourceMap, spriterResult.sourceMap);
-      }
-
-      files.map(fontList.add.bind(fontList));
-
-      var tasks = [];
-
-      // We need to generate a couple different files if this is going to be a
       gameHTML.addCSS(bootstrapCSS);
       gameHTML.addCSS(fontList.getCSS({
         embedFonts: config.browser.embedFonts,
@@ -179,154 +269,25 @@ exports.build = function (api, app, config, cb) {
       }
 
       var hasIndexPage = !isMobile;
-      tasks.push(gameHTML.generate(api, app, config)
+      var pages = [];
+      pages.push(gameHTML.generate(api, app, config)
         .then(function (html) {
-          files.push(new File({
-            base: baseDirectory,
-            path: path.join(baseDirectory, hasIndexPage
-                                                 ? 'game.html'
-                                                 : 'index.html'),
-            contents: new Buffer(html)
-          }));
+          addFile(hasIndexPage ? 'game.html' : 'index.html', html);
         }));
 
       if (hasIndexPage) {
-        tasks.push(new html.IndexHTML()
+        pages.push(new html.IndexHTML()
           .generate(api, app, config)
           .then(function (indexHTML) {
-            files.push(new File({
-              base: baseDirectory,
-              path: path.join(baseDirectory, 'index.html'),
-              contents: new Buffer(indexHTML)
-            }));
+            addFile('index.html', indexHTML);
           }));
       }
 
-      var InlineCache = require('../common/inlineCache').InlineCache;
-      var inlineCache = new InlineCache(logger);
-      var addToInlineCache = inlineCache.add.bind(inlineCache);
-      return Promise
-        .all(tasks)
-        .then(function () {
-          return Promise.resolve(files)
-            .filter(addToInlineCache);
-        })
-        .then(function (files) {
-          files.push(new File({
-              base: baseDirectory,
-              path: path.join(baseDirectory, config.target + '.js'),
-              contents: new Buffer('NATIVE=false;'
-                + 'CACHE=' + JSON.stringify(inlineCache) + ';\n'
-                + jsSrc + ';'
-                + 'jsio("import ' + INITIAL_IMPORT + '");')
-            }));
-
-          files.forEach(function (file) {
-            if (file.history.length > 1) {
-              sourceMap[slash(file.relative)] = file.history[0];
-            }
-          });
-
-          files.push(new File({
-            base: baseDirectory,
-            path: path.join(baseDirectory, config.target + '.manifest'),
-            contents: require('./offlineManifest')
-                        .generate(app, config, files)
-          }));
-
-          files.push(new File({
-            base: baseDirectory,
-            path: path.join(baseDirectory, 'resource_source_map.json'),
-            contents: new Buffer(JSON.stringify(sourceMap))
-          }));
-
-          // build cache-worker
-          var js = require('./cacheWorker.js').generate(config, cacheWorkerJS);
-          files.push(new File({
-            base: baseDirectory,
-            path: path.join(baseDirectory, 'cache-worker.js'),
-            contents: new Buffer(js)
-          }));
-
-          // copy icons
-          var browserIcons = app.manifest.browser && app.manifest.browser.icons;
-          if (browserIcons) {
-            browserIcons.forEach(function (icon) {
-              var srcPath = path.join(app.paths.root, icon.src);
-              if (fs.existsSync(srcPath)) {
-                files.push(new File({
-                  base: baseDirectory,
-                  path: path.join(baseDirectory, icon.src),
-                  contents: fs.createReadStream(srcPath)
-                }));
-              }
-            });
-          }
-
-          // create web app manifest json file
-          var webAppManifest = config.browser.webAppManifest;
-          if (webAppManifest) {
-            if (browserIcons) {
-              webAppManifest.icons = browserIcons;
-            }
-
-            // fixed orientation if only one is supported
-            var supportedOrientations = app.manifest.supportedOrientations;
-            if (supportedOrientations.length == 1) {
-              webAppManifest.orientation = supportedOrientations[0];
-            }
-
-            webAppManifest = JSON.stringify(webAppManifest);
-            var file = new File({
-              base: baseDirectory,
-              path: path.join(baseDirectory, 'web-app-manifest.json'),
-              contents: new Buffer(webAppManifest)
-            });
-            file.inline = false;
-            files.push(file);
-          }
-
-          // add extra resources for copying
-          config.browser.copy && config.browser.copy.forEach(function (resource) {
-
-            var filePath = path.resolve(config.appPath, resource);
-            var base;
-            var relativePath = path.relative(filePath, config.appPath);
-            if (/^\.\./.test(relativePath)) {
-              base = path.dirname(filePath);
-              relativePath = path.basename(filePath);
-            } else {
-              base = config.appPath;
-            }
-
-            var f = new File({
-              base: base,
-              path: filePath,
-              contents: fs.createReadStream(filePath)
-            });
-
-            f.base = baseDirectory;
-            f.path = path.join(baseDirectory, relativePath);
-
-            files.push(f);
-          });
-
-          return {
-            files: files,
-            spritesheets: spriterResult
-          };
-        });
+      return pages;
     })
-    .tap(function (buildResult) {
-      // https://github.com/petkaantonov/bluebird/issues/332
-      logger.log('Writing files...');
-      return new Promise(function (resolve, reject) {
-        streamFromArray.obj(buildResult.files)
-          // .pipe(newer(baseDirectory))
-          .pipe(vfs.dest(baseDirectory))
-          .on('end', resolve)
-          .on('error', reject);
-      });
-    })
+    .all()
     .nodeify(cb);
-};
+  });
+
+  return stream;
+}

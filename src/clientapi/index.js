@@ -126,10 +126,10 @@ exports.ClientAPI = Class(lib.PubSub, function () {
   //  data: campaign
   // });
 
-  var map;
+  var spritesheets;
   try {
     if (GLOBAL.CACHE) {
-      map = JSON.parse(GLOBAL.CACHE['spritesheets/map.json']);
+      spritesheets = JSON.parse(GLOBAL.CACHE['spritesheets/map-v2.json']);
     }
   } catch (e) {
     logger.warn("spritesheet map failed to parse", e);
@@ -137,7 +137,7 @@ exports.ClientAPI = Class(lib.PubSub, function () {
 
   import ui.resource.loader;
   this.resources = ui.resource.loader;
-  this.resources.setMap(map);
+  this.resources.addSheets(spritesheets);
 
   import AudioManager;
 

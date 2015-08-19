@@ -205,8 +205,8 @@ exports.GameHTML = Class(function () {
         );
 
         // Targeting mobile browsers requires viewport settings.
-        if (config.target === 'browser-mobile') {
-          if (!app.manifest.scaleDPR) {
+        if (config.target === 'browser-mobile' || config.isSimulated) {
+          if (app.manifest.scaleDPR === false) {
             html.push('<meta name="viewport"'
                 + ' content="user-scalable=no,target-densitydpi=low"/>');
           } else {

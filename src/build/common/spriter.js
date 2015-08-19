@@ -1,179 +1,204 @@
-var fs = require('fs');
-var crypto = require('crypto');
 var path = require('path');
-var File = require('vinyl');
+var fs = require('graceful-fs');
+var devkitSpriter = require('devkit-spriter');
 
 // utility function to replace any windows path separators for paths that
 // will be used for URLs
 var regexSlash = /\\/g;
 function useURISlashes (str) { return str.replace(regexSlash, '/'); }
 
-var SpriteSheetList = function () {
+var SpritesheetSet = function () {
   this.sheets = [];
   this.imageMap = {};
   this.sourceMap = {};
 };
 
-SpriteSheetList.prototype.merge = function (list) {
+SpritesheetSet.prototype.merge = function (list) {
   this.addSheets(list.sheets, list.imageMap, list.sourceMap);
   return this;
 };
 
-SpriteSheetList.prototype.addSheets = function (sheets, imageMap, sourceMap) {
+SpritesheetSet.prototype.addSheets = function (sheets, imageMap, sourceMap) {
   this.sheets = this.sheets.concat(sheets);
   this.imageMap = merge(this.imageMap, imageMap);
   this.sourceMap = merge(this.sourceMap, sourceMap);
 };
 
-exports.sprite = function (api, app, config, directories) {
-  var baseDirectory = config.outputResourcePath;
-  var relativeSpritesheetsDirectory = 'spritesheets';
-  var spritesheetsDirectory = path.join(baseDirectory,
-                                        relativeSpritesheetsDirectory);
-
-  return Promise.resolve(directories)
-    .map(function (directory) {
-      return exports.spriteDirectory(api, config, directory,
-                                     spritesheetsDirectory,
-                                     relativeSpritesheetsDirectory);
-    }, {concurrency: 1})
-    .reduce(function (allSheets, directorySheets) {
-      return allSheets.merge(directorySheets);
-    }, new SpriteSheetList())
-    .then(function (spritesheets) {
-      // create map of spritesheets to filenames
-      var filename = path.join(spritesheetsDirectory,
-                               'spritesheetSizeMap.json');
-
-      var sheetMap = {};
-      for (var i in spritesheets.imageMap) {
-        var img = spritesheets.imageMap[i];
-        if (!img || !img.sheet) {
-          continue;
-        }
-
-        var sheet = img.sheet;
-        if (!sheetMap[sheet]) {
-          sheetMap[sheet] = {
-            w: img.sheetSize[0],
-            h: img.sheetSize[1]
-          };
-        }
-      }
-
-      var sheetMapFile = new File({
-          base: baseDirectory,
-          path: filename,
-          contents: new Buffer(JSON.stringify(sheetMap))
-        });
-
-      sheetMapFile.inline = false;
-
-      return {
-        sourceMap: spritesheets.sourceMap,
-        files: [
-          // the image map maps each source image to the name of the
-          // spritesheet it was embedded in along with it's location and
-          // padding
-          new File({
-              base: baseDirectory,
-              path: path.join(spritesheetsDirectory, 'map.json'),
-              contents: new Buffer(JSON.stringify(spritesheets.imageMap))
-            }),
-          sheetMapFile
-        ]
-      };
-    });
+SpritesheetSet.prototype.getImageMap = function () {
+  return this.imageMap;
 };
 
-exports.spriteDirectory = function (api, config, directory,
-                                    spritesheetsDirectory,
-                                    relativeSpritesheetsDirectory) {
-  var logger = api.logging.get('spriter');
+SpritesheetSet.prototype.getSourceMap = function () {
+  return this.sourceMap;
+};
 
-  var jvmExec = Promise.promisify(api.jvmtools.exec);
-  var readFile = Promise.promisify(fs.readFile);
+SpritesheetSet.prototype.getSheetMap = function () {
+  // create map of spritesheets to filenames
+  var sheetMap = {};
+  for (var i in this.imageMap) {
+    var img = this.imageMap[i];
+    if (!img || !img.sheet) {
+      continue;
+    }
 
-  var spritesheets = new SpriteSheetList();
-
-  return Promise
-    .try(function () {
-      var md5sum = crypto.createHash('md5');
-      md5sum.update(directory.src);
-      var hash = md5sum.digest('hex');
-
-      var spriterPngFallback = !!(config.argv
-                                  && config.argv['spriter-png-fallback']);
-      var cmd = {
-        tool: 'spriter',
-        args: [
-          // don't remove unused spritesheets, since we might be spriting
-          // multiple source directories into the same target
-          '--no-clean',
-          '--cache-file', 'spritercache-' + hash,
-          '--scale', 1,
-          '--dir', directory.src + '/',
-          '--output', spritesheetsDirectory,
-          '--target', config.target,
-          '--binaries', api.paths.lib,
-          '--is-simulator', config.isSimulated,
-          '--spriter-png-fallback', spriterPngFallback
-        ],
-        buffer: true
+    var sheet = img.sheet;
+    if (!sheetMap[sheet]) {
+      sheetMap[sheet] = {
+        w: img.sheetSize[0],
+        h: img.sheetSize[1]
       };
+    }
+  }
 
-      logger.log('spriter', cmd.args.map(function (arg) {
-            return /^--/.test(arg)
-              ? arg
-              : '"' + arg + '"';
+  return sheetMap;
+};
+
+var SPRITABLE_EXTS = {
+  '.jpg': true,
+  '.jpeg': true,
+  '.png': true,
+  '.bmp': true
+};
+
+// from timestep.ui.SpriteView
+var IS_ANIMATION_FRAME = /((?:.*)\/.*?)[-_ ](.*?)[-_ ](\d+)/;
+
+exports.sprite = function (api, outputDirectory) {
+  var groups = {};
+  var filenameMap = {};
+
+  function addToGroup(file) {
+    /**
+     * group images based on:
+     *   - directory
+     *   - file type (jpeg versus png versus png8)
+     */
+    var base = path.basename(file.originalRelativePath);
+    var animFrameKey = base.match(IS_ANIMATION_FRAME);
+    var isJPG = file.getOption('forceJpeg');
+    var isPNG = !isJPG;
+    var isPNG8 = isPNG && !!file.getOption('pngquant');
+    var key = [
+      animFrameKey && animFrameKey[1] || '',
+      isJPG ? 'j' : isPNG8 ? '8' : 'p',
+      path.dirname(file.originalRelativePath).replace(/\//g, '-') // must be last
+    ].join('-');
+
+    if (!groups[key]) {
+      groups[key] = {
+        format: isJPG ? 'image/jpeg' : 'image/png',
+        isPNG8: isPNG8,
+        isJPG: isJPG,
+        filenames: []
+      };
+    }
+
+    var fullPath = file.history[0];
+    var relPath = file.targetRelativePath;
+    groups[key].filenames.push(fullPath);
+    filenameMap[fullPath] = relPath;
+  }
+
+  return api.createFilterStream(function (file) {
+    if (path.extname(file.path) in SPRITABLE_EXTS
+        && file.getOption('sprite') !== false) {
+      addToGroup(file);
+      return api.STREAM_REMOVE_FILE;
+    }
+  }, function atEnd(addFile, cb) {
+    // spritesheet map json
+    var sheets = {};
+
+    // legacy spritesheetSizeMap
+    var sizes = {};
+    var inProgress = 0;
+    Promise.resolve(Object.keys(groups))
+      .bind(this)
+      .map(function (name) {
+        inProgress++;
+        var group = groups[name];
+        return runTaskRemote({
+            id: 'sprite',
+            name: name,
+            outputDirectory: outputDirectory,
+            filenames: group.filenames,
+            format: group.format
           })
-          .join(' '));
+          .map(function (sheet) {
+            sheet.map.d.forEach(function (info) {
+              info.f = filenameMap[info.f];
+            });
 
-      return jvmExec(cmd);
+            sheets[sheet.filename] = sheet.map;
+            sizes[sheet.filename] = {
+              w: sheet.map.w,
+              h: sheet.map.h
+            };
+
+            // if (res.buffer) {
+            //   addFile('spritesheets/' + res.filename, res.buffer);
+            // }
+          });
+      })
+      .then(function () {
+        addFile('spritesheets/map-v2.json', JSON.stringify(sheets));
+        addFile('spritesheets/spritesheetSizeMap.json', JSON.stringify(sizes));
+      })
+      .nodeify(cb);
+  });
+};
+
+function sprite(name, filenames, format, outputDirectory) {
+  return devkitSpriter.loadImages(filenames)
+    .then(function (images) {
+      return devkitSpriter.sprite(name, images);
     })
-    .spread(function (stdout /*, stderr */) {
-      var spriterOutput = JSON.parse(stdout);
+    .map(function (spritesheet) {
+      var filename = spritesheet.name + (format == 'images/jpeg' ? '.jpg' : '.png');
 
-      // If the spriter gives an error, throw
-      if (spriterOutput.error) {
-        throw spriterOutput.error;
-      }
+      return spritesheet.composite().buffer.getBuffer(format)
+        .then(function (buffer) {
+          spritesheet.recycle();
+          fs.writeFile(path.join(outputDirectory, filename), buffer);
+          return {
+            filename: filename,
+            map: spritesheet.toJSON()
+          };
+        });
+    });
+}
 
-      var sheets = spriterOutput.sprites.map(function (filename) {
-        return new File({
-          fullPath: path.resolve(spritesheetsDirectory, filename),
-          target: path.join(relativeSpritesheetsDirectory, filename)
+function runTaskLocal(task) {
+  if (task.id == 'sprite') {
+    return sprite(task.name, task.filenames, task.format, task.outputDirectory);
+  } else if (task.id == 'exit') {
+    process.exit();
+  }
+}
+
+var _taskQueue;
+function runTaskRemote(task) {
+  if (!_taskQueue) {
+    _taskQueue = new (require('./TaskQueue'))(__filename);
+  }
+
+  return _taskQueue.runTask(task);
+}
+
+function workerProcess() {
+  process.on('message', function (evt) {
+    var id = evt.id;
+    var task = evt.task;
+    runTaskLocal(task)
+      .then(function (res) {
+        process.send({
+          id: id,
+          res: res
         });
       });
+  });
+}
 
-      var mapPath = path.resolve(spritesheetsDirectory, spriterOutput.map);
-      return readFile(mapPath, 'utf8').then(function (mapContents) {
-        // rewrite JSON data, fixing slashes and appending the spritesheet
-        // directory
-        var rawMap = JSON.parse(mapContents);
-        var imageMap = {};
-        var sourceMap = {};
-
-        Object
-          .keys(rawMap)
-          .forEach(function (key) {
-            if (rawMap[key].sheet) {
-              var fullSheetPath = path.join(relativeSpritesheetsDirectory,
-                                            rawMap[key].sheet);
-              rawMap[key].sheet = useURISlashes(fullSheetPath);
-            }
-
-            var targetKey = useURISlashes(path.join(directory.target, key));
-            imageMap[targetKey] = rawMap[key];
-
-            var relPath = path.relative(directory.target, key);
-            sourceMap[key] = path.join(directory.src, relPath);
-          });
-
-        spritesheets.addSheets(sheets, imageMap, sourceMap);
-      });
-    })
-    .then(function () {
-      return spritesheets;
-    });
-};
+if (require.main === module) {
+  workerProcess();
+}
