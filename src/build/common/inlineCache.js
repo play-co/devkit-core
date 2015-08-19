@@ -1,42 +1,43 @@
 var fs = require('fs');
 var path = require('path');
-var stream = require('stream');
+var through2 = require('through2');
+var Stream = require('stream').Stream;
+
 var streamToArray = require('./stream-to-array');
 var readFile = Promise.promisify(fs.readFile);
 
-var exts = {
+var INLINE_EXTS = {
   '.js': true,
   '.json': true,
-  '.xml': true,
-  '.css': false // TODO
+  '.xml': true
 };
 
-exports.InlineCache = Class(function () {
-  this.init = function (logger) {
-    this._cache = {};
-    this._logger = logger;
-  };
-
-  this.has = function (relativePath) {
-    return !!this._cache[relativePath];
-  };
-
-  // returns true if it doesn't add it so that it can be used with a filter
-  // function (filter out the files that get inlined)
-  this.add = function (file) {
+/**
+ * Used to create an inline cache from a file stream. Retrieve the cache after
+ * the stream has ended by converting the returned stream to JSON or by calling
+ * `toJSON` on it.
+ *
+ * @returns {Stream} caches files that match INLINE_EXTS
+ */
+exports.create = function (logger) {
+  var cache = {};
+  var stream = through2.obj(undefined, function (file, enc, cb) {
     var ext = path.extname(file.path);
-    if (!exts[ext] || file.inline === false) { return true; }
 
-    return new Promise(function (resolve, reject) {
-        if (file.contents) {
-          resolve(file.contents);
-        } else {
-          readFile(file.history[0], 'utf8').then(resolve, reject);
-        }
+    if (!INLINE_EXTS[ext] || file.inline === false) {
+      // do not inline
+      this.push(file);
+      cb();
+      return;
+    }
+
+    // inline file contents
+    Promise
+      .try(function () {
+        return file.contents || readFile(file.history[0], 'utf8');
       })
-      .bind(this)
       .then(function (contents) {
-        if (contents instanceof stream.Stream) {
+        if (contents instanceof Stream) {
           return streamToArray(contents);
         } else {
           return contents;
@@ -51,18 +52,23 @@ exports.InlineCache = Class(function () {
           try {
             contents = JSON.stringify(JSON.parse(contents.toString('utf8')));
           } catch (e) {
-            this._logger.error('invalid JSON in', file.path);
+            logger.error('invalid JSON in', file.history[0]);
             throw e;
           }
         }
 
-        this._cache[file.relative] = contents;
+        cache[file.relative] = contents;
+      })
+      .then(cb);
+  });
 
-        return false;
-      });
+  stream.has = function (relativePath) {
+    return relativePath in cache;
   };
 
-  this.toJSON = function () {
-    return this._cache;
+  stream.toJSON = function () {
+    return cache;
   };
-});
+
+  return stream;
+};

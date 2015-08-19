@@ -2,6 +2,7 @@ var path = require('path');
 var fs = require('fs');
 var util = require('util');
 
+var through2 = require('through2');
 var File = require('vinyl');
 var glob = Promise.promisify(require('glob'));
 
@@ -16,6 +17,10 @@ function StreamingFile(opts) {
 }
 
 util.inherits(StreamingFile, File);
+
+StreamingFile.prototype.getOption = function (key) {
+  return this.options.get(this.originalRelativePath, key);
+};
 
 StreamingFile.prototype.isStream = function () { return true; };
 
@@ -36,37 +41,42 @@ Object.defineProperty(StreamingFile.prototype, 'contents', {
 
 exports.getDirectories = require('./directories').get;
 exports.getMetadata = require('./metadata').get;
-exports.getFiles = function (targetDirectory, directories) {
-  return Promise.resolve(directories).map(function (directory) {
-    return glob('**/*', {cwd: directory.src, nodir: true})
-      .map(function (filename) {
-        // a vinyl file records changes to the file's path -- the first path in
-        // the history is the location on disk, then we set the path to the
-        // target location
-        var srcPath = path.join(directory.src, filename);
+exports.createFileStream = function (api, app, config, outputDirectory) {
+  var stream = through2.obj(undefined);
+  Promise.resolve(exports.getDirectories(api, app, config))
+    .map(function (directory) {
+      return glob('**/*', {cwd: directory.src, nodir: true})
+        .map(function (filename) {
+          // a vinyl file records changes to the file's path -- the first path in
+          // the history is the location on disk, then we set the path to the
+          // target location
+          var srcPath = path.join(directory.src, filename);
 
-        var file = new StreamingFile({
-          base: directory.src,
-          path: srcPath
-        });
-
-        file.originalRelativePath = filename;
-        return file;
-      })
-      .filter(function (file) {
-        return exports.getMetadata(file)
-          .then(function (options) {
-            // console.log(file.relative, options.get('package'))
-            return options.get(file.originalRelativePath, 'package') !== false;
+          var file = new StreamingFile({
+            base: directory.src,
+            path: srcPath
           });
-      })
-      .map(function (file) {
-        file.base = targetDirectory;
-        file.path = path.join(targetDirectory, directory.target, file.originalRelativePath);
-        return file;
-      });
-  }).then(function (fileArrays) {
-    // concat all arrays
-    return [].concat.apply([], fileArrays);
-  });
+
+          file.originalRelativePath = filename;
+          file.targetRelativePath = path.join(directory.target, file.originalRelativePath);
+          file.base = outputDirectory;
+          file.path = path.join(outputDirectory, file.targetRelativePath);
+
+          return exports.getMetadata(file)
+            .then(function (options) {
+              file.options = options;
+            })
+            .return(file);
+        })
+        .filter(function (file) {
+          return file.getOption('package') !== false;
+        })
+        .map(function (file) {
+          stream.write(file);
+        });
+    })
+    .then(function () {
+      stream.end();
+    });
+  return stream;
 };

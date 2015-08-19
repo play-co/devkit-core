@@ -14,8 +14,8 @@ module.exports = function (stream) {
       stream.on('error', onEnd);
       stream.on('close', onClose);
 
-      function onData(doc) {
-        arr.push(doc);
+      function onData(data) {
+        arr.push(data);
       }
 
       function onEnd(err) {

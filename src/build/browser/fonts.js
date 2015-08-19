@@ -27,44 +27,43 @@ exports.getFormatsForTarget = function (buildTarget) {
   }
 };
 
-exports.CSSFontList = Class(function () {
-  this.init = function () {
-    this._fonts = {};
-  };
-
-  this.add = function (file) {
+exports.create = function (api) {
+  var fonts = {};
+  var fontList = api.createFilterStream(function (file, cb) {
     var filePath = file.history[0];
     var ext = path.extname(filePath).toLowerCase();
     if (FONT_EXTS[ext]) {
-      this._fonts[path.basename(filePath)] = new CSSFont(filePath);
+      fonts[path.basename(filePath)] = new CSSFont(filePath);
     }
+  });
+
+  fontList.getNames = function () {
+    return Object.keys(fonts).map(function (font) {
+      return fonts[font].name;
+    });
   };
 
-  this.getNames = function () {
-    return Object.keys(this._fonts).map(function (font) {
-      return this._fonts[font].name;
-    }, this);
-  };
-
-  this.getCSS = function (opts) {
+  fontList.getCSS = function (opts) {
     // Font CSS has to be sorted in proper order: bold and italic
     // version must come *after* the regular version. A standard
     // string sort will take care of this, assuming names like
     //     Ubuntu.ttf
     //     Ubuntu-Bold.ttf
-    var fonts = Object.keys(this._fonts).map(function (key) {
-      return this._fonts[key];
-    }, this);
+    var values = Object.keys(fonts).map(function (key) {
+      return fonts[key];
+    });
 
-    fonts.sort(function (a, b) {
+    values.sort(function (a, b) {
       return a.sortOrder - b.sortOrder;
     });
 
-    return fonts.map(function (font) {
+    return values.map(function (font) {
         return font.getCSS(opts);
       }).join('\n');
   };
-});
+
+  return fontList;
+};
 
 // Convert a font file into a data URI.
 function getFontDataURI(loc) {
@@ -173,10 +172,10 @@ var CSSFont = Class(function () {
     }, this);
 
     var css = '';
-    if (this.weight != null) {
+    if (this.weight) {
       css += 'font-weight:' + this.weight + ';';
     }
-    if (this.style != null) {
+    if (this.style) {
       css += 'font-style:' + this.style + ';';
     }
 

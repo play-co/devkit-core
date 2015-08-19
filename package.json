@@ -24,6 +24,7 @@
     "slash": "^1.0.0",
     "stream-from-array": "^0.1.0",
     "stylus": "0.48.1",
+    "through2": "^2.0.0",
     "uglify-js": "^2.4.17",
     "vinyl": "^0.4.6",
     "vinyl-fs": "^1.0.0"

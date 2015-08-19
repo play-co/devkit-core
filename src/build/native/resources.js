@@ -27,9 +27,8 @@ exports.writeNativeResources = function (api, app, config, cb) {
 
   var JSConfig = require('../common/jsConfig').JSConfig;
   var JSCompiler = require('../common/jsCompiler').JSCompiler;
-  var sprite = require('../common/spriter')
-                            .sprite
-                            .bind(null, api, app, config);
+  var spriter = require('../common/spriter');
+  var sprite = spriter.sprite.bind(spriter, api, app, config);
 
   var jsConfig = new JSConfig(api, app, config);
   var resources = require('../common/resources');
@@ -53,16 +52,16 @@ exports.writeNativeResources = function (api, app, config, cb) {
         readFile(path.join(__dirname, 'env.js'), 'utf8')
       ];
     })
-    .spread(function (files, spriterResult, js, envJS) {
+    .spread(function (files, spritesheets, js, envJS) {
       var sourceMap = {};
-      if (spriterResult) {
+      if (spritesheets) {
         // remove sprited files from file list
         files = files.filter(function (file) {
-          return !(file.originalRelativePath in spriterResult.sourceMap);
+          return !(file.originalRelativePath in spritesheets.sourceMap);
         });
 
-        files = files.concat(spriterResult.files);
-        sourceMap = merge(sourceMap, spriterResult.sourceMap);
+        files = files.concat(spriter.createMetadataFiles(spritesheets));
+        sourceMap = merge(sourceMap, spritesheets.sourceMap);
       }
 
       // move all font files to resources/fonts
@@ -110,7 +109,7 @@ exports.writeNativeResources = function (api, app, config, cb) {
 
           return {
             files: files,
-            spritesheets: spriterResult
+            spritesheets: spritesheets
           };
         });
     })
