@@ -15,18 +15,58 @@ var File = require('vinyl');
  */
 
 // adds stream api functions to the api object
-exports.addToAPI = function (api, outputDirectory) {
+exports.addToAPI = function (api, app, config) {
 
   api.STREAM_REMOVE_FILE = {};
 
+  api.streams = {
+    get: function (key, opts) {
+      switch (key) {
+        case 'spriter':
+          return require('./spriter').sprite(api, config);
+        case 'inline-cache':
+          return require('./inlineCache').create(api);
+        case 'app-js':
+          return require('./appJS').create(api, app, config, opts);
+        case 'fonts':
+          return require('./fonts').create(api, config);
+        case 'html':
+          return require('./html').create(api, app, config, opts);
+      }
+    }
+  };
+
+  api.streamToPromise = function (stream) {
+    return new Promise(function (resolve, reject) {
+      stream
+        .on('end', resolve)
+        .on('error', reject);
+    });
+  };
+
+  // api.createFileStream = function (opts) {
+  //   var stream = through2.obj(undefined, function onFile(file, enc, cb) {
+  //     if (opts.parent) {
+  //       opts.parent.write(file);
+  //     } else if (opts.each) {
+  //       opts.each.call(stream, file, cb);
+  //     }
+  //   });
+  // };
+
   api.createFilterStream = function (each, atEnd) {
-    function addFile(filename, contents) {
-      console.log("adding file", filename, contents.length);
-      this.push(new File({
-        base: outputDirectory,
-        path: path.join(outputDirectory, filename),
+    function addFile(filename, contents, opts) {
+      var file = new File({
+        base: config.outputResourcePath,
+        path: path.join(config.outputResourcePath, filename),
         contents: typeof contents == 'string' ? new Buffer(contents) : contents
-      }));
+      });
+
+      if (opts && ('inline' in opts)) {
+        file.inline = opts.inline;
+      }
+
+      this.push(file);
     }
 
     return through2.obj(undefined, function onFile(file, enc, cb) {
@@ -36,8 +76,13 @@ exports.addToAPI = function (api, outputDirectory) {
       }
 
       cb();
-    }, atEnd && function (cb) {
-      atEnd.call(this, addFile.bind(this), cb);
+    }, function (cb) {
+      atEnd = atEnd || this.onEnd;
+      if (atEnd) {
+        atEnd.call(this, addFile.bind(this), cb);
+      } else {
+        cb();
+      }
     });
   };
 

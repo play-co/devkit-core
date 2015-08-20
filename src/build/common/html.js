@@ -3,11 +3,131 @@ var fs = require('fs');
 var stylus = require('stylus');
 var nib = require('nib');
 var printf = require('printf');
-
-var JSCompiler = require('../common/jsCompiler').JSCompiler;
+var appJS = require('./appJS');
+var JSConfig = require('./jsConfig').JSConfig;
+var JSCompiler = require('./jsCompiler').JSCompiler;
 var getBase64Image = require('./datauri').getBase64Image;
 
+var readFile = Promise.promisify(fs.readFile);
+
 var TARGET_APPLE_TOUCH_ICON_SIZE = 152;
+var STATIC_BOOTSTRAP_CSS = getStaticFilePath('bootstrap.styl');
+var STATIC_BOOTSTRAP_JS = getStaticFilePath('bootstrap.js');
+var STATIC_LIVE_EDIT_JS = getStaticFilePath('liveEdit.js');
+
+// Static resources.
+function getStaticFilePath(filePath) {
+  return path.join(__dirname, 'static', filePath);
+}
+
+function getPreloadJS(config, compileJS) {
+  // get preload JS
+  if (/^native/.test(config.target)) {
+    return Promise.resolve('jsio=function(){window._continueLoad()}');
+  }
+
+  var isLiveEdit = (config.target === 'live-edit');
+  if (isLiveEdit && !config.preCompressCallback) {
+    config.preCompressCallback = function(sourceTable) {
+      for (var fullPath in sourceTable) {
+        var fileValues = sourceTable[fullPath];
+        if (fileValues.friendlyPath === 'ui.resource.Image') {
+          logger.log('Patching ui.resource.Image to look for'
+                   + 'GC_LIVE_EDIT._imgBase');
+
+          var regex = /(this._setSrcImg.+{)/;
+          var insert = 'if(url&&GC_LIVE_EDIT._imgBase){'
+                     + 'url=GC_LIVE_EDIT._imgBase+url;'
+                     + '}';
+
+          fileValues.src = fileValues.src.replace(regex, '$1' + insert);
+        }
+      }
+    };
+  }
+
+  return compileJS({
+    initialImport: 'devkit.browser.bootstrap.launchBrowser',
+    appendImport: false,
+    preCompress: config.preCompressCallback
+  });
+}
+
+exports.create = function (api, app, config, opts) {
+  var fontList = opts.fontList;
+  var isMobile = (config.target !== 'browser-desktop');
+  var isLiveEdit = (config.target === 'live-edit');
+
+  var jsConfig = new JSConfig(api, app, config);
+  var jsCompiler = new JSCompiler(api, app, config, jsConfig);
+  var compileJS = Promise.promisify(jsCompiler.compile, jsCompiler);
+
+  var gameHTML = new exports.GameHTML();
+
+  // start file-system tasks in background immediately
+  var tasks = Promise.all([
+    getPreloadJS(config, compileJS),
+    readFile(STATIC_BOOTSTRAP_CSS, 'utf8'),
+    readFile(STATIC_BOOTSTRAP_JS, 'utf8'),
+    isLiveEdit && readFile(STATIC_LIVE_EDIT_JS, 'utf8')
+  ]);
+
+  // generate html when stream ends
+  var stream = api.createEndStream(function (addFile, cb) {
+
+    // wait for file-system tasks to finish
+    tasks.spread(function (preloadJS, bootstrapCSS, bootstrapJS, liveEditJS) {
+      jsConfig.add('embeddedFonts', fontList.getNames());
+
+      gameHTML.addCSS(bootstrapCSS);
+      gameHTML.addCSS(fontList.getCSS({
+        embedFonts: config.browser.embedFonts
+      }));
+
+      if (config.browser.canvas.css) {
+        gameHTML.addCSS('#timestep_onscreen_canvas{'
+                      + config.browser.canvas.css
+                      + '}');
+      }
+
+      gameHTML.addJS(jsConfig.toString());
+      gameHTML.addJS(bootstrapJS);
+      gameHTML.addJS(printf('bootstrap("%(initialImport)s", "%(target)s")', {
+          initialImport: appJS.initialImports.browser,
+          target: config.target
+        }));
+      gameHTML.addJS(preloadJS);
+
+      liveEditJS && gameHTML.addJS(liveEditJS);
+
+      var hasWebAppManifest = !!config.browser.webAppManifest;
+      if (hasWebAppManifest) {
+        config.browser.headHTML.push('<link rel="manifest" href="web-app-manifest.json">');
+      }
+
+      var hasIndexPage = !isMobile;
+      var pages = [];
+      pages.push(gameHTML.generate(api, app, config)
+        .then(function (html) {
+          addFile(hasIndexPage ? 'game.html' : 'index.html', html);
+        }));
+
+      if (hasIndexPage) {
+        pages.push(new exports.IndexHTML()
+          .generate(api, app, config)
+          .then(function (indexHTML) {
+            addFile('index.html', indexHTML);
+          }));
+      }
+
+      return pages;
+    })
+    .all()
+    .nodeify(cb);
+  });
+
+  return stream;
+};
 
 exports.IndexHTML = Class(function () {
   this.generate = function (api, app, config) {
