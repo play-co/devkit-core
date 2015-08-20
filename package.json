@@ -10,7 +10,7 @@
   "dependencies": {
     "archiver": "^0.14.4",
     "bluebird": "^2.9.34",
-    "devkit-spriter": "0.0.1",
+    "devkit-spriter": "0.0.3",
     "fs-extra": "^0.23.1",
     "glob": "^5.0.2",
     "graceful-fs": "^4.1.2",
