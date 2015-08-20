@@ -5,7 +5,6 @@ var crypto = require('crypto');
 var argv = require('optimist').argv;
 var mkdirp = require('mkdirp');
 var EventEmitter = require('events').EventEmitter;
-var color = require('cli-color');
 
 // clone to modify the path for this jsio but not any others
 var jsio = require('jsio').clone();
@@ -164,7 +163,7 @@ exports.JSCompiler = Class(function () {
           }
 
           if (showLog !== false) {
-            compressLog.log(color.greenBright(filename + ':\n') + stderr);
+            compressLog.log(filename + ':\n' + stderr);
           }
         }
       }

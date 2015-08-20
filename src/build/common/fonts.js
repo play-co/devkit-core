@@ -31,9 +31,9 @@ exports.create = function (api, config) {
 
   var fontList = api.createFilterStream(function (file) {
     var filePath = file.history[0];
-    var ext = path.extname(filePath).toLowerCase();
+    var ext = file.extname.toLowerCase();
     if (validExts[ext]) {
-      fonts[path.basename(filePath)] = new Font(filePath);
+      fonts[file.basename] = new Font(filePath);
 
       // TODO: better font management on native
       if (!/^resources\/fonts\//.test(file.targetRelativePath)) {
@@ -143,7 +143,7 @@ var Font = Class(function () {
 
   this.init = function (file) {
     this.filename = file;
-    this.basename = path.basename(file, path.extname(file));
+    this.basename = path.basename(file, file.extname);
 
     this.name = this.basename.trim();
 
