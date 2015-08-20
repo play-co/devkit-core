@@ -25,14 +25,17 @@ var SPRITABLE_EXTS = {
  */
 exports.sprite = function (api, config) {
   var spriter = new DevKitSpriter(config.spritesheetsDirectory);
-  return api.createFilterStream(function (file) {
-    if (path.extname(file.path) in SPRITABLE_EXTS
-        && file.getOption('sprite') !== false) {
-      spriter.addFile(file);
-      return api.STREAM_REMOVE_FILE;
+  return api.streams.create({
+    onFile: function (file) {
+      if ((file.extname in SPRITABLE_EXTS)
+          && file.getOption('sprite') !== false) {
+        spriter.addFile(file);
+        return api.streams.REMOVE_FILE;
+      }
+    },
+    onEnd: function (addFile) {
+      return spriter.sprite(addFile);
     }
-  }, function atEnd(addFile, cb) {
-    spriter.sprite(addFile, cb);
   });
 };
 
