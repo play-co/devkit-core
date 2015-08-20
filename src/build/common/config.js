@@ -9,7 +9,7 @@ exports.extend = function (app, config) {
   config.localBuildPath = path.relative(config.appPath, config.outputPath);
 
   // where spritesheets go
-  config.spritesheetsDirectory = path.join(config.outputPath, 'spritesheets');
+  config.spritesheetsDirectory = path.join(config.outputResourcePath, 'spritesheets');
 
   // Generate a default bundleID
 

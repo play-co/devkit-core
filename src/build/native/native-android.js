@@ -18,6 +18,10 @@ exports.opts = require('optimist')
 exports.configure = function (api, app, config, cb) {
   logger = api.logging.get('build-native');
 
+  if (!config.isSimulated) {
+    config.outputResourcePath = path.join(config.outputPath, "assets/resources");
+  }
+
   // add in any common config keys
   require('../common/config').extend(app, config);
 
@@ -27,10 +31,6 @@ exports.configure = function (api, app, config, cb) {
   config.repack = argv.repack;
   config.enableLogging = !argv.debug && argv.enableReleaseLogging;
   config.resourcesOnly = argv["resources-only"];
-
-  if (!config.isSimulated) {
-    config.outputResourcePath = path.join(config.outputPath, "assets/resources");
-  }
 
   // add in native-specific config keys
   // require('./nativeConfig').insert(app, config, exports.opts.argv);

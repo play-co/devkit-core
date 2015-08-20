@@ -14,6 +14,11 @@ exports.opts = require('optimist')(process.argv)
 exports.configure = function (api, app, config, cb) {
   logger = api.logging.get('build-native');
 
+  if (!config.isSimulated) {
+    config.xcodeResourcesPath = path.join('resources', 'resources.bundle');
+    config.outputResourcePath = path.join(config.outputPath, "xcodeproject", config.xcodeResourcesPath);
+  }
+
   // add in any common config keys
   require('../common/config').extend(app, config);
 
@@ -37,18 +42,6 @@ exports.configure = function (api, app, config, cb) {
   } else if (config.open === undefined) {
     config.open = true;
   }
-
-  // TODO: can override the following for external projects
-  // config.xcodeProjectPath
-
-  // TODO: if cocos2d or other, change this
-  if (!config.isSimulated) {
-    config.xcodeResourcesPath = path.join('resources', 'resources.bundle');
-    config.outputResourcePath = path.join(config.outputPath, "xcodeproject", config.xcodeResourcesPath);
-  }
-
-  // add in native-specific config keys
-  // require('./nativeConfig').insert(app, config, exports.opts.argv);
 
   if (config.isSimulated) {
     require('../browser/').configure(api, app, config, cb);
