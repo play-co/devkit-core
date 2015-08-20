@@ -63,7 +63,7 @@ exports.addToAPI = function (api, app, config) {
           opts.parent.write(file);
           cb();
         } else if (opts.onFile) {
-          opts.onFile.call(this, file).nodeify(cb);
+          callOnFile(file).nodeify(cb);
         }
       }, function onEnd(cb) {
         if (opts.parent) {
@@ -80,17 +80,24 @@ exports.addToAPI = function (api, app, config) {
           .nodeify(cb);
       });
 
+      function callOnFile(file) {
+        return Promise.resolve(opts.onFile.call(this, file))
+          .then(function (res) {
+            if (res !== api.streams.REMOVE_FILE) {
+              stream.emit('data', file);
+            }
+          });
+      }
+
       // proxy events to ourself
       if (opts.parent) {
         opts.parent.on('data', function (file) {
           if (opts.onFile) {
-            var promise = opts.onFile.call(stream, file);
-            if (promise && promise instanceof Promise) {
-              blockingEnd.push(promise);
-              promise.then(function () {
-                blockingEnd.splice(blockingEnd.indexOf(promise), 1);
-              });
-            }
+            var promise = callOnFile(file);
+            blockingEnd.push(promise);
+            promise.then(function () {
+              blockingEnd.splice(blockingEnd.indexOf(promise), 1);
+            });
           }
         });
 
@@ -104,7 +111,9 @@ exports.addToAPI = function (api, app, config) {
       }
 
       return stream;
-    }
+    },
+
+    REMOVE_FILE: {}
   };
 
   api.streamToPromise = function (stream) {
