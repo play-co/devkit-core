@@ -22,8 +22,7 @@ var INLINE_EXTS = {
 exports.create = function (api) {
   var cache = {};
   var stream = through2.obj(undefined, function (file, enc, cb) {
-    var ext = path.extname(file.path);
-
+    var ext = file.extname;
     if (!INLINE_EXTS[ext] || file.inline === false) {
       // do not inline
       this.push(file);
