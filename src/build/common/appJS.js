@@ -20,9 +20,6 @@ exports.create = function (api, app, config, opts) {
     inlineCache = api.streams.get('inline-cache');
   }
 
-  // we need a better api for wrapping streams, but we can just reuse the inline
-  // cache stream for now
-  var appJSStream = inlineCache;
   var compileAppJS = compileJS({
         env: opts.env,
         initialImport: imports.join(', '),
@@ -32,21 +29,23 @@ exports.create = function (api, app, config, opts) {
         preCompress: config.preCompressCallback
       });
 
-  appJSStream.onEnd = function (addFile, cb) {
-    Promise.all(opts.tasks)
-      .then(function (tasks) {
-        return compileAppJS
-          .then(function (js) {
-            return opts.composite(tasks, js, inlineCache, jsConfig);
-          })
-          .then(function (contents) {
-            addFile(opts.filename, contents);
-          });
-      })
-      .nodeify(cb);
-  };
+  var stream = api.streams.create({
+    parent: inlineCache,
+    onEnd: function (addFile) {
+      return Promise.all(opts.tasks)
+        .then(function (tasks) {
+          return compileAppJS
+            .then(function (js) {
+              return opts.composite(tasks, js, inlineCache, jsConfig);
+            })
+            .then(function (contents) {
+              addFile(opts.filename, contents);
+            });
+        });
+    }
+  });
 
-  appJSStream.config = jsConfig;
+  stream.config = jsConfig;
 
-  return appJSStream;
+  return stream;
 };

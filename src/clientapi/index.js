@@ -129,7 +129,7 @@ exports.ClientAPI = Class(lib.PubSub, function () {
   var spritesheets;
   try {
     if (GLOBAL.CACHE) {
-      spritesheets = JSON.parse(GLOBAL.CACHE['spritesheets/map-v2.json']);
+      spritesheets = JSON.parse(GLOBAL.CACHE['spritesheets/map.json']);
     }
   } catch (e) {
     logger.warn("spritesheet map failed to parse", e);
