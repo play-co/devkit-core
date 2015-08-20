@@ -21,7 +21,7 @@ exports.addToAPI = function (api, outputDirectory) {
 
   api.createFilterStream = function (each, atEnd) {
     function addFile(filename, contents) {
-      console.log("inserting file", filename, contents.length);
+      console.log("adding file", filename, contents.length);
       this.push(new File({
         base: outputDirectory,
         path: path.join(outputDirectory, filename),

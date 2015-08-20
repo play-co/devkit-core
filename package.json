@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "archiver": "^0.14.4",
+    "bluebird": "^2.9.34",
     "cli-color": "^0.3.2",
     "etags": "git+https://github.com/gameclosure/etags#1.0.0",
     "fs-extra": "^0.18.4",
