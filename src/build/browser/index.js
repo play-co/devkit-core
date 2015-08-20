@@ -65,7 +65,14 @@ exports.build = function (api, app, config, cb) {
   var outputDirectory = config.outputResourcePath;
   buildStreamAPI.addToAPI(api, app, config);
 
-  var appJS = api.streams.get('app-js', {
+  var fontListStream = api.streams.get('fonts');
+  var stream = resources.createFileStream(api, app, config, outputDirectory)
+    .pipe(createSourceMap(api, 'resource_source_map.json'))
+    .pipe(api.streams.get('spriter'))
+    .pipe(fontListStream)
+    .pipe(api.streams.get('html', {fontList: fontListStream}))
+    .pipe(offlineManifest.create(api, app, config, config.target + '.manifest'))
+    .pipe(api.streams.get('app-js', {
       env: 'browser',
       tasks: [],
       inlineCache: true,
@@ -77,17 +84,7 @@ exports.build = function (api, app, config, cb) {
           + js + ';'
           + 'jsio("import ' + INITIAL_IMPORT + '");';
       }
-    });
-
-  var fontList = api.streams.get('fonts');
-
-  var stream = resources.createFileStream(api, app, config, outputDirectory)
-    .pipe(createSourceMap(api, 'resource_source_map.json'))
-    .pipe(api.streams.get('spriter'))
-    .pipe(fontList)
-    .pipe(api.streams.get('html', {fontList: fontList}))
-    .pipe(offlineManifest.create(api, app, config, config.target + '.manifest'))
-    .pipe(appJS)
+    }))
     .pipe(api.insertFilesStream([
         cacheWorker.generate(config),
         webAppManifest.create(api, app, config)
