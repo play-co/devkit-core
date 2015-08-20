@@ -1,6 +1,7 @@
 var path = require('path');
 var fs = require('fs-extra');
 var crypto = require('crypto');
+var resolve = require('resolve');
 
 var argv = require('optimist').argv;
 var EventEmitter = require('events').EventEmitter;
@@ -238,7 +239,9 @@ function replaceSlashes(str) {
  * @return {Object} object with path and pathCache variables
  */
 exports.getPathAndCache = function(app, config) {
-  var jsioPath = jsio.__env.getPath();
+  var devkitCorePath = path.join(app.paths.root, 'modules', 'devkit-core');
+  var jsioPath = path.dirname(resolve.sync('jsio', { basedir: devkitCorePath }));
+
   var _path = [];
   var _pathCache = {
     jsio: jsioPath
@@ -284,7 +287,15 @@ exports.writeJsioPath = function(opts) {
 
   var util = jsio.__jsio.__util;
 
-  _path = [jsio.__env.getPath(), '.', 'lib'].concat(_path);
+  var jsioPath;
+  if (opts.cwd) {
+    var devkitCorePath = path.join(opts.cwd, 'modules', 'devkit-core');
+    jsioPath = path.dirname(resolve.sync('jsio', { basedir: devkitCorePath }));
+  } else {
+    jsioPath = jsio.__env.getPath();
+  }
+
+  _path = [jsioPath, '.', 'lib'].concat(_path);
 
   var cache = {};
   Object.keys(pathCache).forEach(function (key) {
