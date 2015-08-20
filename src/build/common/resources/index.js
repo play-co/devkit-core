@@ -15,24 +15,48 @@ function useURISlashes (str) { return str.replace(regexSlash, '/'); }
 // end up copying, so we want to be somewhat lazy about them. The StreamFile
 // class generates the content stream only on first use, which also helps
 // avoid emfile errors (too many open files).
-function StreamingFile(opts) {
-  File.apply(this, arguments);
+function StreamingFile(directory, filename, outputDirectory) {
 
-  this._originalPath = opts.path;
+  this.sourceFile = path.join(directory.src, filename);
+  this.sourceDirectory = directory.src;
+
+  // a vinyl file records changes to the file's path -- the first path in the
+  // history is the location on disk, then we set the path to the target
+  // location
+  File.call(this, {
+    base: directory.src,
+    path: this.sourceFile
+  });
+
+  this.sourceRelativePath = filename;
+  this.targetRelativePath = useURISlashes(path.join(directory.target, filename));
+
+  this.base = outputDirectory;
+  this.path = path.join(outputDirectory, this.targetRelativePath);
 }
 
 util.inherits(StreamingFile, File);
 
 StreamingFile.prototype.getOption = function (key) {
-  return this.options.get(this.originalRelativePath, key);
+  return this.options.get(this.sourceRelativePath, key);
 };
 
 StreamingFile.prototype.isStream = function () { return true; };
 
+StreamingFile.prototype.moveToFile = function (target) {
+  this.targetRelativePath = useURISlashes(target);
+  this.path = path.join(this.base, target);
+};
+
+StreamingFile.prototype.moveToDirectory = function (target) {
+  var basename = path.basename(this.path);
+  this.moveToFile(path.join(target, basename));
+};
+
 Object.defineProperty(StreamingFile.prototype, 'contents', {
   get: function () {
     if (!this._contents) {
-      this._contents = fs.createReadStream(this._originalPath);
+      this._contents = fs.createReadStream(this.sourceFile);
     }
 
     return this._contents;
@@ -51,22 +75,8 @@ exports.createFileStream = function (api, app, config, outputDirectory) {
   Promise.resolve(exports.getDirectories(api, app, config))
     .map(function (directory) {
       return glob('**/*', {cwd: directory.src, nodir: true})
-        .map(function (filename) {
-          // a vinyl file records changes to the file's path -- the first path in
-          // the history is the location on disk, then we set the path to the
-          // target location
-          var srcPath = path.join(directory.src, filename);
-
-          var file = new StreamingFile({
-            base: directory.src,
-            path: srcPath
-          });
-
-          file.originalRelativePath = filename;
-          file.targetRelativePath = useURISlashes(path.join(directory.target, file.originalRelativePath));
-          file.base = outputDirectory;
-          file.path = path.join(outputDirectory, file.targetRelativePath);
-
+        .map(function (relativePath) {
+          var file = new StreamingFile(directory, relativePath, outputDirectory);
           return exports.getMetadata(file)
             .then(function (options) {
               file.options = options;

@@ -5,13 +5,6 @@ var mime = require('mime');
 
 var toDataURI = require('./datauri').toDataURI;
 
-var FONT_EXTS = {
-  '.ttf': true,
-  '.svg': false,
-  '.eot': true,
-  '.woff': true
-};
-
 exports.getFormatsForTarget = function (buildTarget) {
   if (buildTarget === 'browser-mobile') {
     return ['.ttf', '.svg'];
@@ -27,13 +20,25 @@ exports.getFormatsForTarget = function (buildTarget) {
   }
 };
 
-exports.create = function (api) {
+exports.create = function (api, config) {
   var fonts = {};
-  var fontList = api.createFilterStream(function (file, cb) {
+  var formats = exports.getFormatsForTarget(config.target);
+
+  var validExts = {};
+  formats.forEach(function (ext) {
+    validExts[ext] = true;
+  });
+
+  var fontList = api.createFilterStream(function (file) {
     var filePath = file.history[0];
     var ext = path.extname(filePath).toLowerCase();
-    if (FONT_EXTS[ext]) {
-      fonts[path.basename(filePath)] = new CSSFont(filePath);
+    if (validExts[ext]) {
+      fonts[path.basename(filePath)] = new Font(filePath);
+
+      // TODO: better font management on native
+      if (!/^resources\/fonts\//.test(file.targetRelativePath)) {
+        file.moveToDirectory('resources/fonts');
+      }
     }
   });
 
@@ -57,8 +62,13 @@ exports.create = function (api) {
       return a.sortOrder - b.sortOrder;
     });
 
+    var cssOpts = {
+      embedFonts: !!opts.embedFonts,
+      formats: opts.formats || formats
+    };
+
     return values.map(function (font) {
-        return font.getCSS(opts);
+        return font.getCSS(cssOpts);
       }).join('\n');
   };
 
@@ -122,7 +132,7 @@ function buildCSSFontString(name, css, formats) {
 }
 
 // Model a CSS font that we can convert into a CSS file.
-var CSSFont = Class(function () {
+var Font = Class(function () {
 
   var exts = {
     '.svg': 'svg', // IOS < 4.2
@@ -132,10 +142,10 @@ var CSSFont = Class(function () {
   };
 
   this.init = function (file) {
-    this.file = file;
-    this.fileBase = path.basename(file, path.extname(file));
+    this.filename = file;
+    this.basename = path.basename(file, path.extname(file));
 
-    this.name = this.fileBase.trim();
+    this.name = this.basename.trim();
 
     var split = this.name.split(/\-/g);
     if (split.length > 1) {
@@ -158,12 +168,12 @@ var CSSFont = Class(function () {
   };
 
   this.getCSS = function (opts) {
-    var fileBase = this.fileBase;
-    var dirname = path.dirname(this.file);
+    var basename = this.basename;
+    var dirname = path.dirname(this.filename);
 
     var fontData = {};
     Object.keys(exts).forEach(function (ext) {
-      var filename = path.join(dirname, fileBase + ext);
+      var filename = path.join(dirname, basename + ext);
       if (opts.embedFonts) {
         fontData[ext] = getFontDataURI(filename);
       } else {
@@ -190,7 +200,7 @@ var CSSFont = Class(function () {
 
           formats.push(def);
         } else {
-          formats.push({url: 'resources/fonts/' + fileBase + ext});
+          formats.push({url: 'resources/fonts/' + basename + ext});
         }
       }
     }, this);

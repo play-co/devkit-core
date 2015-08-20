@@ -7,20 +7,15 @@ var writeFile = Promise.promisify(fs.writeFile);
 exports.run = function (opts) {
   return devkitSpriter.loadImages(opts.filenames)
     .then(function (images) {
-      return devkitSpriter.sprite(opts.name, images);
+      return devkitSpriter.sprite(images, opts);
     })
     .map(function (spritesheet) {
-      var ext = (opts.mime == 'images/jpeg' ? '.jpg' : '.png');
-      var filename = spritesheet.name + ext;
-
+      var filename = spritesheet.name;
       return spritesheet.composite().buffer.getBuffer(opts.mime)
         .then(function (buffer) {
           spritesheet.recycle();
-          return writeFile(path.join(opts.outputDirectory, filename), buffer)
-            .return({
-              filename: filename,
-              map: spritesheet.toJSON()
-            });
+          return writeFile(path.join(opts.spritesheetsDirectory, filename), buffer)
+            .return(spritesheet.toJSON());
         });
     });
 };

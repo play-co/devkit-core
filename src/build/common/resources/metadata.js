@@ -10,36 +10,39 @@ var metadataCache = {};
 var optionCache = {};
 
 exports.get = function (file) {
-  var dirname = path.dirname(file.path);
+  var dirname = path.dirname(file.sourceFile);
   if (!(dirname in optionCache)) {
     // compute all parent directories from file.base to file.path
-    var parents = path.dirname(file.relative)
+    var parents = path.dirname(file.sourceRelativePath)
       .split(/[\\\/]/)
       .filter(nonEmptyFilter)
       .reduce(function (parents, current, i) {
         parents.push(path.join(parents[i], current));
         return parents;
-      }, [file.base]);
+      }, [file.sourceDirectory]);
 
     optionCache[dirname] = Promise.map(parents, function (parent) {
-      var metadata = path.join(parent, METADATA_JSON);
-      if (metadata in metadataCache) {
-        return metadataCache[metadata];
-      }
-
-      return readFile(metadata).then(function onRead(contents) {
-        return (metadataCache[contents] = JSON.parse(contents));
-      }, function onError(err) {
-        if (err && err.cause && err.cause.code === 'ENOENT') {
-          metadataCache[metadata] = false;
-        } else {
-          console.error('Unable to read metadata file:', metadata, err);
-          throw err;
+        var metadata = path.join(parent, METADATA_JSON);
+        if (metadata in metadataCache) {
+          return metadataCache[metadata];
         }
+
+        return readFile(metadata)
+          .then(function onRead(contents) {
+            return (metadataCache[metadata] = JSON.parse(contents));
+          })
+          .catch(function onError(err) {
+            if (err && err.cause && err.cause.code === 'ENOENT') {
+              metadataCache[metadata] = false;
+            } else {
+              console.error('Unable to read metadata file:', metadata, err);
+              throw err;
+            }
+          });
+      })
+      .then(function (metadatas) {
+        return new Options(dirname, metadatas);
       });
-    }).then(function (metadatas) {
-      return new Options(dirname, metadatas);
-    });
   }
 
   return Promise.resolve(optionCache[dirname]);

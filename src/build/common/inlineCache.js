@@ -19,7 +19,7 @@ var INLINE_EXTS = {
  *
  * @returns {Stream} caches files that match INLINE_EXTS
  */
-exports.create = function (logger) {
+exports.create = function (api) {
   var cache = {};
   var stream = through2.obj(undefined, function (file, enc, cb) {
     var ext = path.extname(file.path);
@@ -52,7 +52,7 @@ exports.create = function (logger) {
           try {
             contents = JSON.stringify(JSON.parse(contents.toString('utf8')));
           } catch (e) {
-            logger.error('invalid JSON in', file.history[0]);
+            api.logging.get('inline-cache').error('invalid JSON in', file.history[0]);
             throw e;
           }
         }

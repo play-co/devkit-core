@@ -23,8 +23,8 @@ var SPRITABLE_EXTS = {
  *
  * @returns {Stream}
  */
-exports.sprite = function (api, outputDirectory) {
-  var spriter = new DevKitSpriter(outputDirectory);
+exports.sprite = function (api, config) {
+  var spriter = new DevKitSpriter(config.spritesheetsDirectory);
   return api.createFilterStream(function (file) {
     if (path.extname(file.path) in SPRITABLE_EXTS
         && file.getOption('sprite') !== false) {
@@ -43,9 +43,9 @@ var DevKitSpriter = Class(function () {
 
   var CACHE_FILENAME = ".devkit-spriter-cache";
 
-  this.init = function (outputDirectory) {
+  this.init = function (spritesheetsDirectory) {
     // where the spritesheets should go
-    this._outputDirectory = outputDirectory;
+    this._spritesheetsDirectory = spritesheetsDirectory;
 
     // divides images during streaming into groups
     this._groups = {};
@@ -57,7 +57,14 @@ var DevKitSpriter = Class(function () {
     this._taskQueue = new TaskQueue();
 
     // disk cache
-    this._cache = spriter.loadCache(path.join(outputDirectory, CACHE_FILENAME), outputDirectory);
+    this._cache = spriter.loadCache(path.join(spritesheetsDirectory, CACHE_FILENAME), spritesheetsDirectory);
+
+    // resulting spritesheets indexed by name for map.json
+    this._sheets = {};
+
+    // sizes - storage for legacy spritesheetSizeMap.json
+    this._sizes = {};
+
   };
 
   this.addFile = function (file) {
@@ -93,45 +100,19 @@ var DevKitSpriter = Class(function () {
   };
 
   this.sprite = function (addFile, cb) {
-    // spritesheet map.json
-    var sheets = {};
-
-    // legacy spritesheetSizeMap.json
-    var sizes = {};
-
-    return Promise.join(this._cache, mkdirp(this._outputDirectory), function (cache) {
+    return Promise.join(this._cache, mkdirp(this._spritesheetsDirectory), function (cache) {
         return Promise.resolve(Object.keys(this._groups))
           .bind(this)
           .map(function (name) {
             var group = this._groups[name];
-            var filenameMap = this._filenameMap;
-            return cache.get(name, group.filenames)
-              .bind(this)
-              .catch(function (e) {
-                if (e.message == 'not cached') {
-                  return this._sprite(name, group, cache);
-                } else {
-                  throw e; // unexpected error?
-                }
-              })
-              .map(function (sheet) {
-                sheet.map.d.forEach(function (info) {
-                  info.f = filenameMap[info.f];
-                });
-
-                sheets[sheet.filename] = sheet.map;
-                sizes[sheet.filename] = {
-                  w: sheet.map.w,
-                  h: sheet.map.h
-                };
-              });
+            return this._spriteGroupCached(name, group, cache);
           })
           .then(function () {
             this._taskQueue.shutdown();
-            addFile('spritesheets/map.json', JSON.stringify(sheets));
-            addFile('spritesheets/spritesheetSizeMap.json', JSON.stringify(sizes));
+            addFile('spritesheets/map.json', JSON.stringify(this._sheets));
+            addFile('spritesheets/spritesheetSizeMap.json', JSON.stringify(this._sizes), {inline: false});
             return [
-              this._cleanup(this._outputDirectory, sheets),
+              this._cleanup(),
               cache.save()
             ];
           })
@@ -140,19 +121,55 @@ var DevKitSpriter = Class(function () {
       .nodeify(cb);
   };
 
-  this._sprite = function (name, group, cache) {
-    return this._taskQueue.run(path.join(__dirname, 'SpriteTask'), {
-      name: name,
-      outputDirectory: this._outputDirectory,
-      filenames: group.filenames,
-      mime: group.mime
-    })
-    .tap(function (rawSheets) {
-      cache.set(name, rawSheets);
-    });
+  this._spriteGroupCached = function (name, group, cache) {
+    var filenameMap = this._filenameMap;
+
+    function onSheet(sheet) {
+      sheet.sprites.forEach(function (info) {
+        info.f = filenameMap[info.f];
+      });
+
+      this._sheets[sheet.name] = sheet.sprites;
+      this._sizes[sheet.name] = {
+        w: sheet.width,
+        h: sheet.height
+      };
+    }
+
+    return cache.get(name, group.filenames)
+      .bind(this)
+      .catch(function (e) {
+        if (e instanceof spriter.NotCachedError) {
+          return this._spriteGroup(name, group, cache);
+        } else {
+          throw e; // unexpected error?
+        }
+      })
+      .map(onSheet)
+      .catch(function () {
+        // a first error is probably an invalid cache file -- try respriting
+        // before giving up
+        console.warn('spritesheet cache value may be invalid');
+        cache.remove(name);
+        return this._spriteGroup(name, group, cache)
+          .bind(this)
+          .map(onSheet);
+      });
   };
 
-  this._cleanup = function (directory, sheets) {
+  this._spriteGroup = function (name, group, cache) {
+    return this._taskQueue.run(path.join(__dirname, 'SpriteTask'), {
+        name: name,
+        spritesheetsDirectory: this._spritesheetsDirectory,
+        filenames: group.filenames,
+        mime: group.mime
+      })
+      .tap(function (sheets) {
+        cache.set(name, sheets);
+      });
+  };
+
+  this._cleanup = function () {
     var validNames = {
       'map.json': true,
       'spritesheetSizeMap.json': true
@@ -160,9 +177,11 @@ var DevKitSpriter = Class(function () {
 
     validNames[CACHE_FILENAME] = true;
 
-    Object.keys(sheets).forEach(function (filename) {
+    Object.keys(this._sheets).forEach(function (filename) {
       validNames[filename] = true;
     });
+
+    var directory = this._spritesheetsDirectory;
     return readdir(directory)
       .map(function (filename) {
         if (!(filename in validNames)) {
