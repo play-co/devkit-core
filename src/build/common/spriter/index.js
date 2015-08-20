@@ -1,5 +1,10 @@
 var path = require('path');
+var spriter = require('devkit-spriter');
+var fs = require('fs-extra');
+var Promise = require('bluebird');
 var mkdirp = Promise.promisify(require('mkdirp'));
+var readdir = Promise.promisify(fs.readdir);
+var unlink = Promise.promisify(fs.remove);
 var TaskQueue = require('../task-queue').TaskQueue;
 
 var SPRITABLE_EXTS = {
@@ -36,6 +41,8 @@ var DevKitSpriter = Class(function () {
   // from timestep.ui.SpriteView
   var IS_ANIMATION_FRAME = /((?:.*)\/.*?)[-_ ](.*?)[-_ ](\d+)/;
 
+  var CACHE_FILENAME = ".devkit-spriter-cache";
+
   this.init = function (outputDirectory) {
     // where the spritesheets should go
     this._outputDirectory = outputDirectory;
@@ -48,6 +55,9 @@ var DevKitSpriter = Class(function () {
 
     // queue for SpriteTasks, runs in n separate processes
     this._taskQueue = new TaskQueue();
+
+    // disk cache
+    this._cache = spriter.loadCache(path.join(outputDirectory, CACHE_FILENAME), outputDirectory);
   };
 
   this.addFile = function (file) {
@@ -56,7 +66,7 @@ var DevKitSpriter = Class(function () {
      *   - directory
      *   - file type (jpeg versus png versus png8)
      */
-    var base = path.basename(file.originalRelativePath);
+    var base = path.basename(file.targetRelativePath);
     var animFrameKey = base.match(IS_ANIMATION_FRAME);
     var isJPG = file.getOption('forceJpeg');
     var isPNG = !isJPG;
@@ -64,7 +74,7 @@ var DevKitSpriter = Class(function () {
     var key = [
       animFrameKey && animFrameKey[1] || '',
       isJPG ? 'j' : isPNG8 ? '8' : 'p',
-      path.dirname(file.originalRelativePath).replace(/\//g, '-') // must be last
+      path.dirname(file.targetRelativePath).replace(/\//g, '-') // must be last
     ].join('-');
 
     if (!this._groups[key]) {
@@ -83,42 +93,82 @@ var DevKitSpriter = Class(function () {
   };
 
   this.sprite = function (addFile, cb) {
-    // spritesheet map json
+    // spritesheet map.json
     var sheets = {};
 
-    // legacy spritesheetSizeMap
+    // legacy spritesheetSizeMap.json
     var sizes = {};
-    Promise.resolve(Object.keys(this._groups))
-      .bind(this)
-      .tap(function () {
-        return mkdirp(this._outputDirectory);
-      })
-      .map(function (name) {
-        var group = this._groups[name];
-        var filenameMap = this._filenameMap;
-        return this._taskQueue.run(path.join(__dirname, 'SpriteTask'), {
-            name: name,
-            outputDirectory: this._outputDirectory,
-            filenames: group.filenames,
-            mime: group.mime
-          })
-          .map(function (sheet) {
-            sheet.map.d.forEach(function (info) {
-              info.f = filenameMap[info.f];
-            });
 
-            sheets[sheet.filename] = sheet.map;
-            sizes[sheet.filename] = {
-              w: sheet.map.w,
-              h: sheet.map.h
-            };
-          });
-      })
-      .then(function () {
-        this._taskQueue.shutdown();
-        addFile('spritesheets/map-v2.json', JSON.stringify(sheets));
-        addFile('spritesheets/spritesheetSizeMap.json', JSON.stringify(sizes));
-      })
+    return Promise.join(this._cache, mkdirp(this._outputDirectory), function (cache) {
+        return Promise.resolve(Object.keys(this._groups))
+          .bind(this)
+          .map(function (name) {
+            var group = this._groups[name];
+            var filenameMap = this._filenameMap;
+            return cache.get(name, group.filenames)
+              .bind(this)
+              .catch(function (e) {
+                if (e.message == 'not cached') {
+                  return this._sprite(name, group, cache);
+                } else {
+                  throw e; // unexpected error?
+                }
+              })
+              .map(function (sheet) {
+                sheet.map.d.forEach(function (info) {
+                  info.f = filenameMap[info.f];
+                });
+
+                sheets[sheet.filename] = sheet.map;
+                sizes[sheet.filename] = {
+                  w: sheet.map.w,
+                  h: sheet.map.h
+                };
+              });
+          })
+          .then(function () {
+            this._taskQueue.shutdown();
+            addFile('spritesheets/map.json', JSON.stringify(sheets));
+            addFile('spritesheets/spritesheetSizeMap.json', JSON.stringify(sizes));
+            return [
+              this._cleanup(this._outputDirectory, sheets),
+              cache.save()
+            ];
+          })
+          .all();
+      }.bind(this))
       .nodeify(cb);
+  };
+
+  this._sprite = function (name, group, cache) {
+    return this._taskQueue.run(path.join(__dirname, 'SpriteTask'), {
+      name: name,
+      outputDirectory: this._outputDirectory,
+      filenames: group.filenames,
+      mime: group.mime
+    })
+    .tap(function (rawSheets) {
+      cache.set(name, rawSheets);
+    });
+  };
+
+  this._cleanup = function (directory, sheets) {
+    var validNames = {
+      'map.json': true,
+      'spritesheetSizeMap.json': true
+    };
+
+    validNames[CACHE_FILENAME] = true;
+
+    Object.keys(sheets).forEach(function (filename) {
+      validNames[filename] = true;
+    });
+    return readdir(directory)
+      .map(function (filename) {
+        if (!(filename in validNames)) {
+          console.log(" --- removing spritesheets/" + filename);
+          return unlink(path.join(directory, filename));
+        }
+      });
   };
 });
