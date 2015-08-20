@@ -22,23 +22,12 @@ exports.get = function (file) {
       }, [file.sourceDirectory]);
 
     optionCache[dirname] = Promise.map(parents, function (parent) {
-        var metadata = path.join(parent, METADATA_JSON);
-        if (metadata in metadataCache) {
-          return metadataCache[metadata];
+        var filename = path.join(parent, METADATA_JSON);
+        if (!(filename in metadataCache)) {
+          metadataCache[filename] = loadMetadata(parent, filename);
         }
 
-        return readFile(metadata)
-          .then(function onRead(contents) {
-            return (metadataCache[metadata] = JSON.parse(contents));
-          })
-          .catch(function onError(err) {
-            if (err && err.cause && err.cause.code === 'ENOENT') {
-              metadataCache[metadata] = false;
-            } else {
-              console.error('Unable to read metadata file:', metadata, err);
-              throw err;
-            }
-          });
+        return metadataCache[filename];
       })
       .then(function (metadatas) {
         return new Options(dirname, metadatas);
@@ -47,6 +36,32 @@ exports.get = function (file) {
 
   return Promise.resolve(optionCache[dirname]);
 };
+
+function loadMetadata(parent, filename) {
+  return readFile(filename)
+    .then(function onRead(contents) {
+      var value = JSON.parse(contents);
+      if (value.rules) {
+        value.rules.forEach(function (rule) {
+          if (Array.isArray(rule['cond-fileList'])) {
+            rule['cond-fileList'] = rule['cond-fileList'].map(function (filename) {
+              return path.resolve(parent, filename);
+            });
+          }
+        });
+      }
+
+      return value;
+    })
+    .catch(function onError(err) {
+      if (err && err.cause && err.cause.code === 'ENOENT') {
+        // file doesn't exist, do nothing
+      } else {
+        console.error('Unable to read metadata file:', filename, err);
+        throw err;
+      }
+    });
+}
 
 exports.Options = Options;
 

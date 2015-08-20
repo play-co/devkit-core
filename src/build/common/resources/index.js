@@ -38,7 +38,7 @@ function StreamingFile(directory, filename, outputDirectory) {
 util.inherits(StreamingFile, File);
 
 StreamingFile.prototype.getOption = function (key) {
-  return this.options.get(this.sourceRelativePath, key);
+  return this.options.get(this.sourceFile, key);
 };
 
 StreamingFile.prototype.isStream = function () { return true; };
