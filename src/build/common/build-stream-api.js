@@ -263,6 +263,8 @@ exports.addToAPI = function (api, app, config) {
           promise.then(function () {
             blockingEnd.splice(blockingEnd.indexOf(promise), 1);
           });
+        } else {
+          stream.emit('data', file);
         }
       });
 

@@ -78,10 +78,9 @@ exports.create = function (api, app, config, opts) {
           var gameHTML = new exports.GameHTML();
 
           gameHTML.addCSS(bootstrapCSS);
-
-          if (opts.fontList) {
-            jsConfig.add('embeddedFonts', opts.fontList.getNames());
-            gameHTML.addCSS(opts.fontList.getCSS({
+          if (opts.fontStream) {
+            jsConfig.add('embeddedFonts', opts.fontStream.getNames());
+            gameHTML.addCSS(opts.fontStream.getCSS({
               embedFonts: config.browser.embedFonts
             }));
           }

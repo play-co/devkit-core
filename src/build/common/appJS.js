@@ -17,6 +17,7 @@ exports.create = function (api, app, config, opts) {
 
   var inlineCache;
   if (opts.inlineCache) {
+    api.streams.create('inline-cache');
     inlineCache = api.streams.get('inline-cache');
   }
 
@@ -46,5 +47,7 @@ exports.create = function (api, app, config, opts) {
   });
 
   stream.config = jsConfig;
+  stream.getOpts = function () { return opts; };
   return stream;
 };
+
