@@ -13,16 +13,11 @@
  * You should have received a copy of the Mozilla Public License v. 2.0
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
-var path = require('path');
 var fs = require('graceful-fs');
 fs.gracefulify(require('fs'));
 
-var File = require('vinyl');
-var vfs = require('vinyl-fs');
-
 var buildStreamAPI = require('../common/build-stream-api');
 var offlineManifest = require('./offlineManifest');
-var resources = require('../common/resources');
 var cacheWorker = require('./cacheWorker');
 var webAppManifest = require('./webAppManifest');
 
@@ -50,102 +45,62 @@ exports.configure = function (api, app, config, cb) {
 
 function createSourceMap(api, filename) {
   var sourceMap = {};
-  return api.createFilterStream(function (file) {
-    if (file.history.length > 1) {
-      sourceMap[slash(file.relative)] = file.history[0];
+  return api.streams.createFileStream({
+    onFile: function (file) {
+      if (file.history.length > 1) {
+        sourceMap[slash(file.relative)] = file.history[0];
+      }
+    },
+    onEnd: function (addFile) {
+      addFile({
+        filename: filename,
+        contents: JSON.stringify(sourceMap)
+      });
     }
-  }, function (addFile, cb) {
-    addFile(filename, JSON.stringify(sourceMap));
-    cb();
   });
 }
 
-exports.build = function (api, app, config, cb) {
-  logger = api.logging.get('build-browser');
-  var outputDirectory = config.outputResourcePath;
-  buildStreamAPI.addToAPI(api, app, config);
+exports.createStreams = function (api, app, config) {
+  // register streams
+  api.streams
+    .register('resource-source-map', createSourceMap(api, 'resource_source_map.json'))
+    .create('spriter')
+    .create('fonts')
+    .create('html', {fontStream: api.streams.get('fonts')})
+    .create('app-js', {
+        env: 'browser',
+        tasks: [],
+        inlineCache: true,
+        filename: config.target + '.js',
+        composite: function (tasks, js, cache, config) {
+          return config.toString()
+            + 'NATIVE=false;'
+            + 'CACHE=' + JSON.stringify(cache) + ';\n'
+            + js + ';'
+            + 'jsio("import ' + INITIAL_IMPORT + '");';
+        }
+      })
+    .create('static-files')
+    .register('html5CacheManifest', offlineManifest.create(api, app, config, config.target + '.manifest'));
 
-  var fontListStream = api.streams.get('fonts');
-  var stream = resources.createFileStream(api, app, config, outputDirectory)
-    .pipe(createSourceMap(api, 'resource_source_map.json'))
-    .pipe(api.streams.get('spriter'))
-    .pipe(fontListStream)
-    .pipe(api.streams.get('html', {fontList: fontListStream}))
-    .pipe(offlineManifest.create(api, app, config, config.target + '.manifest'))
-    .pipe(api.streams.get('app-js', {
-      env: 'browser',
-      tasks: [],
-      inlineCache: true,
-      filename: config.target + '.js',
-      composite: function (tasks, js, cache, config) {
-        return config.toString()
-          + 'NATIVE=false;'
-          + 'CACHE=' + JSON.stringify(cache) + ';\n'
-          + js + ';'
-          + 'jsio("import ' + INITIAL_IMPORT + '");';
-      }
-    }))
-    .pipe(api.insertFilesStream([
-        cacheWorker.generate(config),
-        webAppManifest.create(api, app, config)
-      ]
-      .concat(copyFiles(config, outputDirectory))
-      .concat(getBrowserIcons(app, outputDirectory))))
-    .pipe(api.createFilterStream(function (file) {
-      console.log('writing', file.path);
-    }))
-    .pipe(vfs.dest(outputDirectory));
+  // get the static-files stream and add our files to it
+  api.streams.get('static-files')
+    .add(cacheWorker.generate(config))
+    .add(webAppManifest.create(api, app, config))
+    .add(config.browser.copy)
+    .add(app.manifest.browser && app.manifest.browser.icons);
 
-  return api.streamToPromise(stream)
-    .nodeify(cb);
+  // return the order in which the streams should run
+  return [
+    'resource-source-map',
+    'spriter',
+    'fonts',
+    'html',
+    'app-js',
+    'static-files',
+    'html5CacheManifest'
+  ];
 };
 
-/**
- * get extra resources for copying
- *
- * @returns {File[]} the files specified in an app's manifest for copying
- */
-function copyFiles(config, outputDirectory) {
-  return config.browser.copy && config.browser.copy.map(function (resource) {
+exports.build = buildStreamAPI.createStreamingBuild(exports.createStreams);
 
-    var filePath = path.resolve(config.appPath, resource);
-    var base;
-    var relativePath = path.relative(filePath, config.appPath);
-    if (/^\.\./.test(relativePath)) {
-      base = path.dirname(filePath);
-      relativePath = path.basename(filePath);
-    } else {
-      base = config.appPath;
-    }
-
-    var f = new File({
-      base: base,
-      path: filePath,
-      contents: fs.createReadStream(filePath)
-    });
-
-    f.base = outputDirectory;
-    f.path = path.join(outputDirectory, relativePath);
-    return f;
-  }) || [];
-}
-
-function getBrowserIcons(app, outputDirectory) {
-  // add browser icons
-  var browserIcons = app.manifest.browser && app.manifest.browser.icons;
-  var icons = [];
-  if (browserIcons) {
-    browserIcons.forEach(function (icon) {
-      var srcPath = path.join(app.paths.root, icon.src);
-      if (fs.existsSync(srcPath)) {
-        icons.push(new File({
-          base: outputDirectory,
-          path: path.join(outputDirectory, icon.src),
-          contents: fs.createReadStream(srcPath)
-        }));
-      }
-    });
-  }
-
-  return icons;
-}

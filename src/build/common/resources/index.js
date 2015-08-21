@@ -11,9 +11,11 @@ var glob = Promise.promisify(require('glob'));
 // end up copying, so we want to be somewhat lazy about them. The StreamFile
 // class generates the content stream only on first use, which also helps
 // avoid emfile errors (too many open files).
-function StreamingFile(directory, filename, outputDirectory) {
+function ResourceFile(directory, filename, outputDirectory) {
 
-  this.sourceFile = path.join(directory.src, filename);
+  if (!filename) { throw new Error("Expected a filename"); }
+
+  this.sourcePath = path.resolve(directory.src, filename);
   this.sourceDirectory = directory.src;
 
   // a vinyl file records changes to the file's path -- the first path in the
@@ -21,38 +23,45 @@ function StreamingFile(directory, filename, outputDirectory) {
   // location
   File.call(this, {
     base: directory.src,
-    path: this.sourceFile
+    path: this.sourcePath
   });
 
-  this.sourceRelativePath = filename;
-  this.targetRelativePath = slash(path.join(directory.target, filename));
+  this.sourceRelativePath = path.relative(this.sourceDirectory, this.sourcePath);
+  this.targetRelativePath = slash(path.join(directory.target, this.sourceRelativePath));
 
   this.base = outputDirectory;
   this.path = path.join(outputDirectory, this.targetRelativePath);
+
+  this._isStream = true;
 }
 
-util.inherits(StreamingFile, File);
+util.inherits(ResourceFile, File);
 
-StreamingFile.prototype.getOption = function (key) {
-  return this.options.get(this.sourceFile, key);
+ResourceFile.prototype.getOption = function (key) {
+  return this.options.get(this.sourcePath, key);
 };
 
-StreamingFile.prototype.isStream = function () { return true; };
+ResourceFile.prototype.setContents = function (contents) {
+  this._contents = typeof contents == 'string' ? new Buffer(contents) : contents;
+  this._isStream = false;
+};
 
-StreamingFile.prototype.moveToFile = function (target) {
+ResourceFile.prototype.isStream = function () { return this._isStream; };
+
+ResourceFile.prototype.moveToFile = function (target) {
   this.targetRelativePath = slash(target);
   this.path = path.join(this.base, target);
 };
 
-StreamingFile.prototype.moveToDirectory = function (target) {
+ResourceFile.prototype.moveToDirectory = function (target) {
   var basename = path.basename(this.path);
   this.moveToFile(path.join(target, basename));
 };
 
-Object.defineProperty(StreamingFile.prototype, 'contents', {
+Object.defineProperty(ResourceFile.prototype, 'contents', {
   get: function () {
     if (!this._contents) {
-      this._contents = fs.createReadStream(this.sourceFile);
+      this._contents = fs.createReadStream(this.sourcePath);
     }
 
     return this._contents;
@@ -64,6 +73,8 @@ Object.defineProperty(StreamingFile.prototype, 'contents', {
   }
 });
 
+exports.File = ResourceFile;
+
 exports.getDirectories = require('./directories').get;
 exports.getMetadata = require('./metadata').get;
 exports.createFileStream = function (api, app, config, outputDirectory) {
@@ -72,7 +83,7 @@ exports.createFileStream = function (api, app, config, outputDirectory) {
     .map(function (directory) {
       return glob('**/*', {cwd: directory.src, nodir: true})
         .map(function (relativePath) {
-          var file = new StreamingFile(directory, relativePath, outputDirectory);
+          var file = new ResourceFile(directory, relativePath, outputDirectory);
           return exports.getMetadata(file)
             .then(function (options) {
               file.options = options;

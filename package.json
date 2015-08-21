@@ -21,7 +21,6 @@
     "optimist": "^0.6.1",
     "printf": "^0.2.3",
     "slash": "^1.0.0",
-    "stream-from-array": "^0.1.0",
     "stylus": "^0.52.0",
     "through2": "^2.0.0",
     "uglify-js": "^2.4.17",

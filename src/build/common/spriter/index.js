@@ -25,7 +25,7 @@ var SPRITABLE_EXTS = {
  */
 exports.sprite = function (api, config) {
   var spriter = new DevKitSpriter(config.spritesheetsDirectory);
-  return api.streams.create({
+  return api.streams.createFileStream({
     onFile: function (file) {
       if ((file.extname in SPRITABLE_EXTS)
           && file.getOption('sprite') !== false) {
@@ -112,8 +112,18 @@ var DevKitSpriter = Class(function () {
           })
           .then(function () {
             this._taskQueue.shutdown();
-            addFile('spritesheets/map.json', JSON.stringify(this._sheets));
-            addFile('spritesheets/spritesheetSizeMap.json', JSON.stringify(this._sizes), {inline: false});
+
+            addFile({
+              filename: 'spritesheets/map.json',
+              contents: JSON.stringify(this._sheets)
+            });
+
+            addFile({
+              filename: 'spritesheets/spritesheetSizeMap.json',
+              contents: JSON.stringify(this._sizes),
+              inline: false
+            });
+
             return [
               this._cleanup(),
               cache.save()

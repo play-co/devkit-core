@@ -1,5 +1,3 @@
-var path = require('path');
-
 exports.insert = function (app, config, argv) {
 
   var copyFiles = [];

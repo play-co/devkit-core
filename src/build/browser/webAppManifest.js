@@ -15,7 +15,7 @@ exports.create = function (api, app, config) {
 
     webAppManifest = JSON.stringify(webAppManifest);
     return {
-      name: 'web-app-manifest.json',
+      filename: 'web-app-manifest.json',
       contents: webAppManifest
     };
   }

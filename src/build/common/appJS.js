@@ -29,23 +29,22 @@ exports.create = function (api, app, config, opts) {
         preCompress: config.preCompressCallback
       });
 
-  var stream = api.streams.create({
+  var stream = api.streams.createFileStream({
     parent: inlineCache,
     onEnd: function (addFile) {
       return Promise.all(opts.tasks)
         .then(function (tasks) {
-          return compileAppJS
-            .then(function (js) {
-              return opts.composite(tasks, js, inlineCache, jsConfig);
-            })
-            .then(function (contents) {
-              addFile(opts.filename, contents);
-            });
+          addFile({
+            filename: opts.filename,
+            contents: compileAppJS
+              .then(function (js) {
+                return opts.composite(tasks, js, inlineCache, jsConfig);
+              })
+          });
         });
     }
   });
 
   stream.config = jsConfig;
-
   return stream;
 };

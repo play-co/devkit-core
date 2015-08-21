@@ -54,7 +54,6 @@ function getPreloadJS(config, compileJS) {
 }
 
 exports.create = function (api, app, config, opts) {
-  var fontList = opts.fontList;
   var isMobile = (config.target !== 'browser-desktop');
   var isLiveEdit = (config.target === 'live-edit');
 
@@ -62,71 +61,67 @@ exports.create = function (api, app, config, opts) {
   var jsCompiler = new JSCompiler(api, app, config, jsConfig);
   var compileJS = Promise.promisify(jsCompiler.compile, jsCompiler);
 
-  var gameHTML = new exports.GameHTML();
-
   // start file-system tasks in background immediately
-  var tasks = Promise.all([
+  var tasks = [
     getPreloadJS(config, compileJS),
     readFile(STATIC_BOOTSTRAP_CSS, 'utf8'),
     readFile(STATIC_BOOTSTRAP_JS, 'utf8'),
     isLiveEdit && readFile(STATIC_LIVE_EDIT_JS, 'utf8')
-  ]);
+  ];
 
   // generate html when stream ends
-  var stream = api.createEndStream(function (addFile, cb) {
+  return api.streams.createFileStream({
+    onEnd: function (addFile) {
+      // wait for file-system tasks to finish
+      return Promise.all(tasks)
+        .spread(function (preloadJS, bootstrapCSS, bootstrapJS, liveEditJS) {
+          var gameHTML = new exports.GameHTML();
 
-    // wait for file-system tasks to finish
-    tasks.spread(function (preloadJS, bootstrapCSS, bootstrapJS, liveEditJS) {
-      jsConfig.add('embeddedFonts', fontList.getNames());
+          gameHTML.addCSS(bootstrapCSS);
 
-      gameHTML.addCSS(bootstrapCSS);
-      gameHTML.addCSS(fontList.getCSS({
-        embedFonts: config.browser.embedFonts
-      }));
+          if (opts.fontList) {
+            jsConfig.add('embeddedFonts', opts.fontList.getNames());
+            gameHTML.addCSS(opts.fontList.getCSS({
+              embedFonts: config.browser.embedFonts
+            }));
+          }
 
-      if (config.browser.canvas.css) {
-        gameHTML.addCSS('#timestep_onscreen_canvas{'
-                      + config.browser.canvas.css
-                      + '}');
-      }
+          if (config.browser.canvas.css) {
+            gameHTML.addCSS('#timestep_onscreen_canvas{'
+                          + config.browser.canvas.css
+                          + '}');
+          }
 
-      gameHTML.addJS(jsConfig.toString());
-      gameHTML.addJS(bootstrapJS);
-      gameHTML.addJS(printf('bootstrap("%(initialImport)s", "%(target)s")', {
-          initialImport: appJS.initialImports.browser,
-          target: config.target
-        }));
-      gameHTML.addJS(preloadJS);
+          gameHTML.addJS(jsConfig.toString());
+          gameHTML.addJS(bootstrapJS);
+          gameHTML.addJS(printf('bootstrap("%(initialImport)s", "%(target)s")', {
+              initialImport: appJS.initialImports.browser,
+              target: config.target
+            }));
+          gameHTML.addJS(preloadJS);
 
-      liveEditJS && gameHTML.addJS(liveEditJS);
+          liveEditJS && gameHTML.addJS(liveEditJS);
 
-      var hasWebAppManifest = !!config.browser.webAppManifest;
-      if (hasWebAppManifest) {
-        config.browser.headHTML.push('<link rel="manifest" href="web-app-manifest.json">');
-      }
+          var hasWebAppManifest = !!config.browser.webAppManifest;
+          if (hasWebAppManifest) {
+            config.browser.headHTML.push('<link rel="manifest" href="web-app-manifest.json">');
+          }
 
-      var hasIndexPage = !isMobile;
-      var pages = [];
-      pages.push(gameHTML.generate(api, app, config)
-        .then(function (html) {
-          addFile(hasIndexPage ? 'game.html' : 'index.html', html);
-        }));
+          var hasIndexPage = !isMobile;
+          addFile({
+            filename: hasIndexPage ? 'game.html' : 'index.html',
+            contents: gameHTML.generate(api, app, config)
+          });
 
-      if (hasIndexPage) {
-        pages.push(new exports.IndexHTML()
-          .generate(api, app, config)
-          .then(function (indexHTML) {
-            addFile('index.html', indexHTML);
-          }));
-      }
-
-      return pages;
-    })
-    .all()
-    .nodeify(cb);
+          if (hasIndexPage) {
+            addFile({
+              filename: 'index.html',
+              contents: new exports.IndexHTML().generate(api, app, config)
+            });
+          }
+        });
+    }
   });
-
-  return stream;
 };
 
 exports.IndexHTML = Class(function () {
