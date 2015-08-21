@@ -31,10 +31,9 @@ exports.create = function (api, config) {
 
   var fontStream = api.streams.createFileStream({
     onFile: function (file) {
-      var filePath = file.sourcePath;
       var ext = file.extname.toLowerCase();
       if (validExts[ext]) {
-        fonts[file.basename] = new Font(filePath);
+        fonts[file.basename] = new Font(file);
 
         // TODO: better font management on native
         if (!/^resources\/fonts\//.test(file.targetRelativePath)) {
@@ -144,9 +143,8 @@ var Font = Class(function () {
   };
 
   this.init = function (file) {
-    this.filename = file;
-    this.basename = path.basename(file, file.extname);
-
+    this.file = file;
+    this.basename = path.basename(file.sourcePath, file.extname);
     this.name = this.basename.trim();
 
     var split = this.name.split(/\-/g);
@@ -170,12 +168,11 @@ var Font = Class(function () {
   };
 
   this.getCSS = function (opts) {
-    var basename = this.basename;
-    var dirname = path.dirname(this.filename);
+    var dirname = path.dirname(this.file.sourcePath);
 
     var fontData = {};
     Object.keys(exts).forEach(function (ext) {
-      var filename = path.join(dirname, basename + ext);
+      var filename = path.join(dirname, this.basename + ext);
       if (opts.embedFonts) {
         fontData[ext] = getFontDataURI(filename);
       } else {
@@ -202,7 +199,8 @@ var Font = Class(function () {
 
           formats.push(def);
         } else {
-          formats.push({url: 'resources/fonts/' + basename + ext});
+          var dirname = path.dirname(this.file.targetRelativePath);
+          formats.push({url: path.join(dirname, this.basename + ext)});
         }
       }
     }, this);

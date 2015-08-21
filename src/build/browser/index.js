@@ -73,8 +73,7 @@ exports.createStreams = function (api, app, config) {
         inlineCache: true,
         filename: config.target + '.js',
         composite: function (tasks, js, cache, config) {
-          return config.toString()
-            + 'NATIVE=false;'
+          return 'NATIVE=false;'
             + 'CACHE=' + JSON.stringify(cache) + ';\n'
             + js + ';'
             + 'jsio("import ' + INITIAL_IMPORT + '");';
