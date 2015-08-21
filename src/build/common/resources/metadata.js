@@ -10,7 +10,7 @@ var metadataCache = {};
 var optionCache = {};
 
 exports.get = function (file) {
-  var dirname = path.dirname(file.sourceFile);
+  var dirname = path.dirname(file.sourcePath);
   if (!(dirname in optionCache)) {
     // compute all parent directories from file.base to file.path
     var parents = path.dirname(file.sourceRelativePath)
@@ -69,6 +69,7 @@ function Options(dirname, metadatas) {
   this.dirname = dirname;
   this.rules = [];
   this.values = {};
+  this.ruleCache = {};
 
   if (metadatas) {
     metadatas.forEach(this.add, this);
@@ -86,8 +87,12 @@ Options.prototype.add = function (metadata) {
 };
 
 Options.prototype.get = function (filename, prop, buildOpts) {
+  var rules = this.ruleCache[filename];
+  if (!rules) {
+    rules = Options.filterRules(this.rules, filename, buildOpts);
+    this.ruleCache[filename] = rules;
+  }
 
-  var rules = Options.filterRules(this.rules, filename, buildOpts);
   var n = rules.length;
   for (var i = n - 1; i >= 0; --i) {
     if (prop in rules[i]) {

@@ -29,26 +29,28 @@ exports.create = function (api, config) {
     validExts[ext] = true;
   });
 
-  var fontList = api.createFilterStream(function (file) {
-    var filePath = file.history[0];
-    var ext = file.extname.toLowerCase();
-    if (validExts[ext]) {
-      fonts[file.basename] = new Font(filePath);
+  var fontStream = api.streams.createFileStream({
+    onFile: function (file) {
+      var filePath = file.sourcePath;
+      var ext = file.extname.toLowerCase();
+      if (validExts[ext]) {
+        fonts[file.basename] = new Font(filePath);
 
-      // TODO: better font management on native
-      if (!/^resources\/fonts\//.test(file.targetRelativePath)) {
-        file.moveToDirectory('resources/fonts');
+        // TODO: better font management on native
+        if (!/^resources\/fonts\//.test(file.targetRelativePath)) {
+          file.moveToDirectory('resources/fonts');
+        }
       }
     }
   });
 
-  fontList.getNames = function () {
+  fontStream.getNames = function () {
     return Object.keys(fonts).map(function (font) {
       return fonts[font].name;
     });
   };
 
-  fontList.getCSS = function (opts) {
+  fontStream.getCSS = function (opts) {
     // Font CSS has to be sorted in proper order: bold and italic
     // version must come *after* the regular version. A standard
     // string sort will take care of this, assuming names like
@@ -72,7 +74,7 @@ exports.create = function (api, config) {
       }).join('\n');
   };
 
-  return fontList;
+  return fontStream;
 };
 
 // Convert a font file into a data URI.

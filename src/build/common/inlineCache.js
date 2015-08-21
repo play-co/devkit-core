@@ -1,5 +1,4 @@
 var fs = require('fs');
-var path = require('path');
 var through2 = require('through2');
 var Stream = require('stream').Stream;
 

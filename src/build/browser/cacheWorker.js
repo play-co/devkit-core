@@ -1,5 +1,4 @@
 var fs = require('graceful-fs');
-var File = require('vinyl');
 var path = require('path');
 var readFile = Promise.promisify(fs.readFile);
 
@@ -35,7 +34,7 @@ exports.generate = function (config) {
       });
 
       return {
-        name: 'cache-worker.js',
+        filename: 'cache-worker.js',
         contents: js
       };
     });

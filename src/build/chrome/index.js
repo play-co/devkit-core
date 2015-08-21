@@ -16,41 +16,13 @@
 var path = require('path');
 var fs = require('fs');
 var readFile = Promise.promisify(fs.readFile);
-var File = require('vinyl');
-var vfs = require('vinyl-fs');
-var streamFromArray = require('stream-from-array');
+var buildStreamAPI = require('../common/build-stream-api');
 
 var logger;
 
 // Static resources.
 var STATIC_DIR = path.join(__dirname, 'chrome-static');
 var browserBuild = require('../browser');
-
-function copyFileSync(from, to) {
-  fs.writeFileSync(to, fs.readFileSync(from));
-}
-function copyIcon(app, outputPath, size) {
-  var destPath = path.join(outputPath, 'icon-' + size + '.png');
-  var chrome = app.manifest.chrome;
-  var iconPath = chrome && chrome.icons && chrome.icons[size];
-
-  if (!iconPath) {
-    logger.warn('No icon specified in the manifest for', size + '.',
-      'Using the default icon for this size.',
-      'This is probably not what you want');
-
-    iconPath = path.join(STATIC_DIR, 'icon-' + size + '.png');
-  } else {
-    iconPath = path.resolve(app.paths.root, iconPath);
-  }
-
-  if (fs.existsSync(iconPath)) {
-    // wrench.mkdirSyncRecursive(path.dirname(destPath));
-    copyFileSync(iconPath, destPath);
-  } else {
-    logger.error('Could not find icon for size', size, 'at', iconPath);
-  }
-}
 
 exports.opts = require('optimist')(process.argv)
   .alias('baseURL', 'u')
@@ -60,11 +32,17 @@ exports.opts = require('optimist')(process.argv)
 exports.configure = function (api, app, config, cb) {
   logger = api.logging.get('build-chrome');
 
-  browserBuild.configure(api, app, config, cb);
+  Promise.join(
+      readFile(path.join(STATIC_DIR, 'localStorage.html'), 'utf8'),
+      browserBuild.configure(api, app, config),
+      function (localStorageHTML) {
+        // add in the custom JS to create the localStorage object
+        config.browser.headHTML.push(localStorageHTML);
+      })
+    .nodeify(cb);
 };
 
-exports.build = function (api, app, config, cb) {
-  logger = api.logging.get('build-chrome');
+exports.createStreams = function (api, app, config) {
 
   // Hack in a new localStorage for all modules that will point to a custom
   // Chrome friendly local storage (which is initilized before jsio)
@@ -86,33 +64,22 @@ exports.build = function (api, app, config, cb) {
     }
   };
 
-  var backgroundJS;
+  var streamOrder = browserBuild.createStreams(api, app, config);
 
-  Promise.all([
-      readFile(path.join(STATIC_DIR, 'localStorage.html'), 'utf8'),
-      readFile(path.join(STATIC_DIR, 'background.js'), 'utf8')
-    ])
-    .spread(function (localStorageHTML, _backgroundJS) {
-      // add in the custom JS to create the localStorage object
-      config.browser.headHTML.push(localStorageHTML);
-
-      // Update the background js constants
-      backgroundJS = _backgroundJS
-                      .replace('%(width)s', config.browser.canvas.width)
-                      .replace('%(height)s', config.browser.canvas.height);
-
-      // run a browser build, since that is all we are really doing, just with some additions
-      return browserBuild.build(api, app, config);
-    })
-    .then(function () {
-      logger.log('Chrome time!');
-
-      // App icons
-      copyIcon(app, config.outputPath, 16);
-      copyIcon(app, config.outputPath, 128);
-
-      // Build the manifest
-      var manifest = {
+  // get the browser build's static-file stream and add in our static files
+  api.streams.get('static-files')
+    .add(readFile(path.join(STATIC_DIR, 'background.js'), 'utf8')
+      .then(function (backgroundJS) {
+        return {
+          filename: 'background.js',
+          contents: backgroundJS
+                .replace('%(width)s', config.browser.canvas.width)
+                .replace('%(height)s', config.browser.canvas.height)
+        };
+      }))
+    .add({
+      filename: 'manifest.json',
+      contents: JSON.stringify({
         name: app.manifest.shortName,
         description: app.manifest.description || ('desc - ' + app.manifest.shortName),
         version: app.manifest.version || '0.0',
@@ -129,36 +96,36 @@ exports.build = function (api, app, config, cb) {
           'storage'
         ],
         icons: { '16': 'icon-16.png', '128': 'icon-128.png' }
+      })
+    })
+    .add({
+      filename: 'pageWrapper.html',
+      src: path.join(STATIC_DIR, 'pageWrapper.html')
+    })
+    .add({
+      filename: 'pageWrapper.js',
+      src: path.join(STATIC_DIR, 'pageWrapper.js')
+    })
+    .add([16, 128].map(function (size) {
+      var chrome = app.manifest.chrome;
+      var iconPath = chrome && chrome.icons && chrome.icons[size];
+      if (!iconPath) {
+        logger.warn('No icon specified in the manifest for', size + '.',
+          'Using the default icon for this size.',
+          'This is probably not what you want');
+
+        iconPath = path.join(STATIC_DIR, 'icon-' + size + '.png');
+      }
+
+      return {
+        filename: 'icon-16' + size + '.png',
+        src: iconPath
       };
+    }));
 
-      var baseDirectory = config.outputPath;
-      var files = [
-        new File({
-          base: baseDirectory,
-          path: path.join(baseDirectory, 'manifest.json'),
-          contents: new Buffer(JSON.stringify(manifest))
-        }),
-        new File({
-          base: baseDirectory,
-          path: path.join(baseDirectory, 'background.js'),
-          contents: new Buffer(backgroundJS)
-        }),
-        new File({
-          base: STATIC_DIR,
-          path: path.join(STATIC_DIR, 'pageWrapper.html')
-        }),
-        new File({
-          base: STATIC_DIR,
-          path: path.join(STATIC_DIR, 'pageWrapper.js')
-        })
-      ];
-
-      logger.log('Writing files...');
-      return new Promise(function (resolve, reject) {
-          streamFromArray.obj(files)
-            .pipe(vfs.dest(baseDirectory))
-            .on('end', resolve)
-            .on('error', reject);
-        });
-    }).nodeify(cb);
+  // return the browser build's stream order
+  return streamOrder;
 };
+
+exports.build = buildStreamAPI.createStreamingBuild(exports.createStreams);
+

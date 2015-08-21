@@ -5,7 +5,8 @@ var slash = require('slash');
 // generate an HTML5 offline cache manifest file
 exports.create = function(api, app, config, filename) {
   var resources = [];
-  return api.createFilterStream(function (file) {
+  return api.streams.createFileStream({
+    onFile: function (file) {
       if (!file.inlined) {
         var relative = slash(file.relative);
         if (config.browser.baseURL) {
@@ -14,8 +15,11 @@ exports.create = function(api, app, config, filename) {
           resources.push(relative);
         }
       }
-    }, function (addFile, cb) {
-      addFile(filename, printf('CACHE MANIFEST\n' +
+    },
+    onEnd: function (addFile) {
+      addFile({
+        filename: filename,
+        contents: printf('CACHE MANIFEST\n' +
           '\n' +
           '#%(appID)s version %(version)s\n' +
           '\n' +
@@ -30,7 +34,8 @@ exports.create = function(api, app, config, filename) {
             appID: app.manifest.appID,
             version: config.version,
             resources: resources.join('\n')
-          }));
-      cb();
-    });
+          })
+      });
+    }
+  });
 };
