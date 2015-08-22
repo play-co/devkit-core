@@ -24,7 +24,10 @@ var SPRITABLE_EXTS = {
  * @returns {Stream}
  */
 exports.sprite = function (api, config) {
-  var spriter = new DevKitSpriter(config.spritesheetsDirectory);
+  var spriter = new DevKitSpriter(config.spritesheetsDirectory, {
+    powerOfTwoSheets: config.powerOfTwoSheets
+  });
+
   return api.streams.createFileStream({
     onFile: function (file) {
       if ((file.extname in SPRITABLE_EXTS)
@@ -46,9 +49,11 @@ var DevKitSpriter = Class(function () {
 
   var CACHE_FILENAME = ".devkit-spriter-cache";
 
-  this.init = function (spritesheetsDirectory) {
+  this.init = function (spritesheetsDirectory, opts) {
     // where the spritesheets should go
     this._spritesheetsDirectory = spritesheetsDirectory;
+
+    this._powerOfTwoSheets = opts.powerOfTwoSheets;
 
     // divides images during streaming into groups
     this._groups = {};
@@ -78,20 +83,28 @@ var DevKitSpriter = Class(function () {
      */
     var base = path.basename(file.targetRelativePath);
     var animFrameKey = base.match(IS_ANIMATION_FRAME);
+    animFrameKey = animFrameKey && animFrameKey[1] || '';
     var isJPG = file.getOption('forceJpeg');
     var isPNG = !isJPG;
     var isPNG8 = isPNG && !!file.getOption('pngquant');
+    var powerOfTwoSheets = file.getOption('po2');
+    if (powerOfTwoSheets === undefined) { powerOfTwoSheets = this._powerOfTwoSheets; }
+    var name = path.dirname(file.targetRelativePath).replace(/\//g, '-');
+
     var key = [
-      animFrameKey && animFrameKey[1] || '',
-      isJPG ? 'j' : isPNG8 ? '8' : 'p',
-      path.dirname(file.targetRelativePath).replace(/\//g, '-') // must be last
+      (powerOfTwoSheets ? 'a' : 'b'),
+      (isJPG ? 'j' : isPNG8 ? '8' : 'p'),
+      animFrameKey,
+      name // must be last
     ].join('-');
 
     if (!this._groups[key]) {
       this._groups[key] = {
+        sheetName: name + (animFrameKey ? '--' + animFrameKey : ''),
         mime: isJPG ? 'image/jpeg' : 'image/png',
         isPNG8: isPNG8,
         isJPG: isJPG,
+        powerOfTwoSheets: powerOfTwoSheets,
         filenames: []
       };
     }
@@ -106,9 +119,9 @@ var DevKitSpriter = Class(function () {
     return Promise.join(this._cache, mkdirp(this._spritesheetsDirectory), function (cache) {
         return Promise.resolve(Object.keys(this._groups))
           .bind(this)
-          .map(function (name) {
-            var group = this._groups[name];
-            return this._spriteGroupCached(name, group, cache);
+          .map(function (key) {
+            var group = this._groups[key];
+            return this._spriteGroupCached(key, group, cache);
           })
           .then(function () {
             this._taskQueue.shutdown();
@@ -134,7 +147,7 @@ var DevKitSpriter = Class(function () {
       .nodeify(cb);
   };
 
-  this._spriteGroupCached = function (name, group, cache) {
+  this._spriteGroupCached = function (key, group, cache) {
     var filenameMap = this._filenameMap;
 
     function onSheet(sheet) {
@@ -149,11 +162,11 @@ var DevKitSpriter = Class(function () {
       };
     }
 
-    return cache.get(name, group.filenames)
+    return cache.get(key, group.filenames)
       .bind(this)
       .catch(function (e) {
         if (e instanceof spriter.NotCachedError) {
-          return this._spriteGroup(name, group, cache);
+          return this._spriteGroup(key, group, cache);
         } else {
           throw e; // unexpected error?
         }
@@ -163,22 +176,23 @@ var DevKitSpriter = Class(function () {
         // a first error is probably an invalid cache file -- try respriting
         // before giving up
         console.warn('spritesheet cache value may be invalid');
-        cache.remove(name);
-        return this._spriteGroup(name, group, cache)
+        cache.remove(key);
+        return this._spriteGroup(key, group, cache)
           .bind(this)
           .map(onSheet);
       });
   };
 
-  this._spriteGroup = function (name, group, cache) {
+  this._spriteGroup = function (key, group, cache) {
     return this._taskQueue.run(path.join(__dirname, 'SpriteTask'), {
-        name: name,
+        name: group.sheetName,
         spritesheetsDirectory: this._spritesheetsDirectory,
+        powerOfTwoSheets: group.powerOfTwoSheets,
         filenames: group.filenames,
         mime: group.mime
       })
       .tap(function (sheets) {
-        cache.set(name, sheets);
+        cache.set(key, sheets);
       });
   };
 
@@ -198,7 +212,7 @@ var DevKitSpriter = Class(function () {
     return readdir(directory)
       .map(function (filename) {
         if (!(filename in validNames)) {
-          console.log(" --- removing spritesheets/" + filename);
+          console.log("removing spritesheets/" + filename);
           return unlink(path.join(directory, filename));
         }
       });

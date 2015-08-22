@@ -30,6 +30,7 @@ exports.configure = function (api, app, config, cb) {
   config.provisionPath = argv.provision;
   config.signingIdentity = argv.developer;
   config.enableLogging = !argv.debug && argv.enableReleaseLogging;
+  config.powerOfTwoSheets = true;
 
   cb && cb();
 };
