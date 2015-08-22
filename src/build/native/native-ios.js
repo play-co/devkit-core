@@ -46,6 +46,7 @@ exports.configure = function (api, app, config, cb) {
   if (config.isSimulated) {
     require('../browser/').configure(api, app, config, cb);
   } else {
+    config.powerOfTwoSheets = true;
     cb && cb();
   }
 };

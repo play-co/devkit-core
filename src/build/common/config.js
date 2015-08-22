@@ -11,6 +11,9 @@ exports.extend = function (app, config) {
   // where spritesheets go
   config.spritesheetsDirectory = path.join(config.outputResourcePath, 'spritesheets');
 
+  // default to non-power-of-two aligned sheets, set to true for native builds
+  config.powerOfTwoSheets = false;
+
   // Generate a default bundleID
 
   // construct a bundleID the same way Android constructs the packageName:
