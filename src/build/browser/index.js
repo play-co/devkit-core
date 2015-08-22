@@ -62,28 +62,27 @@ function createSourceMap(api, filename) {
 
 exports.createStreams = function (api, app, config) {
   // register streams
-  api.streams
-    .register('resource-source-map', createSourceMap(api, 'resource_source_map.json'))
-    .create('spriter')
-    .create('fonts')
-    .create('html', {fontStream: api.streams.get('fonts')})
-    .create('app-js', {
-        env: 'browser',
-        tasks: [],
-        inlineCache: true,
-        filename: config.target + '.js',
-        composite: function (tasks, js, cache, config) {
-          return 'NATIVE=false;'
-            + 'CACHE=' + JSON.stringify(cache) + ';\n'
-            + js + ';'
-            + 'jsio("import ' + INITIAL_IMPORT + '");';
-        }
-      })
-    .create('static-files')
-    .register('html5CacheManifest', offlineManifest.create(api, app, config, config.target + '.manifest'));
+  var streams = api.streams;
 
-  // get the static-files stream and add our files to it
-  api.streams.get('static-files')
+  streams.register('resource-source-map', createSourceMap(api, 'resource_source_map.json'));
+  streams.create('spriter');
+  var fontStream = streams.create('fonts');
+  streams.create('html', {fontStream: fontStream});
+  streams.create('app-js', {
+      env: 'browser',
+      tasks: [],
+      inlineCache: true,
+      filename: config.target + '.js',
+      composite: function (tasks, js, cache, config) {
+        return 'NATIVE=false;'
+          + 'CACHE=' + JSON.stringify(cache) + ';\n'
+          + js + ';'
+          + 'jsio("import ' + INITIAL_IMPORT + '");';
+      }
+    });
+  streams.register('html5-cache-manifest', offlineManifest.create(api, app, config, config.target + '.manifest'));
+
+  streams.create('static-files')
     .add(cacheWorker.generate(config))
     .add(webAppManifest.create(api, app, config))
     .add(config.browser.copy)
@@ -97,7 +96,7 @@ exports.createStreams = function (api, app, config) {
     'html',
     'app-js',
     'static-files',
-    'html5CacheManifest'
+    'html5-cache-manifest'
   ];
 };
 

@@ -46,6 +46,8 @@ var File = resources.File;
  */
 exports.createStreamingBuild = function (createStreams) {
   return function (api, app, config, cb) {
+    var logger = api.logging.get(config.target);
+
     exports.addToAPI(api, app, config);
 
     var outputDirectory = config.outputResourcePath;
@@ -54,11 +56,18 @@ exports.createStreamingBuild = function (createStreams) {
 
     // pipe all the streams together in the specified order
     streamOrder.map(function (id) {
-      var nextStream = api.streams.get(id);
+      var nextStream = api.streams.get(id) || api.streams.create(id);
+      nextStream.on('end', function () {
+        logger.log(id, 'complete');
+      });
       buildStream = buildStream.pipe(nextStream);
     });
 
     buildStream = buildStream.pipe(vfs.dest(outputDirectory));
+
+    buildStream.on('end', function () {
+      logger.log('writing files complete');
+    });
 
     return streamToPromise(buildStream)
       .nodeify(cb);
@@ -70,6 +79,8 @@ var REMOVE_FILE = {};
 
 // adds stream api functions to the api object
 exports.addToAPI = function (api, app, config) {
+
+  var logger = api.logging.get(config.target);
 
   var allStreams = {};
 
@@ -98,12 +109,20 @@ exports.addToAPI = function (api, app, config) {
         case 'static-files':
           stream = require('./static-files').create(api, app, config);
           break;
+        case 'log':
+          stream = createFileStream({
+            onFile: function (file) {
+              logger.log(file.path);
+            }
+          });
+          break;
         default:
           stream = createFileStream(opts);
           break;
       }
 
-      return this.register(id, stream);
+      this.register(id, stream);
+      return stream;
     },
 
     register: function (id, stream) {
@@ -221,6 +240,7 @@ exports.addToAPI = function (api, app, config) {
       if (opts.contents) {
         var onContents = Promise.resolve(opts.contents)
           .then(function (contents) {
+            logger.log("creating", opts.filename);
             file.setContents(contents);
             stream.push(file);
           });

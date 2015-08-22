@@ -17,8 +17,7 @@ exports.create = function (api, app, config, opts) {
 
   var inlineCache;
   if (opts.inlineCache) {
-    api.streams.create('inline-cache');
-    inlineCache = api.streams.get('inline-cache');
+    inlineCache = api.streams.create('inline-cache');
   }
 
   var compileAppJS = compileJS({
