@@ -48,6 +48,40 @@ ResourceFile.prototype.setContents = function (contents) {
 
 ResourceFile.prototype.isStream = function () { return this._isStream; };
 
+ResourceFile.prototype.getCompressOpts = function () {
+  if (!this._compressOpts) {
+    var compressOpts = this.getOption('compress');
+    if (!compressOpts) {
+      // handle legacy options
+      if (this.getOption('forceJpeg')) {
+        compressOpts = {
+          format: 'jpg'
+        };
+      } else {
+        var legacyPng8Opts = this.getOption('pngquant');
+        if (legacyPng8Opts) {
+          compressOpts = merge({
+            format: 'png',
+            quantize: true
+          }, legacyPng8Opts);
+        }
+      }
+    }
+
+    if (compressOpts && compressOpts.format) {
+      // normalize format
+      var format = compressOpts.format;
+      format = format.toLowerCase();
+      if (format == 'jpeg') { format = 'jpg'; }
+      compressOpts.format = format;
+    }
+
+    this._compressOpts = compressOpts;
+  }
+
+  return this._compressOpts;
+};
+
 ResourceFile.prototype.moveToFile = function (target) {
   this.targetRelativePath = slash(target);
   this.path = path.join(this.base, target);
