@@ -38,7 +38,9 @@ exports.createStreams = function (api, app, config) {
   return [
     'spriter',
     'app-js',
-    'static-files'
+    'static-files',
+    'output',
+    config.scheme == 'release' && 'image-compress'
   ];
 };
 

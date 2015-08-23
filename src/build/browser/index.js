@@ -89,15 +89,22 @@ exports.createStreams = function (api, app, config) {
     .add(app.manifest.browser && app.manifest.browser.icons);
 
   // return the order in which the streams should run
-  return [
+  var order = [
     'resource-source-map',
     'spriter',
     'fonts',
     'html',
-    'app-js',
     'static-files',
-    'html5-cache-manifest'
+    'app-js',
+    'html5-cache-manifest',
+    'output'
   ];
+
+  if (config.scheme === 'release') {
+    order.push('image-compress');
+  }
+
+  return order;
 };
 
 exports.build = buildStreamAPI.createStreamingBuild(exports.createStreams);

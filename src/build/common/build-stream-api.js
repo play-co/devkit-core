@@ -1,9 +1,14 @@
 var path = require('path');
+var util = require('util');
+var EventEmitter = require('events').EventEmitter;
+var vfs = require('vinyl-fs');
 var through2 = require('through2');
 var resources = require('./resources');
-var vfs = require('vinyl-fs');
 var File = resources.File;
-
+var createStreamWrapper = require('./stream-wrap').createStreamWrapper;
+var gulpFilter = require('gulp-filter');
+var Promise = require('bluebird');
+Promise.longStackTraces();
 /**
  * DevKit build targets exports a function build(api, app, config cb).  To
  * create a streaming build target (a build target composed of several streams),
@@ -50,20 +55,24 @@ exports.createStreamingBuild = function (createStreams) {
 
     exports.addToAPI(api, app, config);
 
-    var outputDirectory = config.outputResourcePath;
-    var buildStream = resources.createFileStream(api, app, config, outputDirectory);
+    var buildStream = api.streams.create('input');
     var streamOrder = createStreams(api, app, config);
 
     // pipe all the streams together in the specified order
     streamOrder.map(function (id) {
+      if (!id) { return; }
+
       var nextStream = api.streams.get(id) || api.streams.create(id);
       nextStream.on('end', function () {
         logger.log(id, 'complete');
       });
+      nextStream.on('error', function (err) {
+        logger.log(id, err);
+      });
       buildStream = buildStream.pipe(nextStream);
     });
 
-    buildStream = buildStream.pipe(vfs.dest(outputDirectory));
+    buildStream.pipe(new ObjectSink());
 
     buildStream.on('end', function () {
       logger.log('writing files complete');
@@ -109,6 +118,9 @@ exports.addToAPI = function (api, app, config) {
         case 'static-files':
           stream = require('./static-files').create(api, app, config);
           break;
+        case 'image-compress':
+          stream = require('./image-compress').create(api, app, config);
+          break;
         case 'log':
           stream = createFileStream({
             onFile: function (file) {
@@ -116,11 +128,29 @@ exports.addToAPI = function (api, app, config) {
             }
           });
           break;
+        case 'input':
+          stream = resources.createFileStream(api, app, config, config.outputResourcePath);
+          break;
+        case 'output':
+          // the spriter outputs files directly to the spritesheets directory
+          // for performance reasons, and then inserts the spritesheet File
+          // objects back into the stream so future streams know about them;
+          // however, we can't actually write them out. This removes files that
+          // have already been written.
+          var filter = gulpFilter(function (file) {
+            return !file.written;
+          }, {restore: true});
+
+          return createStreamWrapper()
+            .wrap(filter)
+            .wrap(vfs.dest(config.outputResourcePath))
+            .wrap(filter.restore);
         default:
           stream = createFileStream(opts);
           break;
       }
 
+      stream.id = id;
       this.register(id, stream);
       return stream;
     },
@@ -167,29 +197,20 @@ exports.addToAPI = function (api, app, config) {
    */
   function createFileStream(opts) {
 
-    // if we're proxying to a parent stream, blockingEnd will contain a Promise
-    // for each item emitted from the parent stream
-    var blockingEnd = [];
     var addFilePromises = [];
+    var stream = through2.obj(undefined,
+          opts.onFile && onFile,
+          onEnd);
+    return stream;
 
     function onFile(file, enc, cb) {
-      if (opts.parent) {
-        opts.parent.write(file);
-        cb();
-      } else if (opts.onFile) {
-        callOnFile(file)
-          .then(function () {
-            cb();
-          });
-      }
-    }
-
-    function callOnFile(file) {
-      return Promise.resolve(opts.onFile.call(this, file))
+      Promise.resolve(opts.onFile.call(this, file))
         .then(function (res) {
           if (res !== api.streams.REMOVE_FILE) {
             stream.push(file);
           }
+
+          cb();
         });
     }
 
@@ -221,8 +242,11 @@ exports.addToAPI = function (api, app, config) {
         }
       }
 
-      if (opts instanceof Promise) {
-        return Promise.resolve(opts).then(addFile);
+      if (typeof opts.then == 'function') {
+        // probably a promise, try to resolve first
+        var beforeAddFile = Promise.resolve(opts).then(addFile);
+        addFilePromises.push(beforeAddFile);
+        return beforeAddFile;
       }
 
       // opts.src: copy file from source
@@ -233,14 +257,18 @@ exports.addToAPI = function (api, app, config) {
         file.moveToFile(opts.filename);
       }
 
-      if (opts.inline !== undefined) {
-        file.inline = !!opts.inline;
+      // copy extra keys to file object
+      for (var key in opts) {
+        if (key != 'src' && key != 'contents' && key != 'filename') {
+          file[key] = opts[key];
+        }
       }
+
+      logger.log("creating", file.relative);
 
       if (opts.contents) {
         var onContents = Promise.resolve(opts.contents)
           .then(function (contents) {
-            logger.log("creating", opts.filename);
             file.setContents(contents);
             stream.push(file);
           });
@@ -251,12 +279,7 @@ exports.addToAPI = function (api, app, config) {
     }
 
     function onEnd(cb) {
-      if (opts.parent) {
-        opts.parent.end();
-      }
-
-      return Promise.all(blockingEnd)
-        .then(function () {
+      return Promise.try(function () {
           if (opts.onEnd) {
             return opts.onEnd.call(stream, addFile);
           }
@@ -269,42 +292,28 @@ exports.addToAPI = function (api, app, config) {
           cb();
         });
     }
-
-    var stream = through2.obj(undefined,
-          (opts.parent || opts.onFile) && onFile,
-          (opts.parent || opts.onEnd) && onEnd);
-
-    // proxy events to ourself
-    if (opts.parent) {
-      opts.parent.on('data', function (file) {
-        if (opts.onFile) {
-          var promise = callOnFile(file);
-          blockingEnd.push(promise);
-          promise.then(function () {
-            blockingEnd.splice(blockingEnd.indexOf(promise), 1);
-          });
-        } else {
-          stream.emit('data', file);
-        }
-      });
-
-      blockingEnd.push(new Promise(function (resolve) {
-        opts.parent.on('end', resolve);
-      }));
-
-      opts.parent.on('error', function (err) {
-        stream.emit('error', err);
-      });
-    }
-
-    return stream;
   }
 };
 
 function streamToPromise (stream) {
   return new Promise(function (resolve, reject) {
     stream
-      .on('end', resolve)
+      .on('finish', resolve)
       .on('error', reject);
   });
+}
+
+function ObjectSink() {
+  EventEmitter.call(this);
+  this.writable = true;
+}
+
+util.inherits(ObjectSink, EventEmitter);
+
+ObjectSink.prototype.write = function write(chunk, encoding, callback) {
+  return true;
+};
+
+ObjectSink.prototype.end = function () {
+  return true;
 }

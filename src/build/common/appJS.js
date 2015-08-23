@@ -1,5 +1,6 @@
 var JSCompiler = require('../common/jsCompiler').JSCompiler;
 var JSConfig = require('../common/jsConfig').JSConfig;
+var createStreamWrapper = require('../common/stream-wrap').createStreamWrapper;
 
 exports.initialImports = {
   'native': 'devkit.native.launchClient',
@@ -29,21 +30,22 @@ exports.create = function (api, app, config, opts) {
         preCompress: config.preCompressCallback
       });
 
-  var stream = api.streams.createFileStream({
-    parent: inlineCache,
-    onEnd: function (addFile) {
-      return Promise.all(opts.tasks)
-        .then(function (tasks) {
-          addFile({
-            filename: opts.filename,
-            contents: compileAppJS
-              .then(function (js) {
-                return opts.composite(tasks, js, inlineCache, jsConfig);
-              })
+  var stream = createStreamWrapper()
+    .wrap(inlineCache)
+    .wrap(api.streams.createFileStream({
+      onEnd: function (addFile) {
+        return Promise.all(opts.tasks)
+          .then(function (tasks) {
+            addFile({
+              filename: opts.filename,
+              contents: compileAppJS
+                .then(function (js) {
+                  return opts.composite(tasks, js, inlineCache, jsConfig);
+                })
+            });
           });
-        });
-    }
-  });
+      }
+    }));
 
   stream.config = jsConfig;
   stream.getOpts = function () { return opts; };
