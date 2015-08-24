@@ -176,10 +176,10 @@ exports.addToAPI = function (api, app, config) {
    *     with a function `addFile` that can be used to create and insert
    *     additional files into the stream.  Must return a Promise to delay the
    *     stream if it does any async work.
-   * @param {function} opts.onEnd called when the stream ends with the same
-   *     `addFile` function.  Useful for writing additional files to the
-   *     stream. Must return a Promise to delay the stream if it does any
-   *     async work. addFile accepts a dictionary with the keys/values:
+   * @param {function} opts.onFinish called when the stream ends with the same
+   *     `addFile` function.  Useful for writing additional files to the stream.
+   *     Must return a Promise to delay the stream if it does any async work.
+   *     addFile accepts a dictionary with the keys/values:
    *
    *       filename {string}  relative path to file in build output
    *       contents {Buffer | string | Promise} (optional) buffer, string, or
@@ -193,21 +193,24 @@ exports.addToAPI = function (api, app, config) {
    */
   function createFileStream(opts) {
 
-    var addFilePromises = [];
+    var blockingEnd = [];
     var stream = through2.obj(undefined,
           opts.onFile && onFile,
-          onEnd);
+          onFinish);
     return stream;
 
     function onFile(file, enc, cb) {
-      Promise.resolve(opts.onFile.call(this, file))
+      // don't end the read stream though until we've pushed all the data
+      // through
+      blockingEnd.push(Promise.resolve(opts.onFile.call(this, file))
         .then(function (res) {
           if (res !== api.streams.REMOVE_FILE) {
             stream.push(file);
           }
+        }));
 
-          cb();
-        });
+      // ok to write more
+      cb();
     }
 
     function addFile(opts) {
@@ -243,7 +246,7 @@ exports.addToAPI = function (api, app, config) {
       if (typeof opts.then == 'function') {
         // probably a promise, try to resolve first
         var beforeAddFile = Promise.resolve(opts).then(addFile);
-        addFilePromises.push(beforeAddFile);
+        blockingEnd.push(beforeAddFile);
         return beforeAddFile;
       }
 
@@ -270,20 +273,26 @@ exports.addToAPI = function (api, app, config) {
             file.setContents(contents);
             stream.push(file);
           });
-        addFilePromises.push(onContents);
+        blockingEnd.push(onContents);
       } else {
         stream.push(file);
       }
     }
 
-    function onEnd(cb) {
+    // called by through2 when the write stream has finished
+    function onFinish(cb) {
       return Promise.try(function () {
-          if (opts.onEnd) {
-            return opts.onEnd.call(stream, addFile);
+          if (opts.onFinish) {
+            return opts.onFinish.call(stream, addFile);
           }
         })
         .then(function () {
-          return addFilePromises;
+          // while we're waiting for promises to finish, we can't call the write
+          // finish callback since we may still want to push stuff onto the read
+          // stream.  If we call the callback now and there's nothing in the
+          // read stream, it'll emit the read 'end' event and we'll be unable to
+          // push more data.
+          return blockingEnd;
         })
         .all()
         .then(function () {

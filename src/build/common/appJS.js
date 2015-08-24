@@ -33,7 +33,7 @@ exports.create = function (api, app, config, opts) {
   var stream = createStreamWrapper()
     .wrap(inlineCache)
     .wrap(api.streams.createFileStream({
-      onEnd: function (addFile) {
+      onFinish: function (addFile) {
         return Promise.all(opts.tasks)
           .then(function (tasks) {
             addFile({

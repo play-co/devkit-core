@@ -51,7 +51,7 @@ function createSourceMap(api, filename) {
         sourceMap[slash(file.relative)] = file.history[0];
       }
     },
-    onEnd: function (addFile) {
+    onFinish: function (addFile) {
       addFile({
         filename: filename,
         contents: JSON.stringify(sourceMap)

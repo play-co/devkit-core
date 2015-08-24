@@ -16,7 +16,7 @@ exports.create = function(api, app, config, filename) {
         }
       }
     },
-    onEnd: function (addFile) {
+    onFinish: function (addFile) {
       addFile({
         filename: filename,
         contents: printf('CACHE MANIFEST\n' +

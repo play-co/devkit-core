@@ -90,7 +90,7 @@ exports.create = function (api, app, config) {
             return fs.remove(tempDir);
           });
       });
-  }
+  };
 
   return stream;
 };

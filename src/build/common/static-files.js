@@ -6,7 +6,7 @@ exports.create = function (api) {
   var filesToAdd = [];
 
   var stream = api.streams.createFileStream({
-    onEnd: function (addFile) {
+    onFinish: function (addFile) {
       filesToAdd.forEach(addFile);
     }
   });
