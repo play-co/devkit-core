@@ -211,6 +211,8 @@ exports.addToAPI = function (api, app, config) {
     }
 
     function addFile(opts) {
+      if (!opts) { return; }
+
       // legacy config, probably from app manifest -- only a single string is
       // provided with no instructions on where it goes
       if (typeof opts == 'string') {
