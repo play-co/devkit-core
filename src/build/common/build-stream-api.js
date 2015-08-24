@@ -62,23 +62,26 @@ exports.createStreamingBuild = function (createStreams) {
     streamOrder.map(function (id) {
       if (!id) { return; }
 
-      var nextStream = api.streams.get(id) || api.streams.create(id);
-      nextStream.on('end', function () {
-        logger.log(id, 'complete');
-      });
-      nextStream.on('error', function (err) {
-        logger.log(id, err);
-      });
-      buildStream = buildStream.pipe(nextStream);
+      buildStream = buildStream.pipe((api.streams.get(id) || api.streams.create(id))
+        .on('end', function () {
+          logger.log(id, 'complete');
+        })
+        .on('error', function (err) {
+          logger.log(id, err);
+        }));
     });
 
-    buildStream.pipe(new ObjectSink());
+    // add a final sink so the last pipe has something draining it
+    buildStream = buildStream.pipe(new ObjectSink());
 
-    buildStream.on('end', function () {
-      logger.log('writing files complete');
-    });
-
-    return streamToPromise(buildStream)
+    return new Promise(function (resolve, reject) {
+        buildStream
+          .on('finish', resolve)
+          .on('error', reject);
+      })
+      .then(function () {
+        logger.log('writing files complete');
+      })
       .nodeify(cb);
   };
 };
@@ -162,8 +165,6 @@ exports.addToAPI = function (api, app, config) {
 
     createFileStream: createFileStream,
 
-    streamToPromise: streamToPromise,
-
     REMOVE_FILE: REMOVE_FILE
   };
 
@@ -171,11 +172,6 @@ exports.addToAPI = function (api, app, config) {
    * Simplifies creation of duplex object streams for the devkit use case of
    * streams that only contain File objects.
    *
-   * @param {Stream} opts.parent another stream that this stream should wrap. When
-   *     something pipes to the new stream, the files are first sent through
-   *     the parent stream.  Effectively, this new stream encapsulates and
-   *     hides the parent stream (nothing need/should pipe to the parent
-   *     stream).
    * @param {function} opts.onFile called for each file object in the stream
    *     with a function `addFile` that can be used to create and insert
    *     additional files into the stream.  Must return a Promise to delay the
@@ -295,14 +291,6 @@ exports.addToAPI = function (api, app, config) {
   }
 };
 
-function streamToPromise (stream) {
-  return new Promise(function (resolve, reject) {
-    stream
-      .on('finish', resolve)
-      .on('error', reject);
-  });
-}
-
 function ObjectSink() {
   EventEmitter.call(this);
   this.writable = true;
@@ -315,5 +303,6 @@ ObjectSink.prototype.write = function write(chunk, encoding, callback) {
 };
 
 ObjectSink.prototype.end = function () {
+  this.emit('finish');
   return true;
-}
+};

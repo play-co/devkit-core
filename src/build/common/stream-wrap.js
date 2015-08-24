@@ -36,14 +36,14 @@ WrapStreams.prototype.wrap = function (stream) {
   }
 
   return this;
-}
+};
 
 WrapStreams.prototype._write = function (chunk, encoding, cb) {
   // forward chunks into the first stream
   this._firstStream.write(chunk, encoding);
   cb();
-}
+};
 
 WrapStreams.prototype._read = function () {
 
-}
+};
