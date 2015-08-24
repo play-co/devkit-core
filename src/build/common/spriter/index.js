@@ -36,7 +36,7 @@ exports.sprite = function (api, config) {
         return api.streams.REMOVE_FILE;
       }
     },
-    onEnd: function (addFile) {
+    onFinish: function (addFile) {
       return spriter.sprite(addFile);
     }
   });

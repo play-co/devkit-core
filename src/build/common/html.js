@@ -71,7 +71,7 @@ exports.create = function (api, app, config, opts) {
 
   // generate html when stream ends
   return api.streams.createFileStream({
-    onEnd: function (addFile) {
+    onFinish: function (addFile) {
       // wait for file-system tasks to finish
       return Promise.all(tasks)
         .spread(function (preloadJS, bootstrapCSS, bootstrapJS, liveEditJS) {
