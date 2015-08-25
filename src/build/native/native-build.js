@@ -1,13 +1,12 @@
 var fs = require('../fs');
 var path = require('path');
 
-var buildStreamAPI = require('../common/build-stream-api');
-
 // Packaging for Native.
 // Native on any platform requires a compiled JavaScript file, so we make this
 // generic and include it here.
 
-exports.createStreams = function (api, app, config) {
+exports.setupStreams = function (api, app, config) {
+
   var logger = api.logging.get('native-resources');
   logger.log(config.target + ': writing resources for', config.appID);
 
@@ -32,15 +31,14 @@ exports.createStreams = function (api, app, config) {
 
   api.streams.create('static-files')
     .add({filename: 'manifest.json', contents: JSON.stringify(app.manifest)});
+};
 
-  // return the order in which the streams should run
+exports.getStreamOrder = function (api, app, config) {
   return [
     'spriter',
     'app-js',
     'static-files',
-    'output',
+    'write-files',
     config.compressImages && 'image-compress'
   ];
 };
-
-exports.writeNativeResources = buildStreamAPI.createStreamingBuild(exports.createStreams);
