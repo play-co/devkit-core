@@ -1,8 +1,8 @@
 var path = require('path');
-var fs = require('fs');
 var util = require('util');
 var slash = require('slash');
 
+var fs = require ('../../fs');
 var through2 = require('through2');
 var File = require('vinyl');
 var glob = Promise.promisify(require('glob'));

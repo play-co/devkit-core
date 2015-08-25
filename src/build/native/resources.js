@@ -1,6 +1,5 @@
-var fs = require('fs');
+var fs = require('../fs');
 var path = require('path');
-var readFile = Promise.promisify(fs.readFile);
 
 var buildStreamAPI = require('../common/build-stream-api');
 
@@ -17,7 +16,7 @@ exports.createStreams = function (api, app, config) {
   api.streams.create('app-js', {
     env: 'native',
     tasks: [
-      readFile(path.join(__dirname, 'env.js'), 'utf8')
+      fs.readFileAsync(path.join(__dirname, 'env.js'), 'utf8')
     ],
     inlineCache: true,
     filename: 'native.js',

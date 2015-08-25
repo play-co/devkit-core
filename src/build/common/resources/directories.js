@@ -1,10 +1,7 @@
-var fs = require('graceful-fs');
 var path = require('path');
 
+var fs = require('../../fs');
 var DirectoryBuilder = require('./DirectoryBuilder');
-
-var readDir = Promise.promisify(fs.readdir);
-var stat = Promise.promisify(fs.stat);
 
 /**
  * Return a list of directories containing resources for an app
@@ -33,9 +30,9 @@ exports.get = function (api, app, config) {
   builder.add('resources');
 
   // add any localized resource directories
-  return readDir(appPath).filter(function (filename) {
+  return fs.readdirAsync(appPath).filter(function (filename) {
       if (/^resources-/.test(filename)) {
-        return stat(path.join(appPath, filename)).then(function (info) {
+        return fs.statAsync(path.join(appPath, filename)).then(function (info) {
           return info.isDirectory();
         }, function onStatFail() {
           return false;

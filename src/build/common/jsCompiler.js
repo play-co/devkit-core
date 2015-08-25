@@ -1,5 +1,4 @@
 var path = require('path');
-var fs = require('fs');
 var crypto = require('crypto');
 
 var argv = require('optimist').argv;
@@ -11,7 +10,7 @@ var jsio = require('jsio').clone();
 
 var uglify = require('uglify-js');
 
-function deepCopy(obj) { return obj && JSON.parse(JSON.stringify(obj)); }
+var fs = require('../fs');
 
 var logger;
 var compressLog;

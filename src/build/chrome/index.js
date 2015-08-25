@@ -14,8 +14,7 @@
  */
 
 var path = require('path');
-var fs = require('fs');
-var readFile = Promise.promisify(fs.readFile);
+var fs = require('../fs');
 var buildStreamAPI = require('../common/build-stream-api');
 
 var logger;
@@ -33,7 +32,7 @@ exports.configure = function (api, app, config, cb) {
   logger = api.logging.get('build-chrome');
 
   Promise.join(
-      readFile(path.join(STATIC_DIR, 'localStorage.html'), 'utf8'),
+      fs.readFileAsync(path.join(STATIC_DIR, 'localStorage.html'), 'utf8'),
       browserBuild.configure(api, app, config),
       function (localStorageHTML) {
         // add in the custom JS to create the localStorage object
@@ -68,7 +67,7 @@ exports.createStreams = function (api, app, config) {
 
   // get the browser build's static-file stream and add in our static files
   api.streams.get('static-files')
-    .add(readFile(path.join(STATIC_DIR, 'background.js'), 'utf8')
+    .add(fs.readFileAsync(path.join(STATIC_DIR, 'background.js'), 'utf8')
       .then(function (backgroundJS) {
         return {
           filename: 'background.js',

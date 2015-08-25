@@ -1,6 +1,5 @@
-var fs = require('graceful-fs');
 var path = require('path');
-var readFile = Promise.promisify(fs.readFile);
+var fs = require('../../fs');
 
 var METADATA_JSON = 'metadata.json';
 
@@ -38,7 +37,7 @@ exports.get = function (file) {
 };
 
 function loadMetadata(parent, filename) {
-  return readFile(filename)
+  return fs.readFileAsync(filename)
     .then(function onRead(contents) {
       var value = JSON.parse(contents);
       if (value.rules) {

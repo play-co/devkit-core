@@ -1,6 +1,6 @@
 var printf = require('printf');
 var path = require('path');
-var fs = require('fs');
+var fs = require('../fs');
 var mime = require('mime');
 
 var toDataURI = require('./datauri').toDataURI;

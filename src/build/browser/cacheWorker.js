@@ -1,6 +1,5 @@
-var fs = require('graceful-fs');
 var path = require('path');
-var readFile = Promise.promisify(fs.readFile);
+var fs = require('../fs');
 
 function string(value) {
   return '\'' + value
@@ -16,7 +15,7 @@ function getLocalFilePath(filePath) {
 
 exports.generate = function (config) {
   // build cache-worker
-  return readFile(getLocalFilePath('../../clientapi/browser/cache-worker.js'), 'utf8')
+  return fs.readFileAsync(getLocalFilePath('../../clientapi/browser/cache-worker.js'), 'utf8')
     .then(function (js) {
       var keys = {
         'APP_ID': string(config.appID),
