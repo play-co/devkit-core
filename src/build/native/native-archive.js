@@ -1,4 +1,5 @@
 var path = require('path');
+var createBuildTarget = require('../index').createBuildTarget;
 
 exports.opts = require('optimist')(process.argv)
     .alias('help',  'h').describe('help', 'Display this help menu')
@@ -15,14 +16,12 @@ exports.opts = require('optimist')(process.argv)
                         .boolean('clean')
                         .default('clean', false);
 
-exports.configure = function (api, app, config, cb) {
+createBuildTarget(exports);
+
+exports.init = function (api, app, config) {
   logger = api.logging.get('build-native');
 
-  // add in any common config keys
-  require('../common/config').extend(app, config);
-
   var argv = exports.opts.argv;
-
   config.repack = argv.repack;
   config.open = argv.open;
   config.reveal = argv.reveal;
@@ -32,97 +31,101 @@ exports.configure = function (api, app, config, cb) {
   config.enableLogging = !argv.debug && argv.enableReleaseLogging;
   config.powerOfTwoSheets = true;
 
-  cb && cb();
-};
-
-// returns an archive with a patched finalize function that calls the original
-// finalize and then returns a Promise that resolves when the write stream
-// closes or rejects on errors
-function createArchive(archivePath) {
-  var archiver = require('archiver');
-  var archive = archiver.create('zip', {});
-  var fs = require('../fs');
-  var output = fs.createWriteStream(archivePath);
-  archive.pipe(output);
-
-  var onFinish = new Promise(function (resolve, reject) {
-    output.on('finish', resolve);
-    output.on('error', reject);
-    archive.on('error', reject);
-  });
-
-  var finalize = archive.finalize;
-  archive.finalize = function () {
-    finalize.apply(this, arguments);
-    return onFinish;
-  };
-
-  return archive;
-}
-
-// takes a app, subtarget(android/ios), additional opts.
-exports.build = function (api, app, config, cb) {
-  logger = api.logging.get('build-native');
-
-  var fs = require('../fs');
-  var glob = Promise.promisify(require('glob'));
-
+  // TODO: move this
   var outPath = config.outputResourcePath;
   if (exports.opts.argv.clean) {
+    var fs = require('fs');
     fs.removeSync(outPath);
     fs.mkdirsSync(outPath);
   }
+};
 
-  var archive;
-  var archiveName = app.manifest.shortName + '.zip';
+// returns an stream that archives all the files in the build stream
+function createArchiveStream(api, app, config) {
+  var archiver = require('archiver');
+  var fs = require('../fs');
 
-  require('./resources')
-    .writeNativeResources(api, app, config)
-    .then(function (buildResult) {
-      if (config.archiveBrowserBuild) {
-        var browserBuilder = require('../browser/');
-        config.target = 'browser-mobile';
-        return browserBuilder
-          .configure(api, app, config)
-          .then(function () {
-            config.spritesheets = buildResult.spritesheets;
-            return browserBuilder.build(api, app, config);
+  var _files = [];
+  return api.streams.createFileStream({
+    onFile: function (file) {
+      _files.push({
+        filename: file.path,
+        stream: fs.createReadStream(file.path)
+      });
+    },
+    onFinish: function () {
+      _files.sort(function (a, b) {
+        return a.filename.localeCompare(b.filename);
+      });
+
+      var filename = app.manifest.shortName + '.zip';
+      var archivePath = path.join(config.outputPath, filename);
+      var archive = archiver.create('zip', {});
+      var output = fs.createWriteStream(archivePath);
+      archive.pipe(output);
+
+      var onFinish = new Promise(function (resolve, reject) {
+        output.on('finish', resolve);
+        output.on('error', reject);
+        archive.on('error', reject);
+      });
+
+      _files.forEach(function (file) {
+        var zipPath = file.filename.replace(config.outputPath + path.sep, '');
+        archive.append(file.stream, {name: zipPath});
+      });
+
+      archive.finalize();
+      return onFinish
+        .then(function () {
+          logger.log('archive created: ', archivePath);
+        });
+    }
+  });
+}
+
+// takes a app, subtarget(android/ios), additional opts.
+exports.setupStreams = function (api, app, config) {
+  logger = api.logging.get('build-native');
+
+  // inherit the native resources
+  require('./native-build').setupStreams(api, app, config);
+
+  if (config.archiveBrowserBuild) {
+
+    // a stream that can run the browser build
+    api.streams.register('browser-build', api.streams.createFileStream({
+      onFinish: function (addFile) {
+        var spritesheets = api.build.getResult('spritesheets');
+        var browserBuild = require('../browser/');
+        var browserConfig = merge({
+            target: 'browser-mobile',
+
+            // the spriter will reuse these rather than respriting
+            spritesheets: spritesheets
+          }, config);
+
+        return api.build.execute(browserBuild, browserConfig)
+          .then(function (res) {
+            res.files.forEach(function (filename) {
+              addFile({filename: filename});
+            });
           });
       }
-    })
-    .then(function () {
-      var archivePath = path.join(outPath, archiveName);
+    }));
+  }
 
-      archive = createArchive(archivePath);
+  api.streams.register('archive', createArchiveStream(api, app, config));
+};
 
-      // Find files in the output directory
-      return glob(path.join(outPath, '**', '*'));
-    })
-    .call('sort', function(a, b) {
-      return a.localeCompare(b);
-    })
-    .each(function (file) {
-      var zipPath = file.replace(outPath + path.sep, '');
-      // Skip any existing archive file
-      if (zipPath === archiveName) {
-        return;
-      }
+exports.getStreamOrder = function (api, app, config) {
+  var order = require('./native-build').getStreamOrder(api, app, config);
 
-      return fs.statAsync(file)
-        .then(function (stats) {
-          if (stats.isDirectory()) {
-            archive.append(new Buffer(0), {name: zipPath + '/'});
-            return;
-          }
+  if (config.archiveBrowserBuild) {
+    order.push('browser-build');
+  }
 
-          return fs.readFileAsync(file)
-            .then(function (buffer) {
-              archive.append(buffer, {name: zipPath});
-            });
-        });
-    })
-    .then(function () {
-      return archive.finalize();
-    })
-    .nodeify(cb);
+  order.push('archive');
+
+  return order;
 };

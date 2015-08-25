@@ -29,7 +29,12 @@ exports.sprite = function (api, config) {
     cacheFile: getCacheFilePath(config, CACHE_FILENAME)
   });
 
-  return api.streams.createFileStream({
+  if (config.spritesheets) {
+    api.logging.get('spriter').log('reusing previous spriter result');
+    spriter.reuseSheets(config.spritesheets);
+  }
+
+  var stream = api.streams.createFileStream({
     onFile: function (file) {
       if ((file.extname in SPRITABLE_EXTS)
           && file.getOption('sprite') !== false) {
@@ -38,9 +43,16 @@ exports.sprite = function (api, config) {
       }
     },
     onFinish: function (addFile) {
-      return spriter.sprite(addFile);
+      return spriter.sprite(addFile)
+        .then(function () {
+          api.build.addResult('spritesheets', spriter.getResult());
+        });
     }
   });
+
+  stream.spriter = spriter;
+
+  return stream;
 };
 
 var DevKitSpriter = Class(function () {
@@ -71,18 +83,36 @@ var DevKitSpriter = Class(function () {
     // disk cache
     if (opts.cacheFile) {
       this._getCache = fs.mkdirsAsync(path.dirname(opts.cacheFile))
+        .bind(this)
         .then(function () {
           return spriter.loadCache(opts.cacheFile, spritesheetsDirectory);
         });
     }
+
+    // set to true if reusing the spritesheets from a different build
+    this._skipSpriting = false;
 
     // resulting spritesheets indexed by name for map.json
     this._sheets = {};
 
     // sizes - storage for legacy spritesheetSizeMap.json
     this._sizes = {};
-
   };
+
+  this.getResult = function () {
+    return {
+      sheets: this._sheets,
+      sizes: this._sizes
+    };
+  };
+
+  this.reuseSheets = function (previousResult) {
+    this._skipSpriting = true;
+    this._sheets = previousResult.sheets;
+    this._sizes = previousResult.sizes;
+  };
+
+  this.getSizes = function () { return this._sizes; };
 
   function compressOptsToString(opts) {
     var keys = Object.keys(opts);
@@ -159,34 +189,42 @@ var DevKitSpriter = Class(function () {
   };
 
   this.sprite = function (addFile) {
-    return Promise.join(this._getCache, fs.mkdirsAsync(this._spritesheetsDirectory), function (cache) {
-        return Promise.resolve(Object.keys(this._groups))
-          .bind(this)
-          .map(function (key) {
-            var group = this._groups[key];
-            return this._spriteIfNotCached(addFile, cache, key, group);
-          })
-          .then(function () {
-            this._taskQueue.shutdown();
-
-            addFile({
-              filename: 'spritesheets/map.json',
-              contents: JSON.stringify(this._sheets)
+    return this._getCache
+      .then(function (cache) {
+        if (!this._skipSpriting) {
+          return fs.mkdirsAsync(this._spritesheetsDirectory)
+            .bind(this)
+            .then(function () {
+              return Object.keys(this._groups);
+            })
+            .map(function (key) {
+              var group = this._groups[key];
+              return this._spriteIfNotCached(addFile, cache, key, group);
+            })
+            .then(function () {
+              return [
+                this._cleanup(),
+                cache && cache.save()
+              ];
+            })
+            .all()
+            .finally(function () {
+              this._taskQueue.shutdown();
             });
+        }
+      })
+      .then(function () {
+        addFile({
+          filename: 'spritesheets/map.json',
+          contents: JSON.stringify(this._sheets)
+        });
 
-            addFile({
-              filename: 'spritesheets/spritesheetSizeMap.json',
-              contents: JSON.stringify(this._sizes),
-              inline: false
-            });
-
-            return [
-              this._cleanup(),
-              cache && cache.save()
-            ];
-          })
-          .all();
-      }.bind(this));
+        addFile({
+          filename: 'spritesheets/spritesheetSizeMap.json',
+          contents: JSON.stringify(this._sizes),
+          inline: false
+        });
+      });
   };
 
   /**

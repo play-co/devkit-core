@@ -1,26 +1,44 @@
 var path = require('path');
+var createBuildTarget = require('../index').createBuildTarget;
 
 exports.opts = require('optimist')(process.argv)
-    .alias('help', 'h').describe('help', 'Display this help menu')
-    .alias('debug', 'd').describe('debug', 'Create debug build').boolean('debug').default('debug', true)
-    .alias('clean', 'c').describe('clean', 'Clean build before compilation').boolean('clean').default('clean', false)
-    .alias('ipa', 'i').describe('ipa', 'Generate appName.ipa file as output for TestFlight').boolean('ipa').default('ipa', false)
-    .describe('sdk', '(optional) Specify an iOS SDK other than the default one').string('sdk')
-    .alias('provision', 'p').describe('provision', '(required for --ipa) Path to .mobileprovision profile file').string('provision')
-    .alias('developer', 'v').describe('developer', '(required for --ipa) Name of developer').string('developer')
-    .alias('open', 'o').describe('open', 'Open the XCode project after building, defaults to true for non-ipa builds, pass --no-open to override')
-    .describe('reveal').describe('reveal', 'Shows ipa or XCode project in Finder after build');
+  .describe('help', 'Display this help menu')
+    .alias('help', 'h')
+  .describe('debug', 'Create debug build')
+    .alias('debug', 'd')
+    .boolean('debug')
+    .default('debug', true)
+  .describe('clean', 'Clean build before compilation')
+    .alias('clean', 'c')
+    .boolean('clean')
+    .default('clean', false)
+  .describe('ipa', 'Generate appName.ipa file as output for TestFlight')
+    .alias('ipa', 'i')
+    .boolean('ipa')
+    .default('ipa', false)
+  .describe('sdk', '(optional) Specify an iOS SDK other than the default one')
+    .string('sdk')
+  .describe('provision', '(required for --ipa) Path to .mobileprovision profile file')
+    .alias('provision', 'p')
+    .string('provision')
+  .describe('developer', '(required for --ipa) Name of developer')
+    .alias('developer', 'v')
+    .string('developer')
+  .describe('open', 'Open the XCode project after building, defaults to true for non-ipa builds, pass --no-open to override')
+    .alias('open', 'o')
+  .describe('reveal', 'Shows ipa or XCode project in Finder after build');
 
-exports.configure = function (api, app, config, cb) {
-  logger = api.logging.get('build-native');
+createBuildTarget(exports);
+
+exports.init = function (api, app, config) {
+
+  // native-ios needs a global logger :( fixme
+  logger = api.logging.get('native-ios');
 
   if (!config.isSimulated) {
     config.xcodeResourcesPath = path.join('resources', 'resources.bundle');
     config.outputResourcePath = path.join(config.outputPath, "xcodeproject", config.xcodeResourcesPath);
   }
-
-  // add in any common config keys
-  require('../common/config').extend(app, config);
 
   var argv = exports.opts.argv;
 
@@ -44,29 +62,22 @@ exports.configure = function (api, app, config, cb) {
   }
 
   if (config.isSimulated) {
-    require('../browser/').configure(api, app, config, cb);
+    require('../browser/').configure(api, app, config);
   } else {
     config.powerOfTwoSheets = true;
-    cb && cb();
   }
 };
 
-// takes a app, subtarget(android/ios), additional opts.
-exports.build = function (api, app, config, cb) {
+var nativeBuild = require('./native-build');
 
-  logger = api.logging.get('build-native');
+exports.setupStreams = function (api, app, config) {
+  if (config.isSimulated) {
+    return require('../browser/').setupStreams(api, app, config);
+  }
 
-  // doesn't build ios - builds the js that it would use, then you shim out NATIVE
-  if (config.isTestApp) {
-    require('./resources').writeNativeResources(api, app, config, cb);
-  } else if (config.isSimulated) {
-    // Build simulated version
-    //
-    // When simulating, we build a native version which targets the native target
-    // but uses the browser HTML to host. A native shim is supplied to mimick native
-    // features, so that the code can be tested in the browser without modification.
-    require('../browser/').build(api, app, config, cb);
-  } else {
+  nativeBuild.setupStreams(api, app, config);
+
+  function runIOSBuild() {
     var iosBuild = require('../../../modules/native-ios/build');
     return Promise
       .resolve()
@@ -76,12 +87,23 @@ exports.build = function (api, app, config, cb) {
         }
       })
       .then(function () {
-        var nativeResources = require('./resources');
-        return Promise.fromNode(nativeResources.writeNativeResources.bind(nativeResources, api, app, config));
-      })
-      .then(function () {
-        return require('../../../modules/native-ios/build').build(api, app, config);
-      })
-      .nodeify(cb);
+        return iosBuild.build(api, app, config);
+      });
   }
+
+  api.streams.registerFunction('ios', runIOSBuild);
+};
+
+exports.getStreamOrder = function (api, app, config) {
+
+  if (config.isSimulated) {
+    return require('../browser/').getStreamOrder(api, app, config);
+  }
+
+  var order = nativeBuild.getStreamOrder(api, app, config);
+  if (!config.resourcesOnly) {
+    order.push('ios');
+  }
+
+  return order;
 };

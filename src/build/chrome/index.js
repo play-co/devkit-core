@@ -15,33 +15,37 @@
 
 var path = require('path');
 var fs = require('../fs');
-var buildStreamAPI = require('../common/build-stream-api');
+var createBuildTarget = require('../index').createBuildTarget;
+var browserBuild = require('../browser');
 
 var logger;
 
 // Static resources.
 var STATIC_DIR = path.join(__dirname, 'chrome-static');
-var browserBuild = require('../browser');
 
 exports.opts = require('optimist')(process.argv)
   .alias('baseURL', 'u')
   .describe('baseURL', 'all relative resources except for index'
                      + ' should be loaded from this URL');
 
-exports.configure = function (api, app, config, cb) {
+createBuildTarget(exports);
+
+exports.init = function (api, app, config) {
   logger = api.logging.get('build-chrome');
 
-  Promise.join(
+  browserBuild.configure(api, app, config);
+
+  return Promise.join(
       fs.readFileAsync(path.join(STATIC_DIR, 'localStorage.html'), 'utf8'),
-      browserBuild.configure(api, app, config),
       function (localStorageHTML) {
         // add in the custom JS to create the localStorage object
         config.browser.headHTML.push(localStorageHTML);
-      })
-    .nodeify(cb);
+      });
 };
 
-exports.createStreams = function (api, app, config) {
+exports.setupStreams = function (api, app, config) {
+
+  browserBuild.setupStreams(api, app, config);
 
   // Hack in a new localStorage for all modules that will point to a custom
   // Chrome friendly local storage (which is initilized before jsio)
@@ -62,8 +66,6 @@ exports.createStreams = function (api, app, config) {
       logger.error('Failed to inject custom localStorage!');
     }
   };
-
-  var streamOrder = browserBuild.createStreams(api, app, config);
 
   // get the browser build's static-file stream and add in our static files
   api.streams.get('static-files')
@@ -121,10 +123,8 @@ exports.createStreams = function (api, app, config) {
         src: iconPath
       };
     }));
-
-  // return the browser build's stream order
-  return streamOrder;
 };
 
-exports.build = buildStreamAPI.createStreamingBuild(exports.createStreams);
+// reuse the browser build's stream order
+exports.getStreamOrder = browserBuild.getStreamOrder;
 

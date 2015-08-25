@@ -5,9 +5,20 @@
 exports.create = function (api) {
   var filesToAdd = [];
 
+  var logger = api.logging.get('static-files');
+
   var stream = api.streams.createFileStream({
     onFinish: function (addFile) {
-      filesToAdd.forEach(addFile);
+      return Promise.all(filesToAdd)
+        .map(function (file) {
+          if (file.filename) {
+            logger.log('creating', file.filename);
+          } else if (file.src) {
+            logger.log('copying', file.src);
+          }
+
+          addFile(file);
+        });
     }
   });
 

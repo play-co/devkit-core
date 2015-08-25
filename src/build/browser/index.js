@@ -13,7 +13,7 @@
  * You should have received a copy of the Mozilla Public License v. 2.0
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
-var buildStreamAPI = require('../common/build-stream-api');
+var createBuildTarget = require('../index').createBuildTarget;
 var offlineManifest = require('./offlineManifest');
 var cacheWorker = require('./cacheWorker');
 var webAppManifest = require('./webAppManifest');
@@ -28,16 +28,96 @@ exports.opts = require('optimist')(process.argv)
   .describe('baseURL', 'all relative resources except for index should be'
                      + 'loaded from this URL');
 
-exports.configure = function (api, app, config, cb) {
+createBuildTarget(exports);
+
+exports.init = function (api, app, config) {
   logger = api.logging.get('build-browser');
 
-  // add in any common config keys
-  require('../common/config').extend(app, config);
+  var webAppManifest = {
+    "name": app.manifest.title,
+    "short_name": app.manifest.shortname,
+    "icons": JSON.parse(JSON.stringify(app.manifest.icons || [])),
+    "start_url": "index.html",
+    "display": "standalone"
+  };
 
-  // add in browser-specific config keys
-  require('./browserConfig').insert(app, config, exports.opts.argv);
+  if (config.isSimulated) {
+    config.browser = {
+      embedSplash: false,
+      embedFonts: false,
+      appleTouchIcon: false,
+      appleTouchStartupImage: false,
+      frame: {},
+      canvas: {},
+      copy: [],
+      headHTML: [],
+      bodyHTML: [],
+      footerHTML: [],
+      webAppManifest: webAppManifest,
+      baseURL: ''
+    };
+    return;
+  }
 
-  return Promise.resolve().nodeify(cb);
+  // Exclude jsio in browser builds (we include it separately)
+  config.excludeJsio = !config.isSimulated;
+
+  config.browser = {};
+
+  merge(config.browser,
+      app.manifest.browser, // copy in keys from manifest
+      { // copy in defaults (if not present)
+        // include image for the apple-touch-icon meta tag (if webpage is saved to
+        // homescreen)
+        icon: true,
+        appleTouchIcon: true,
+        appleTouchStartupImage: true,
+
+        // embed fonts disabled by default (load over URL), if true, base64 encode
+        // them into the css
+        embedFonts: false,
+
+        // embed a base64 splash screen (background-size: cover)
+        embedSplash: true,
+        cache: [],
+        copy: [],
+        desktopBodyCSS: '',
+
+        // html to insert
+        headHTML: [],
+        bodyHTML: [],
+        footerHTML: [],
+
+        // web app manifest, converted to json
+        webAppManifest: webAppManifest,
+
+        // browser framing options
+        frame: {},
+        canvas: {},
+        baseURL: exports.opts.argv.baseURL || ''
+      });
+
+  merge(config.browser.frame, {width: 320, height: 480});
+  merge(config.browser.canvas, {width: 320, height: 480});
+
+  var spinnerOpts = config.browser.spinner;
+  if (spinnerOpts) {
+    // provide defaults for the browser splash screen spinner
+    merge(spinnerOpts, {
+      x: '50%', y: '50%',
+      width: '90px', height: '90px',
+      color0: 'rgba(255, 255, 255, 0.2)', color1: '#FFF'
+    });
+
+    // convert numbers to numbers with units
+    ['width', 'height'].forEach(function (key) {
+      var match = spinnerOpts[key].match(/^-?[0-9.]+(.*)$/);
+      spinnerOpts[key] = {
+        value: parseFloat(spinnerOpts[key]),
+        unit: match && match[1] || 'px'
+      };
+    });
+  }
 };
 
 function createSourceMap(api, filename) {
@@ -57,7 +137,7 @@ function createSourceMap(api, filename) {
   });
 }
 
-exports.createStreams = function (api, app, config) {
+exports.setupStreams = function (api, app, config) {
   // register streams
   var streams = api.streams;
 
@@ -70,7 +150,7 @@ exports.createStreams = function (api, app, config) {
       tasks: [],
       inlineCache: true,
       filename: config.target + '.js',
-      composite: function (tasks, js, cache, config) {
+      composite: function (tasks, js, cache, jsConfig) {
         return 'NATIVE=false;'
           + 'CACHE=' + JSON.stringify(cache) + ';\n'
           + js + ';'
@@ -84,8 +164,9 @@ exports.createStreams = function (api, app, config) {
     .add(webAppManifest.create(api, app, config))
     .add(config.browser.copy)
     .add(app.manifest.browser && app.manifest.browser.icons);
+};
 
-  // return the order in which the streams should run
+exports.getStreamOrder = function (api, app, config) {
   var order = [
     'resource-source-map',
     'spriter',
@@ -94,7 +175,7 @@ exports.createStreams = function (api, app, config) {
     'static-files',
     'app-js',
     'html5-cache-manifest',
-    'output'
+    'write-files'
   ];
 
   if (config.compressImages) {
@@ -103,6 +184,3 @@ exports.createStreams = function (api, app, config) {
 
   return order;
 };
-
-exports.build = buildStreamAPI.createStreamingBuild(exports.createStreams);
-

@@ -1,108 +1,300 @@
-var path = require('path');
+var util = require('util');
+var EventEmitter = require('events').EventEmitter;
+var vfs = require('vinyl-fs');
+var resources = require('./common/resources');
+var createStreamWrapper = require('./common/stream-wrap').createStreamWrapper;
+var FilterStream = require('streamfilter');
+var Promise = require('bluebird');
 
-exports.onBeforeBuild = function (app, target, opts, cb) {
-	var appPath = app.paths.root;
-
-	// Font sheets cannot be sprited; add a metadata.json file for fonts (for compatibility)
-	writeDefaultMetadata(appPath, "resources/fonts", {'sprite': false});
-	writeDefaultMetadata(appPath, "resources/icons", {'sprite': false, 'package': false});
-	writeDefaultMetadata(appPath, "resources/splash", {'sprite': false, 'package': false});
-
-	if (!manifest.splash || !Object.keys(manifest.splash).length) {
-		wrench.mkdirSyncRecursive(path.join(appPath, "resources/splash"));
-		config.splash = updateSplash(common.paths.root("/src/init/templates/empty/"), opts.appPath);
-		manifest.splash = JSON.parse(JSON.stringify(config.splash));
-	} else {
-		config.splash = JSON.parse(JSON.stringify(manifest.splash));
-	}
+function BuildError(message, showStack) {
+  this.message = message;
+  this.showStack = showStack || false;
 }
 
-function writeDefaultMetadata(appPath, directory, metadata) {
-	var directory = path.resolve(appPath, directory);
-	var metadataFile = path.join(directory, "metadata.json");
-	if (fs.existsSync(directory) && fs.lstatSync(directory).isDirectory() && !fs.existsSync(metadataFile)) {
-		fs.writeFileSync(metadataFile, JSON.stringify(metadata, null, '  '));
-	}
+util.inherits(BuildError, Error);
+
+exports.BuildError = BuildError;
+
+/**
+ * DevKit3 build targets must export three properties: opts, configure, and
+ * build.  To use streaming builds, this function creates the required configure
+ * and build functions, and asks that the implementor then provide the following
+ * functions:
+ *
+ *   - exports.init, called to setup the config object
+ *   - exports.setupStreams, called to setup the streams required for a build
+ *     using one of the following helper functions:
+ *        - api.streams.create(id, opts) - built-in stream with optional opts,
+ *          see below for a list of the built-in streams
+ *        - api.streams.register(id, stream) - custom stream, see
+ *          api.streams.createFileStream for a convenience wrapper
+ *        - api.streams.registerFunction(id, cb) - custom stream (calls cb at
+ *          the end of the previous stream)
+ *     Note that id is a unique identifying string
+ *   - exports.getStreamOrder, called to get the order that the streams should
+ *     be connected in
+ *
+ * Devkit calls these three functions and then pipes the streams returned by
+ * getStreamOrder together with a source file stream.
+ *
+ * Build targets can easily inherit from each other by importing the another
+ * target and calling the other target's exports.
+ *
+ * Working with streams directly can be painful, so to facilitate creating and
+ * connecting streams, devkit-core wraps the through2 library with a higher-
+ * level file stream.
+ *
+ *    - spriter - the devkit-spriter
+ *    - inline-cache - filters out inlinable files, usually wrapped by the
+ *      app-js stream
+ *    - app-js - wraps inline-cache and constructs a compiled app js file
+ *    - fonts - moves fonts to resources/fonts and (optionally) embeds fonts
+ *      into css
+ *    - html - generates index.html for browser games
+ *    - static-files - does nothing by default, but after creating it, you
+ *      can get a reference to it using api.streams.get('static-files'). The
+ *      stream object has a convenience function .add() for functionally
+ *      adding files.  See createFileStream for help constructing valid
+ *      parameters to .add().
+ *    - write-files - writes the files to disk, unless they have the `written`
+ *      flag set on them (the spriter, for example, writes files out directly
+ *      but adds file objects back into the stream so that other streams such as
+ *      the offline cache manifest know about the spritesheet files)
+ */
+exports.createBuildTarget = function (buildExports) {
+
+  buildExports.configure = function (api, app, config, cb) {
+    api.streams = exports.getStreamAPI(api, app, config);
+    api.build = exports.getBuildAPI(api, app, config);
+
+    // add in any common config keys
+    require('./common/config').extend(app, config);
+
+    return Promise.resolve(buildExports.init(api, app, config))
+      .nodeify(cb);
+  };
+
+  buildExports.build = function (api, app, config, cb) {
+    var logger = api.logging.get(config.target);
+    if (!api.streams) {
+      logger.error('api.streams not available! Did you forget to call',
+        'build-stream-api\'s configure function in your configure step?');
+
+      throw new BuildError('configuration error');
+    }
+
+    var buildStream = api.streams.create('src');
+    return Promise.try(function () {
+        return buildExports.setupStreams(api, app, config);
+      })
+      .then(function () {
+        return buildExports.getStreamOrder(api, app, config);
+      })
+      // pipe all the streams together in the specified order
+      .map(function (streamId) {
+        if (!streamId) { return; }
+
+        buildStream = buildStream.pipe((api.streams.get(streamId) || api.streams.create(streamId))
+          .on('end', function () {
+            logger.log(streamId, 'complete');
+          })
+          .on('error', function (err) {
+            // showStack indicates this is a devkit build exception
+            if (err.showStack !== undefined) {
+              throw err;
+            } else {
+              logger.error(err);
+              logger.log('Unexpected error in stream', streamId);
+
+              var wrappedError = new BuildError('error in ' + streamId + ' stream');
+              wrappedError.originalError = err;
+              throw wrappedError;
+            }
+          }));
+      })
+      // add a final sink so the last pipe has something draining it
+      .then(function () {
+        var sink = new FileSink();
+        buildStream.pipe(sink);
+        return sink.onFinish.then(function (files) {
+          api.build.addResult('files', files);
+        });
+      })
+      .then(function () {
+        // build result
+        return api.build.getResults();
+      })
+      .nodeify(cb);
+  };
+};
+
+// token to return from onFile callbacks if the file should be removed
+var REMOVE_FILE = {};
+
+// adds stream api functions to the api object
+exports.getStreamAPI = function (api, app, config) {
+
+  var logger = api.logging.get(config.target);
+
+  // devkit < 3.1 incorrectly passed the raw app object rather than the public
+  // api -- just call toJSON to get the object we expect
+  if (!app.modules) {
+    app = app.toJSON();
+  }
+
+  var allStreams = {};
+  var createFileStream = require('./common/createFileStream').bind(null, api, app, config);
+
+  return {
+    get: function (id) {
+      return allStreams[id];
+    },
+    remove: function (id) {
+      delete allStreams[id];
+    },
+    removeAll: function () {
+      allStreams = {};
+    },
+    create: function (id, opts) {
+      var stream;
+      switch (id) {
+        case 'spriter':
+          stream = require('./common/spriter').sprite(api, config);
+          break;
+        case 'inline-cache':
+          stream = require('./common/inlineCache').create(api);
+          break;
+        case 'app-js':
+          stream = require('./common/appJS').create(api, app, config, opts);
+          break;
+        case 'fonts':
+          stream = require('./common/fontStream').create(api, config);
+          break;
+        case 'html':
+          stream = require('./common/html').create(api, app, config, opts);
+          break;
+        case 'static-files':
+          stream = require('./common/static-files').create(api, app, config);
+          break;
+        case 'image-compress':
+          stream = require('./common/image-compress').create(api, app, config);
+          break;
+        case 'log':
+          stream = createFileStream({
+            onFile: function (file) {
+              logger.log(file.path);
+            }
+          });
+          break;
+        case 'src':
+          stream = resources.createFileStream(api, app, config, config.outputResourcePath);
+          break;
+        case 'write-files':
+          // the spriter outputs files directly to the spritesheets directory
+          // for performance reasons, and then inserts the spritesheet File
+          // objects back into the stream so future streams know about them;
+          // however, we can't actually write them out. This removes files that
+          // have already been written.
+          var filter = new FilterStream(function (file, enc, cb) {
+            cb(file.written);
+          }, {restore: true, objectMode: true, passthrough: true});
+
+          return createStreamWrapper()
+            .wrap(filter)
+            .wrap(vfs.dest(config.outputResourcePath))
+            .wrap(filter.restore);
+        default:
+          stream = createFileStream(opts);
+          break;
+      }
+
+      stream.id = id;
+      this.register(id, stream);
+      return stream;
+    },
+
+    register: function (id, stream) {
+      allStreams[id] = stream;
+      return this;
+    },
+
+    // convenience wrapper - takes a function and runs it as part of the build
+    // stream (when the previous stream ends)
+    registerFunction: function (id, func) {
+      allStreams[id] = createFileStream({
+        onFinish: func
+      });
+
+      return this;
+    },
+
+    createFileStream: createFileStream,
+
+    REMOVE_FILE: REMOVE_FILE
+  };
+};
+
+/**
+ * Provides a simple API for components of the build process to interact with
+ * other components
+ */
+exports.getBuildAPI = function (api, app, config) {
+  var _results = {
+    config: config
+  };
+
+  return {
+    // stores a build result
+    addResult: function (key, value) {
+      _results[key] = value;
+    },
+
+    getResult: function (key) {
+      return _results[key];
+    },
+
+    // returns the results that are passed out of the build
+    getResults: function () {
+      return _results;
+    },
+
+    // helps build targets wrap other build targets by executing a specific
+    // build target
+    execute: function (buildTarget, targetConfig) {
+      if (!targetConfig) {
+        targetConfig = JSON.parse(JSON.stringify(config));
+      }
+
+      return buildTarget.configure(api, app, targetConfig)
+        .then(function () {
+          return buildTarget.build(api, app, targetConfig);
+        });
+    }
+  };
+};
+
+function FileSink() {
+  EventEmitter.call(this);
+
+  this.onFinish = new Promise(function (resolve, reject) {
+    this._resolve = resolve;
+    this.on('error', reject);
+  }.bind(this));
+
+  this._files = [];
+  this.writable = true;
 }
 
-function copyFile (from, to) {
-	if (!fs.existsSync(to)) {
-		if (fs.existsSync(from)) {
-			try {
-				fs.writeFileSync(to, fs.readFileSync(from));
-			} catch (e) {
-				console.error("Failed to copy file:", from);
-			}
-		} else {
-			console.error("Warning can't find:", from);
-		}
-	}
-}
+util.inherits(FileSink, EventEmitter);
 
-function updateSplash (templatePath, appPath) {
-	var splash = {
-			portrait480: "resources/splash/portrait480.png",
-			portrait960: "resources/splash/portrait960.png",
-			portrait1024: "resources/splash/portrait1024.png",
-			portrait1136: "resources/splash/portrait1136.png",
-			portrait2048: "resources/splash/portrait2048.png",
-			landscape768: "resources/splash/landscape768.png",
-			landscape1536: "resources/splash/landscape1536.png"
-		};
+FileSink.prototype.write = function write(file, encoding, cb) {
+  this._files.push(file.relative);
+  if (cb) { process.nextTick(cb); }
+  return true;
+};
 
-	for (var i in splash) {
-		var image = splash[i];
-		copyFile(path.join(templatePath, image), path.join(appPath, image));
-	}
-
-	splash.autoHide = true;
-	return splash;
-}
-
-function updateIcons (templatePath, appPath, icons) {
-	for (var i in icons) {
-		var image = icons[i];
-		copyFile(path.join(templatePath, image), path.join(appPath, image));
-	}
-
-	return icons;
-}
-
-function updateAssets() {
-	if (!manifest.splash || !Object.keys(manifest.splash).length) {
-		wrench.mkdirSyncRecursive(path.join(opts.appPath, "resources/splash"));
-		config.splash = updateSplash(common.paths.root("/src/init/templates/empty/"), opts.appPath);
-		manifest.splash = JSON.parse(JSON.stringify(config.splash));
-	} else {
-		config.splash = JSON.parse(JSON.stringify(manifest.splash));
-	}
-
-	if (manifest.android && (!manifest.android.icons || !Object.keys(manifest.android.icons).length)) {
-		wrench.mkdirSyncRecursive(path.join(opts.appPath, "resources/icons"));
-		manifest.android.icons = updateIcons(
-			common.paths.root("/src/init/templates/empty/"),
-			opts.appPath,
-			{
-				36: "resources/icons/android36.png",
-				48: "resources/icons/android48.png",
-				72: "resources/icons/android72.png",
-				96: "resources/icons/android96.png"
-			}
-		);
-	}
-
-	if (manifest.ios && (!manifest.ios.icons || !Object.keys(manifest.ios.icons).length)) {
-		wrench.mkdirSyncRecursive(path.join(opts.appPath, "resources/icons"));
-		manifest.ios.icons = updateIcons(
-			common.paths.root("/src/init/templates/empty/"),
-			opts.appPath,
-			{
-				57: "resources/icons/ios57.png",
-				72: "resources/icons/ios72.png",
-				114: "resources/icons/ios114.png",
-				144: "resources/icons/ios144.png",
-			}
-		);
-		manifest.ios.icons.renderGloss = true;
-	}
-}
+FileSink.prototype.end = function () {
+  this.emit('finish');
+  this._resolve(this._files);
+  return true;
+};
