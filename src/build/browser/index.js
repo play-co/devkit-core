@@ -100,7 +100,7 @@ exports.createStreams = function (api, app, config) {
     'output'
   ];
 
-  if (config.scheme === 'release') {
+  if (config.compressImages) {
     order.push('image-compress');
   }
 

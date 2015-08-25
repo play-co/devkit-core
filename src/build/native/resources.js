@@ -40,7 +40,7 @@ exports.createStreams = function (api, app, config) {
     'app-js',
     'static-files',
     'output',
-    config.scheme == 'release' && 'image-compress'
+    config.compressImages && 'image-compress'
   ];
 };
 

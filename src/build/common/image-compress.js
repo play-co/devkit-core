@@ -18,7 +18,7 @@ var COMPRESS_EXTS = {
 var loggedWarning = false;
 
 exports.create = function (api, app, config) {
-  var logger = api.logging.get('image-compress');
+  var logger = api.logging.get('imagemin');
 
   var stream = api.streams.createFileStream({
     onFile: function (file) {
@@ -37,7 +37,7 @@ exports.create = function (api, app, config) {
                 '',
                 chalk.green('   npm install -g imagemin-cli && npm install -g imagemin-pngquant'),
                 '',
-                chalk.blue('After installing, devkit will automatically images during the next time release build.'),
+                chalk.blue('After installing, rerun this release build and devkit will use imagemin to compress images.'),
                 '',
               ].join('\n'));
             }
