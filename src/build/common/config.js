@@ -1,5 +1,7 @@
 var path = require('path');
 
+var DEFAULT_LANG = 'en';
+
 exports.extend = function (app, config) {
 
   var appPath = app.paths.root;
@@ -45,7 +47,20 @@ exports.extend = function (app, config) {
   studio = names.join('.');
   var defaultName = studio + "." + app.manifest.shortName;
 
+  config.studioName = studio;
   config.bundleID = app.manifest.ios && app.manifest.ios.bundleID || defaultName;
   config.packageName = app.manifest.android && app.manifest.android.packageName || defaultName;
 
+  var title = app.manifest.title;
+  var titles = app.manifest.titles || {};
+  if (title === null && titles === null) {
+    title = app.manifest.shortName || 'Untitled';
+  }
+
+  if (!titles[DEFAULT_LANG]) {
+    titles[DEFAULT_LANG] = title;
+  }
+
+  config.titles = titles;
+  config.title = title;
 };
