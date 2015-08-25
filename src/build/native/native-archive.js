@@ -41,7 +41,7 @@ exports.configure = function (api, app, config, cb) {
 function createArchive(archivePath) {
   var archiver = require('archiver');
   var archive = archiver.create('zip', {});
-  var fs = require('fs-extra');
+  var fs = require('../fs');
   var output = fs.createWriteStream(archivePath);
   archive.pipe(output);
 
@@ -64,10 +64,8 @@ function createArchive(archivePath) {
 exports.build = function (api, app, config, cb) {
   logger = api.logging.get('build-native');
 
-  var fs = require('fs-extra');
+  var fs = require('../fs');
   var glob = Promise.promisify(require('glob'));
-  var readFile = Promise.promisify(fs.readFile);
-  var stat = Promise.promisify(fs.stat);
 
   var outPath = config.outputResourcePath;
   if (exports.opts.argv.clean) {
@@ -110,14 +108,14 @@ exports.build = function (api, app, config, cb) {
         return;
       }
 
-      return stat(file)
+      return fs.statAsync(file)
         .then(function (stats) {
           if (stats.isDirectory()) {
             archive.append(new Buffer(0), {name: zipPath + '/'});
             return;
           }
 
-          return readFile(file)
+          return fs.readFileAsync(file)
             .then(function (buffer) {
               archive.append(buffer, {name: zipPath});
             });

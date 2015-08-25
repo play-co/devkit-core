@@ -1,9 +1,8 @@
-var fs = require('fs');
 var through2 = require('through2');
 var Stream = require('stream').Stream;
 
+var fs = require('../fs');
 var streamToArray = require('./stream-to-array');
-var readFile = Promise.promisify(fs.readFile);
 
 var INLINE_EXTS = {
   '.js': true,
@@ -32,7 +31,7 @@ exports.create = function (api) {
     // inline file contents
     Promise
       .try(function () {
-        return file.contents || readFile(file.history[0], 'utf8');
+        return file.contents || fs.readFileAsync(file.history[0], 'utf8');
       })
       .then(function (contents) {
         if (contents instanceof Stream) {

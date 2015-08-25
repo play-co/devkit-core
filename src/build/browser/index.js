@@ -13,9 +13,6 @@
  * You should have received a copy of the Mozilla Public License v. 2.0
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
-var fs = require('graceful-fs');
-fs.gracefulify(require('fs'));
-
 var buildStreamAPI = require('../common/build-stream-api');
 var offlineManifest = require('./offlineManifest');
 var cacheWorker = require('./cacheWorker');

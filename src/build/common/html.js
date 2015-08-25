@@ -1,14 +1,12 @@
 var path = require('path');
-var fs = require('fs');
 var stylus = require('stylus');
 var nib = require('nib');
 var printf = require('printf');
+var fs = require('../fs');
 var appJS = require('./appJS');
 var JSConfig = require('./jsConfig').JSConfig;
 var JSCompiler = require('./jsCompiler').JSCompiler;
 var getBase64Image = require('./datauri').getBase64Image;
-
-var readFile = Promise.promisify(fs.readFile);
 
 var TARGET_APPLE_TOUCH_ICON_SIZE = 152;
 var STATIC_BOOTSTRAP_CSS = getStaticFilePath('bootstrap.styl');
@@ -64,9 +62,9 @@ exports.create = function (api, app, config, opts) {
   // start file-system tasks in background immediately
   var tasks = [
     getPreloadJS(config, compileJS),
-    readFile(STATIC_BOOTSTRAP_CSS, 'utf8'),
-    readFile(STATIC_BOOTSTRAP_JS, 'utf8'),
-    isLiveEdit && readFile(STATIC_LIVE_EDIT_JS, 'utf8')
+    fs.readFileAsync(STATIC_BOOTSTRAP_CSS, 'utf8'),
+    fs.readFileAsync(STATIC_BOOTSTRAP_JS, 'utf8'),
+    isLiveEdit && fs.readFileAsync(STATIC_LIVE_EDIT_JS, 'utf8')
   ];
 
   // generate html when stream ends
@@ -237,6 +235,16 @@ exports.GameHTML = Class(function () {
     return closestIcon;
   };
 
+  function getSplashHTML(config, image) {
+    return image && fs.existsAsync(image)
+      .then(function (exists) {
+        if (exists) {
+          require('./splash')
+            .getSplashHTML(config.browser.spinner, image);
+        }
+      });
+  }
+
   this.generate = function (api, app, config) {
     var logger = api.logging.get('build-html');
 
@@ -248,18 +256,24 @@ exports.GameHTML = Class(function () {
     var jsCompiler = new JSCompiler(api, app);
     var renderCSS = Promise.promisify(stylusRenderer.render, stylusRenderer);
     var compileJS = Promise.promisify(jsCompiler.compress, jsCompiler);
+
+    // browser splash
+    var splashImage = config.browser.splash
+                   && path.resolve(app.paths.root, config.browser.splash);
+
+    // Create HTML document.
+    var html = [];
+
     return Promise.all([
         renderCSS(),
         config.compress
           ? compileJS('[bootstrap]', js, {showWarnings: false})
-          : js
+          : js,
+        splashImage && fs.existsAsync(splashImage) || false
       ])
       .bind(this)
-      .spread(function (css, js) {
-        // browser splash
-        var splashImage = config.browser.splash
-                       && path.resolve(app.paths.root, config.browser.splash);
-        if (!fs.existsSync(splashImage) && !config.isSimulated) {
+      .spread(function (css, js, splashHTML, splashExists) {
+        if (!splashExists && !config.isSimulated) {
           var splashPaths = {
             'portrait': ['portrait2048', 'portrait1136',
                           'portrait1024', 'portrait960', 'portrait480'],
@@ -296,9 +310,6 @@ exports.GameHTML = Class(function () {
           }
 
         }
-
-        // Create HTML document.
-        var html = [];
 
         // Check if there is a manifest.
         html.push('<!DOCTYPE html>');
@@ -370,8 +381,12 @@ exports.GameHTML = Class(function () {
         );
 
         if (config.browser.embedSplash && splashImage) {
-          html.push(require('./splash')
-            .getSplashHTML(config.browser.spinner, splashImage));
+          return getSplashHTML();
+        }
+      })
+      .then(function (splashHTML) {
+        if (splashHTML) {
+          html.push(splashHTML);
         }
 
         html.push(

@@ -1,10 +1,7 @@
 var path = require('path');
 var spriter = require('devkit-spriter');
-var fs = require('fs-extra');
 var Promise = require('bluebird');
-var mkdirp = Promise.promisify(require('mkdirp'));
-var readdir = Promise.promisify(fs.readdir);
-var unlink = Promise.promisify(fs.remove);
+var fs = require('../../fs');
 var TaskQueue = require('../task-queue').TaskQueue;
 
 var SPRITABLE_EXTS = {
@@ -155,7 +152,7 @@ var DevKitSpriter = Class(function () {
   };
 
   this.sprite = function (addFile) {
-    return Promise.join(this._cache, mkdirp(this._spritesheetsDirectory), function (cache) {
+    return Promise.join(this._getCache, fs.mkdirsAsync(this._spritesheetsDirectory), function (cache) {
         return Promise.resolve(Object.keys(this._groups))
           .bind(this)
           .map(function (key) {
@@ -265,11 +262,11 @@ var DevKitSpriter = Class(function () {
     });
 
     var directory = this._spritesheetsDirectory;
-    return readdir(directory)
+    return fs.readdirAsync(directory)
       .map(function (filename) {
         if (!(filename in validNames)) {
           console.log("removing spritesheets/" + filename);
-          return unlink(path.join(directory, filename));
+          return fs.unlinkAsync(path.join(directory, filename));
         }
       });
   };
