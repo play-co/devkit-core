@@ -70,7 +70,7 @@ var DevKitSpriter = Class(function () {
 
     // disk cache
     if (opts.cacheFile) {
-      this._getCache = fs.mkdirsAsync(path.basename(opts.cacheFile))
+      this._getCache = fs.mkdirsAsync(path.dirname(opts.cacheFile))
         .then(function () {
           return spriter.loadCache(opts.cacheFile, spritesheetsDirectory);
         });
@@ -247,6 +247,7 @@ var DevKitSpriter = Class(function () {
         spritesheetsDirectory: this._spritesheetsDirectory,
         powerOfTwoSheets: group.powerOfTwoSheets,
         filenames: group.filenames,
+        compress: group.compress,
         ext: group.ext,
         mime: group.mime
       })

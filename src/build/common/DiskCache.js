@@ -11,7 +11,7 @@ module.exports.getCacheFilePath = function (config, basename) {
 
 // get a DiskCache instance given the path to a cache file
 module.exports.load = function (filename) {
-  return fs.mkdirsAsync(path.basename(filename))
+  return fs.mkdirsAsync(path.dirname(filename))
     .then(function () {
       return fs.readFileAsync(filename, 'utf-8');
     })

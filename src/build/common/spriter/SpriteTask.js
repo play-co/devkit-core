@@ -11,7 +11,12 @@ exports.run = function (opts) {
     })
     .map(function (spritesheet) {
       var filename = spritesheet.name;
-      return spritesheet.composite().buffer.getBuffer(opts.mime)
+      var quality = opts.compress && opts.compress.quality;
+      var image = spritesheet.composite().buffer;
+      if (quality) {
+        image.quality(quality);
+      }
+      return image.getBuffer(opts.mime)
         .then(function (buffer) {
           spritesheet.recycle();
           return writeFile(path.join(opts.spritesheetsDirectory, filename), buffer)

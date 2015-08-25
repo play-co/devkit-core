@@ -93,7 +93,7 @@ Options.prototype.get = function (filename, prop, buildOpts) {
   }
 
   var n = rules.length;
-  for (var i = n - 1; i >= 0; --i) {
+  for (var i = 0; i < n; ++i) {
     if (prop in rules[i]) {
       return rules[i][prop];
     }
