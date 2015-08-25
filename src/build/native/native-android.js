@@ -13,6 +13,9 @@ exports.opts = require('optimist')
     .alias('clean', 'c').describe('clean', 'Clean build before compilation').boolean('clean').default('clean', false)
     .alias('clearstorage', 's').describe('clearstorage', 'Clear localStorage on device').boolean('clearstorage').default('clearstorage', false)
     .alias('repack', 'js-only').describe('repack', 'only build the JavaScript').boolean('repack').default('repack', false)
+    .describe('target-sdk-version', 'set a custom android target sdk version').default('target-sdk-version', 14)
+    .describe('min-sdk-version', 'set a custom android min sdk version').default('min-sdk-version', 8)
+    .describe('reveal', 'show the apk in Finder')
     .describe('resources-only', 'skip the native build').boolean('resources-only').default('resources-only', false)
 
 exports.configure = function (api, app, config, cb) {
@@ -31,6 +34,7 @@ exports.configure = function (api, app, config, cb) {
   config.repack = argv.repack;
   config.enableLogging = !argv.debug && argv.enableReleaseLogging;
   config.resourcesOnly = argv["resources-only"];
+  config.activityName = (app.manifest.shortName || 'Main') + 'Activity';
 
   // add in native-specific config keys
   // require('./nativeConfig').insert(app, config, exports.opts.argv);
