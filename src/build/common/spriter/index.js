@@ -3,6 +3,7 @@ var spriter = require('devkit-spriter');
 var Promise = require('bluebird');
 var fs = require('../../fs');
 var TaskQueue = require('../task-queue').TaskQueue;
+var getCacheFilePath = require('../DiskCache').getCacheFilePath;
 
 var SPRITABLE_EXTS = {
   '.jpg': true,
@@ -10,6 +11,8 @@ var SPRITABLE_EXTS = {
   '.png': true,
   '.bmp': true
 };
+
+var CACHE_FILENAME = "devkit-spriter";
 
 /**
  * Removes spritable image files from a file stream, sprites them, and inserts
@@ -22,7 +25,8 @@ var SPRITABLE_EXTS = {
  */
 exports.sprite = function (api, config) {
   var spriter = new DevKitSpriter(config.spritesheetsDirectory, {
-    powerOfTwoSheets: config.powerOfTwoSheets
+    powerOfTwoSheets: config.powerOfTwoSheets,
+    cacheFile: getCacheFilePath(config, CACHE_FILENAME)
   });
 
   return api.streams.createFileStream({
@@ -43,8 +47,6 @@ var DevKitSpriter = Class(function () {
 
   // from timestep.ui.SpriteView
   var IS_ANIMATION_FRAME = /((?:.*)\/.*?)[-_ ](.*?)[-_ ](\d+)/;
-
-  var CACHE_FILENAME = ".devkit-spriter-cache";
 
   this.init = function (spritesheetsDirectory, opts) {
     // where the spritesheets should go
@@ -67,7 +69,12 @@ var DevKitSpriter = Class(function () {
     this._taskQueue = new TaskQueue();
 
     // disk cache
-    this._cache = spriter.loadCache(path.join(spritesheetsDirectory, CACHE_FILENAME), spritesheetsDirectory);
+    if (opts.cacheFile) {
+      this._getCache = fs.mkdirsAsync(path.basename(opts.cacheFile))
+        .then(function () {
+          return spriter.loadCache(opts.cacheFile, spritesheetsDirectory);
+        });
+    }
 
     // resulting spritesheets indexed by name for map.json
     this._sheets = {};
@@ -175,7 +182,7 @@ var DevKitSpriter = Class(function () {
 
             return [
               this._cleanup(),
-              cache.save()
+              cache && cache.save()
             ];
           })
           .all();
@@ -207,6 +214,10 @@ var DevKitSpriter = Class(function () {
         written: true,
         compress: group.compress
       });
+    }
+
+    if (!cache) {
+      return this._runSpriter(addFile, cache, key, group);
     }
 
     return cache.get(key, group.filenames)
@@ -245,7 +256,7 @@ var DevKitSpriter = Class(function () {
         // destination directory (e.g. '/Users/.../game/resources/images/a.png'
         // --> 'resources/images/a.png') and we want to cache the original so we
         // can look it up on disk later to validate the cache
-        cache.set(key, sheets);
+        cache && cache.set(key, sheets);
       });
   };
 

@@ -4,9 +4,12 @@ var tempfile = require('tempfile');
 var Promise = require('bluebird');
 var spawn = require('child_process').spawn;
 var Queue = require('promise-queue');
+var FilterStream = require('streamfilter');
+var fs = require('../fs');
+var DiskCache = require('./DiskCache');
+var createStreamWrapper = require('./stream-wrap').createStreamWrapper;
 Queue.configure(Promise);
 
-var fs = Promise.promisifyAll(require('fs-extra'));
 var exec = Promise.promisify(require('child_process').exec);
 
 var COMPRESS_EXTS = {
@@ -15,36 +18,70 @@ var COMPRESS_EXTS = {
   '.gif': true
 };
 
+var CACHE_FILENAME = 'image-compress';
+
 var loggedWarning = false;
 
 exports.create = function (api, app, config) {
   var logger = api.logging.get('imagemin');
 
-  var stream = api.streams.createFileStream({
-    onFile: function (file) {
-      if (file.extname in COMPRESS_EXTS) {
-        var opts = file.compress;
-        return detectImageMin()
-          .then(function () {
-            return stream.compressFile(file, opts);
-          }, function () {
-            if (!loggedWarning) {
-              loggedWarning = true;
-              logger.warn([
-                'skipping image compression step: ' + chalk.red('imagemin not found'),
-                '',
-                chalk.blue('To compress images, please first install imagemin with npm:'),
-                '',
-                chalk.green('   npm install -g imagemin-cli && npm install -g imagemin-pngquant'),
-                '',
-                chalk.blue('After installing, rerun this release build and devkit will use imagemin to compress images.'),
-                '',
-              ].join('\n'));
-            }
-          });
-      }
+  var cacheFile = DiskCache.getCacheFilePath(config, CACHE_FILENAME);
+  var getCache = DiskCache.load(cacheFile);
+
+  var filter = new FilterStream(function (file, enc, cb) {
+    // remove anything that's not an image
+    if (!(file.extname in COMPRESS_EXTS)) {
+      return cb(true);
     }
-  });
+
+    var isCached = false;
+
+    // remove anything that's cached
+    getCache
+      .then(function (cache) {
+        return cache.get(file.path);
+      })
+      .then(function (res) {
+        isCached = res;
+      })
+      .finally(function () {
+        cb(isCached);
+      });
+  }, {restore: true, objectMode: true, passthrough: true});
+
+  var stream = createStreamWrapper()
+    .wrap(filter)
+    .wrap(api.streams.createFileStream({
+      onFile: function (file) {
+        if (file.extname in COMPRESS_EXTS) {
+          var opts = file.compress;
+          return detectImageMin()
+            .then(function () {
+              return stream.compressFile(file, opts);
+            }, function () {
+              if (!loggedWarning) {
+                loggedWarning = true;
+                logger.warn([
+                  'skipping image compression step: ' + chalk.red('imagemin not found'),
+                  '',
+                  chalk.blue('To compress images, please first install imagemin with npm:'),
+                  '',
+                  chalk.green('   npm install -g imagemin-cli && npm install -g imagemin-pngquant'),
+                  '',
+                  chalk.blue('After installing, rerun this release build and devkit will use imagemin to compress images.'),
+                  '',
+                ].join('\n'));
+              }
+            });
+        }
+      },
+      onFinish: function () {
+        getCache.then(function (cache) {
+          cache.save();
+        });
+      }
+    }))
+    .wrap(filter.restore);
 
   stream.compressFile = function (file, opts) {
     opts = merge({}, opts);

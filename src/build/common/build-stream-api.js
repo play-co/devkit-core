@@ -6,9 +6,9 @@ var through2 = require('through2');
 var resources = require('./resources');
 var File = resources.File;
 var createStreamWrapper = require('./stream-wrap').createStreamWrapper;
-var gulpFilter = require('gulp-filter');
+var FilterStream = require('streamfilter');
 var Promise = require('bluebird');
-Promise.longStackTraces();
+
 /**
  * DevKit build targets exports a function build(api, app, config cb).  To
  * create a streaming build target (a build target composed of several streams),
@@ -140,9 +140,9 @@ exports.addToAPI = function (api, app, config) {
           // objects back into the stream so future streams know about them;
           // however, we can't actually write them out. This removes files that
           // have already been written.
-          var filter = gulpFilter(function (file) {
-            return !file.written;
-          }, {restore: true});
+          var filter = new FilterStream(function (file, enc, cb) {
+            cb(file.written);
+          }, {restore: true, objectMode: true, passthrough: true});
 
           return createStreamWrapper()
             .wrap(filter)

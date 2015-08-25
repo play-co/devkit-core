@@ -2,11 +2,21 @@ var path = require('path');
 
 exports.extend = function (app, config) {
 
+  var appPath = app.paths.root;
+
   // application id
   config.appID = app.manifest.appID || "";
 
-  // target build directory relative to app base directory
-  config.localBuildPath = path.relative(config.appPath, config.outputPath);
+  // build cache files
+  if (!config.cacheDirectory) {
+    if (/^build\//.test(path.relative(appPath, config.outputPath))) {
+      config.cacheDirectory = path.join(appPath, 'build', 'cache');
+    } else {
+      config.cacheDirectory = path.join(config.outputPath, 'devkit-cache');
+    }
+
+    config.cachePrefix = config.scheme + '-' + config.target + '-';
+  }
 
   // where spritesheets go
   config.spritesheetsDirectory = path.join(config.outputResourcePath, 'spritesheets');
