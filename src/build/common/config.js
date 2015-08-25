@@ -14,6 +14,15 @@ exports.extend = function (app, config) {
   // default to non-power-of-two aligned sheets, set to true for native builds
   config.powerOfTwoSheets = false;
 
+  // compress images in the release scheme unless --no-compress was provided
+  config.compressImages = config.scheme === 'release' && config.compress !== false;
+
+  // if --compress-images or --no-compress-images is provided, override other
+  // compression settings
+  if ('compress-images' in config.argv) {
+    config.compressImages = !!config.argv['compress-images'];
+  }
+
   // Generate a default bundleID
 
   // construct a bundleID the same way Android constructs the packageName:
