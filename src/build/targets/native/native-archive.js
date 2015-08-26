@@ -1,5 +1,5 @@
 var path = require('path');
-var createBuildTarget = require('../index').createBuildTarget;
+var createBuildTarget = require('../../index').createBuildTarget;
 
 exports.opts = require('optimist')(process.argv)
     .alias('help',  'h').describe('help', 'Display this help menu')
@@ -43,7 +43,7 @@ exports.init = function (api, app, config) {
 // returns an stream that archives all the files in the build stream
 function createArchiveStream(api, app, config) {
   var archiver = require('archiver');
-  var fs = require('../fs');
+  var fs = require('../../util/fs');
 
   var _files = [];
   return api.streams.createFileStream({
@@ -97,7 +97,7 @@ exports.setupStreams = function (api, app, config) {
     api.streams.register('browser-build', api.streams.createFileStream({
       onFinish: function (addFile) {
         var spritesheets = api.build.getResult('spritesheets');
-        var browserBuild = require('../browser/');
+        var browserBuild = require('../browser');
         var browserConfig = merge({
             target: 'browser-mobile',
 

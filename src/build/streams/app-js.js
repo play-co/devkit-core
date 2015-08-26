@@ -1,6 +1,5 @@
-var JSCompiler = require('../common/jsCompiler').JSCompiler;
-var JSConfig = require('../common/jsConfig').JSConfig;
-var createStreamWrapper = require('../common/stream-wrap').createStreamWrapper;
+var JSCompiler = require('../jsCompiler').JSCompiler;
+var JSConfig = require('../jsConfig').JSConfig;
 
 exports.initialImports = {
   'native': 'devkit.native.launchClient',
@@ -30,7 +29,7 @@ exports.create = function (api, app, config, opts) {
         preCompress: config.preCompressCallback
       });
 
-  var stream = createStreamWrapper()
+  var stream = api.streams.createStreamWrapper()
     .wrap(inlineCache)
     .wrap(api.streams.createFileStream({
       onFinish: function (addFile) {

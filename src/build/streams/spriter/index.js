@@ -1,9 +1,9 @@
 var path = require('path');
 var spriter = require('devkit-spriter');
 var Promise = require('bluebird');
-var fs = require('../../fs');
-var TaskQueue = require('../task-queue').TaskQueue;
-var getCacheFilePath = require('../DiskCache').getCacheFilePath;
+var fs = require('../../util/fs');
+var TaskQueue = require('../../task-queue').TaskQueue;
+var getCacheFilePath = require('../../DiskCache').getCacheFilePath;
 
 var SPRITABLE_EXTS = {
   '.jpg': true,

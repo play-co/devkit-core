@@ -1,4 +1,4 @@
-var fs = require('../fs');
+var fs = require('../util/fs');
 var mime = require('mime');
 
 exports.toDataURI = function (data, mime) {

@@ -3,7 +3,7 @@ var printf = require('printf');
 var slash = require('slash');
 
 // generate an HTML5 offline cache manifest file
-exports.create = function(api, app, config, filename) {
+exports.create = function(api, app, config) {
   var resources = [];
   return api.streams.createFileStream({
     onFile: function (file) {
@@ -18,7 +18,7 @@ exports.create = function(api, app, config, filename) {
     },
     onFinish: function (addFile) {
       addFile({
-        filename: filename,
+        filename: config.target + '.manifest',
         contents: printf('CACHE MANIFEST\n' +
           '\n' +
           '#%(appID)s version %(version)s\n' +

@@ -1,5 +1,5 @@
 var path = require('path');
-var fs = require('../fs');
+var fs = require('../../util/fs');
 
 function string(value) {
   return '\'' + value
@@ -15,7 +15,7 @@ function getLocalFilePath(filePath) {
 
 exports.generate = function (config) {
   // build cache-worker
-  return fs.readFileAsync(getLocalFilePath('../../clientapi/browser/cache-worker.js'), 'utf8')
+  return fs.readFileAsync(getLocalFilePath('../../../clientapi/browser/cache-worker.js'), 'utf8')
     .then(function (js) {
       var keys = {
         'APP_ID': string(config.appID),

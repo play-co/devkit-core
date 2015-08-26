@@ -14,8 +14,8 @@
  */
 
 var path = require('path');
-var fs = require('../fs');
-var createBuildTarget = require('../index').createBuildTarget;
+var fs = require('../../util/fs');
+var createBuildTarget = require('../../index').createBuildTarget;
 var browserBuild = require('../browser');
 
 var logger;

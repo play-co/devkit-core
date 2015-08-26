@@ -5,9 +5,8 @@ var Promise = require('bluebird');
 var spawn = require('child_process').spawn;
 var Queue = require('promise-queue');
 var FilterStream = require('streamfilter');
-var fs = require('../fs');
-var DiskCache = require('./DiskCache');
-var createStreamWrapper = require('./stream-wrap').createStreamWrapper;
+var fs = require('../util/fs');
+var DiskCache = require('../DiskCache');
 Queue.configure(Promise);
 
 var exec = Promise.promisify(require('child_process').exec);
@@ -49,7 +48,7 @@ exports.create = function (api, app, config) {
       });
   }, {restore: true, objectMode: true, passthrough: true});
 
-  var stream = createStreamWrapper()
+  var stream = api.streams.createStreamWrapper()
     .wrap(filter)
     .wrap(api.streams.createFileStream({
       onFile: function (file) {
@@ -144,7 +143,7 @@ function detectImageMin() {
 }
 
 // simultaneous running minifiers
-var MAX_RUNNING = require('./task-queue').DEFAULT_NUM_WORKERS;
+var MAX_RUNNING = require('../task-queue').DEFAULT_NUM_WORKERS;
 var queue = new Queue(MAX_RUNNING);
 function runImageMin(args, outputPath, onStart) {
   return queue.add(function () {

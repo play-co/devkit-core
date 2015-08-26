@@ -37,14 +37,14 @@
   },
   "devkit": {
     "buildTargets": {
-      "browser-mobile": "src/build/browser/",
-      "browser-desktop": "src/build/browser/",
-      "live-edit": "src/build/browser/",
-      "native-ios": "src/build/native/native-ios",
-      "native-android": "src/build/native/native-android",
-      "native-archive": "src/build/native/native-archive",
-      "chrome": "src/build/chrome",
-      "resources-bundle": "src/build/resources-bundle"
+      "browser-mobile": "src/build/targets/browser/",
+      "browser-desktop": "src/build/targets/browser/",
+      "live-edit": "src/build/targets/browser/",
+      "native-ios": "src/build/targets/native/native-ios",
+      "native-android": "src/build/targets/native/native-android",
+      "native-archive": "src/build/targets/native/native-archive",
+      "chrome": "src/build/targets/chrome",
+      "resources-bundle": "src/build/targets/resources-bundle"
     },
     "clientPaths": {
       "devkit": "src/clientapi",

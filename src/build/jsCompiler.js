@@ -10,7 +10,7 @@ var jsio = require('jsio').clone();
 
 var uglify = require('uglify-js');
 
-var fs = require('../fs');
+var fs = require('./util/fs');
 
 var logger;
 var compressLog;

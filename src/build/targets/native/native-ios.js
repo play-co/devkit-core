@@ -1,5 +1,5 @@
 var path = require('path');
-var createBuildTarget = require('../index').createBuildTarget;
+var createBuildTarget = require('../../index').createBuildTarget;
 
 exports.opts = require('optimist')(process.argv)
   .describe('help', 'Display this help menu')
@@ -62,7 +62,7 @@ exports.init = function (api, app, config) {
   }
 
   if (config.isSimulated) {
-    require('../browser/').configure(api, app, config);
+    require('../browser').configure(api, app, config);
   } else {
     config.powerOfTwoSheets = true;
   }
@@ -72,13 +72,13 @@ var nativeBuild = require('./native-build');
 
 exports.setupStreams = function (api, app, config) {
   if (config.isSimulated) {
-    return require('../browser/').setupStreams(api, app, config);
+    return require('../browser').setupStreams(api, app, config);
   }
 
   nativeBuild.setupStreams(api, app, config);
 
   function runIOSBuild() {
-    var iosBuild = require('../../../modules/native-ios/build');
+    var iosBuild = require('../../../../modules/native-ios/build');
     return Promise
       .resolve()
       .then(function () {
@@ -97,7 +97,7 @@ exports.setupStreams = function (api, app, config) {
 exports.getStreamOrder = function (api, app, config) {
 
   if (config.isSimulated) {
-    return require('../browser/').getStreamOrder(api, app, config);
+    return require('../browser').getStreamOrder(api, app, config);
   }
 
   var order = nativeBuild.getStreamOrder(api, app, config);

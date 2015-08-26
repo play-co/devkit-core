@@ -1,4 +1,4 @@
-var fs = require('../fs');
+var fs = require('../../util/fs');
 var path = require('path');
 
 // Packaging for Native.

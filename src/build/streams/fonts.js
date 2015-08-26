@@ -1,9 +1,9 @@
 var printf = require('printf');
 var path = require('path');
-var fs = require('../fs');
+var fs = require('../util/fs');
 var mime = require('mime');
 
-var toDataURI = require('./datauri').toDataURI;
+var toDataURI = require('../util/datauri').toDataURI;
 
 exports.getFormatsForTarget = function (buildTarget) {
   if (buildTarget === 'browser-mobile') {

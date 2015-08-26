@@ -13,8 +13,7 @@
  * You should have received a copy of the Mozilla Public License v. 2.0
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
-var createBuildTarget = require('../index').createBuildTarget;
-var offlineManifest = require('./offlineManifest');
+var createBuildTarget = require('../../index').createBuildTarget;
 var cacheWorker = require('./cacheWorker');
 var webAppManifest = require('./webAppManifest');
 
@@ -157,7 +156,6 @@ exports.setupStreams = function (api, app, config) {
           + 'jsio("import ' + INITIAL_IMPORT + '");';
       }
     });
-  streams.register('html5-cache-manifest', offlineManifest.create(api, app, config, config.target + '.manifest'));
 
   streams.create('static-files')
     .add(cacheWorker.generate(config))
@@ -174,7 +172,7 @@ exports.getStreamOrder = function (api, app, config) {
     'html',
     'static-files',
     'app-js',
-    'html5-cache-manifest',
+    'application-cache-manifest',
     'write-files'
   ];
 

@@ -1,6 +1,6 @@
 var path = require('path');
 
-var fs = require('../../fs');
+var fs = require('../util/fs');
 var DirectoryBuilder = require('./DirectoryBuilder');
 
 /**

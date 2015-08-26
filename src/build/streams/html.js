@@ -2,11 +2,11 @@ var path = require('path');
 var stylus = require('stylus');
 var nib = require('nib');
 var printf = require('printf');
-var fs = require('../fs');
-var appJS = require('./appJS');
-var JSConfig = require('./jsConfig').JSConfig;
-var JSCompiler = require('./jsCompiler').JSCompiler;
-var getBase64Image = require('./datauri').getBase64Image;
+var fs = require('../util/fs');
+var appJS = require('./app-js');
+var JSConfig = require('../jsConfig').JSConfig;
+var JSCompiler = require('../jsCompiler').JSCompiler;
+var getBase64Image = require('../util/datauri').getBase64Image;
 
 var TARGET_APPLE_TOUCH_ICON_SIZE = 152;
 var STATIC_BOOTSTRAP_CSS = getStaticFilePath('bootstrap.styl');
@@ -15,7 +15,7 @@ var STATIC_LIVE_EDIT_JS = getStaticFilePath('liveEdit.js');
 
 // Static resources.
 function getStaticFilePath(filePath) {
-  return path.join(__dirname, 'static', filePath);
+  return path.join(__dirname, '..', 'targets', 'browser', 'static', filePath);
 }
 
 function getPreloadJS(config, compileJS) {

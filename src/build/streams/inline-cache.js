@@ -1,8 +1,8 @@
 var through2 = require('through2');
 var Stream = require('stream').Stream;
 
-var fs = require('../fs');
-var streamToArray = require('./stream-to-array');
+var fs = require('../util/fs');
+var streamToArray = require('../util/stream-to-array');
 
 var INLINE_EXTS = {
   '.js': true,

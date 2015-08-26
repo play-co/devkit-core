@@ -1,8 +1,8 @@
 var util = require('util');
 var EventEmitter = require('events').EventEmitter;
 var vfs = require('vinyl-fs');
-var resources = require('./common/resources');
-var createStreamWrapper = require('./common/stream-wrap').createStreamWrapper;
+var resources = require('./resources');
+var createStreamWrapper = require('./util/stream-wrap').createStreamWrapper;
 var FilterStream = require('streamfilter');
 var Promise = require('bluebird');
 
@@ -91,7 +91,7 @@ exports.createBuildTarget = function (buildExports) {
     api.build = exports.getBuildAPI(api, app, config);
 
     // add in any common config keys
-    require('./common/config').extend(app, config);
+    require('./commonConfig').extend(app, config);
 
     return Promise.resolve(buildExports.init(api, app, config))
       .nodeify(cb);
@@ -166,7 +166,7 @@ exports.getStreamAPI = function (api, app, config) {
   }
 
   var allStreams = {};
-  var createFileStream = require('./common/createFileStream').bind(null, api, app, config);
+  var createFileStream = require('./util/createFileStream').bind(null, api, app, config);
 
   return {
     get: function (id) {
@@ -182,25 +182,28 @@ exports.getStreamAPI = function (api, app, config) {
       var stream;
       switch (id) {
         case 'spriter':
-          stream = require('./common/spriter').sprite(api, config);
+          stream = require('./streams/spriter').sprite(api, config);
           break;
         case 'inline-cache':
-          stream = require('./common/inlineCache').create(api);
+          stream = require('./streams/inline-cache').create(api);
           break;
         case 'app-js':
-          stream = require('./common/appJS').create(api, app, config, opts);
+          stream = require('./streams/app-js').create(api, app, config, opts);
           break;
         case 'fonts':
-          stream = require('./common/fontStream').create(api, config);
+          stream = require('./streams/fonts').create(api, config);
           break;
         case 'html':
-          stream = require('./common/html').create(api, app, config, opts);
+          stream = require('./streams/html').create(api, app, config, opts);
           break;
         case 'static-files':
-          stream = require('./common/static-files').create(api, app, config);
+          stream = require('./streams/static-files').create(api, app, config);
           break;
         case 'image-compress':
-          stream = require('./common/image-compress').create(api, app, config);
+          stream = require('./streams/image-compress').create(api, app, config);
+          break;
+        case 'application-cache-manifest':
+          stream = require('./streams/application-cache-manifest').create(api, app, config);
           break;
         case 'log':
           stream = createFileStream({
@@ -252,6 +255,8 @@ exports.getStreamAPI = function (api, app, config) {
     },
 
     createFileStream: createFileStream,
+
+    createStreamWrapper: createStreamWrapper,
 
     REMOVE_FILE: REMOVE_FILE
   };

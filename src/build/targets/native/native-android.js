@@ -1,5 +1,5 @@
 var path = require('path');
-var createBuildTarget = require('../index').createBuildTarget;
+var createBuildTarget = require('../../index').createBuildTarget;
 
 exports.helpText = 'For release builds, please set the environment variables '
  + 'DEVKIT_ANDROID_KEYSTORE, DEVKIT_ANDROID_STOREPASS, DEVKIT_ANDROID_KEYPASS, '
@@ -61,7 +61,7 @@ exports.init = function (api, app, config) {
   config.activityName = (app.manifest.shortName || 'Main') + 'Activity';
 
   if (config.isSimulated) {
-    require('../browser/').configure(api, app, config);
+    require('../browser').configure(api, app, config);
   } else {
     config.powerOfTwoSheets = true;
   }
@@ -71,13 +71,13 @@ var nativeBuild = require('./native-build');
 
 exports.setupStreams = function (api, app, config) {
   if (config.isSimulated) {
-    return require('../browser/').setupStreams(api, app, config);
+    return require('../browser').setupStreams(api, app, config);
   }
 
   nativeBuild.setupStreams(api, app, config);
 
   function androidBuild() {
-    var android = require('../../../modules/native-android/build');
+    var android = require('../../../../modules/native-android/build');
     var build = Promise.promisify(android.build, android);
     return build(api, app, config);
   }
@@ -88,7 +88,7 @@ exports.setupStreams = function (api, app, config) {
 exports.getStreamOrder = function (api, app, config) {
 
   if (config.isSimulated) {
-    return require('../browser/').getStreamOrder(api, app, config);
+    return require('../browser').getStreamOrder(api, app, config);
   }
 
   var order = nativeBuild.getStreamOrder(api, app, config);
