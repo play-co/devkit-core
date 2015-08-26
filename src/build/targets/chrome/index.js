@@ -119,7 +119,7 @@ exports.setupStreams = function (api, app, config) {
       }
 
       return {
-        filename: 'icon-16' + size + '.png',
+        filename: 'icon-' + size + '.png',
         src: iconPath
       };
     }));
