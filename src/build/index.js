@@ -16,31 +16,54 @@ util.inherits(BuildError, Error);
 exports.BuildError = BuildError;
 
 /**
- * DevKit3 build targets must export three properties: opts, configure, and
- * build.  To use streaming builds, this function creates the required configure
- * and build functions, and asks that the implementor then provide the following
- * functions:
+ * The DevKit build process expects each build target will export three
+ * properties:
  *
- *   - exports.init, called to setup the config object
+ *  1. opts: an optimist instance for the command-line options specific to the
+ *     current build target
+ *  2. configure: a function for updating a build's `config` object with
+ *     settings specific to the current build target
+ *  3. build: a function to execute the build
+ *
+ * DevKit-core v4 updates the API used for creating builds to easily support
+ * build streams, enabling faster builds with more customization and the ability
+ * for builds to inherit logic and components from each other. As before, each
+ * build target is a node.js module that exports the required build functions.
+ * To create a build target in v4, in your build target module, require this file and use the function
+ * `createBuildTarget` to setup the exports. You still need to provide the
+ * `opts` export, but `createBuildTarget` will create and export the `configure`
+ * and `build` functions for you.  Your build target should then export the
+ * following functions:
+ *
+ *   - exports.init, called to setup the build's `config` object with settings
+ *     specific to the current build target
+ *
  *   - exports.setupStreams, called to setup the streams required for a build
  *     using one of the following helper functions:
- *        - api.streams.create(id, opts) - built-in stream with optional opts,
- *          see below for a list of the built-in streams
- *        - api.streams.register(id, stream) - custom stream, see
- *          api.streams.createFileStream for a convenience wrapper
+ *
+ *        - api.streams.create(id, opts) - initializes one of the built-in
+ *          streams with optional opts (see below for a list of the built-in
+ *          streams)
+ *        - api.streams.register(id, stream) - registers a custom stream that
+ *          can be used during a build, see api.streams.createFileStream for a
+ *          convenience wrapper
  *        - api.streams.registerFunction(id, cb) - custom stream (calls cb at
  *          the end of the previous stream)
+ *
  *     Note that id is a unique identifying string
+ *
  *   - exports.getStreamOrder, called to get the order that the streams should
- *     be connected in
+ *     be connected in, returns an array of stream ids (strings)
  *
- * Devkit calls these three functions and then pipes the streams returned by
- * getStreamOrder together with a source file stream.
+ * Devkit calls these three functions, and then pipes the streams returned by
+ * `exports.getStreamOrder` together with a source file stream.  This interface
+ * allows build targets to easily inherit from each other by importing another
+ * build target's module target and calling the other target's exported
+ * functions.  Note that all of these functions may optionally return a
+ * Promise to defer execution (though the core build targets do not for
+ * simplicity).
  *
- * Build targets can easily inherit from each other by importing the another
- * target and calling the other target's exports.
- *
- * Working with streams directly can be painful, so to facilitate creating and
+ * Working with streams directly can be tricky, so to facilitate creating and
  * connecting streams, devkit-core wraps the through2 library with a higher-
  * level file stream.
  *
