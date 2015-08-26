@@ -316,7 +316,7 @@ var DevKitSpriter = Class(function () {
       .map(function (filename) {
         if (!(filename in validNames)) {
           console.log("removing spritesheets/" + filename);
-          return fs.unlinkAsync(path.join(directory, filename));
+          return fs.removeAsync(path.join(directory, filename));
         }
       });
   };

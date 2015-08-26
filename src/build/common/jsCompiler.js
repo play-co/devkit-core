@@ -54,8 +54,8 @@ exports.JSCompiler = Class(function () {
     var appPath = this._app.paths.root;
     var jsCachePath = opts.jsCachePath;
     if (!jsCachePath) {
-      if (opts.schemePath && opts.target) {
-        jsCachePath = path.join(opts.schemePath, '.js-cache-' + opts.target);
+      if (opts.cacheDirectory) {
+        jsCachePath = path.join(opts.cacheDirectory, opts.cachePrefix + 'js');
       } else {
         jsCachePath = path.join(appPath, 'build', '.js-cache');
       }

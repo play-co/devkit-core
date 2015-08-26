@@ -16,8 +16,14 @@ exports.extend = function (app, config) {
     } else {
       config.cacheDirectory = path.join(config.outputPath, 'devkit-cache');
     }
+  }
 
-    config.cachePrefix = config.scheme + '-' + config.target + '-';
+  if (!config.cachePrefix) {
+    config.cachePrefix = [
+          config.scheme,
+          config.target,
+          (config.isSimulated ? 'sim' : '')
+        ].join('-');
   }
 
   // where spritesheets go
