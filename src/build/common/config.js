@@ -27,7 +27,16 @@ exports.extend = function (app, config) {
   }
 
   // where spritesheets go
-  config.spritesheetsDirectory = path.join(config.outputResourcePath, 'spritesheets');
+  var _spritesheetsDirectory = config.spritesheetsDirectory;
+  Object.defineProperty(config, 'spritesheetsDirectory', {
+      get: function () {
+        return _spritesheetsDirectory
+          || (_spritesheetsDirectory = path.join(config.outputResourcePath, 'spritesheets'));
+      },
+      set: function (dir) {
+        _spritesheetsDirectory = dir;
+      }
+    });
 
   // default to non-power-of-two aligned sheets, set to true for native builds
   config.powerOfTwoSheets = false;
