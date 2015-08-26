@@ -35,11 +35,16 @@ module.exports = function createFileStream(api, app, config, opts) {
   function onFile(file, enc, cb) {
     // don't end the read stream though until we've pushed all the data
     // through
-    blockingEnd.push(Promise.resolve(opts.onFile.call(this, file))
+    blockingEnd.push(Promise.try(function () {
+        return opts.onFile.call(this, file);
+      })
       .then(function (res) {
         if (res !== api.streams.REMOVE_FILE) {
           stream.push(file);
         }
+      })
+      .catch(function (err) {
+        stream.emit('error', err);
       }));
 
     // ok to write more
@@ -126,6 +131,9 @@ module.exports = function createFileStream(api, app, config, opts) {
         return blockingEnd;
       })
       .all()
+      .catch(function (err) {
+        stream.emit('error', err);
+      })
       .then(function () {
         cb();
       });

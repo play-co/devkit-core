@@ -124,14 +124,14 @@ exports.createBuildTarget = function (buildExports) {
           .on('error', function (err) {
             // showStack indicates this is a devkit build exception
             if (err.showStack !== undefined) {
-              throw err;
+              cb(err);
             } else {
               logger.error(err);
               logger.log('Unexpected error in stream', streamId);
 
               var wrappedError = new BuildError('error in ' + streamId + ' stream');
               wrappedError.originalError = err;
-              throw wrappedError;
+              cb(wrappedError);
             }
           }));
       })

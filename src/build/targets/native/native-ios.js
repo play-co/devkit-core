@@ -62,7 +62,7 @@ exports.init = function (api, app, config) {
   }
 
   if (config.isSimulated) {
-    require('../browser').configure(api, app, config);
+    require('../browser').init(api, app, config);
   } else {
     config.powerOfTwoSheets = true;
   }

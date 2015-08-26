@@ -46,12 +46,16 @@ function createArchiveStream(api, app, config) {
   var fs = require('../../util/fs');
 
   var _files = [];
+  var _fileHash = {};
   return api.streams.createFileStream({
     onFile: function (file) {
-      _files.push({
-        filename: file.path,
-        stream: fs.createReadStream(file.path)
-      });
+      if (!_fileHash[file.path]) {
+        _fileHash[file.path] = true;
+        _files.push({
+          filename: file.path,
+          stream: fs.createReadStream(file.path)
+        });
+      }
     },
     onFinish: function () {
       _files.sort(function (a, b) {

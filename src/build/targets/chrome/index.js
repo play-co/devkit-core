@@ -33,7 +33,7 @@ createBuildTarget(exports);
 exports.init = function (api, app, config) {
   logger = api.logging.get('build-chrome');
 
-  browserBuild.configure(api, app, config);
+  browserBuild.init(api, app, config);
 
   return Promise.join(
       fs.readFileAsync(path.join(STATIC_DIR, 'localStorage.html'), 'utf8'),

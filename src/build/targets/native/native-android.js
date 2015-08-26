@@ -61,7 +61,7 @@ exports.init = function (api, app, config) {
   config.activityName = (app.manifest.shortName || 'Main') + 'Activity';
 
   if (config.isSimulated) {
-    require('../browser').configure(api, app, config);
+    require('../browser').init(api, app, config);
   } else {
     config.powerOfTwoSheets = true;
   }

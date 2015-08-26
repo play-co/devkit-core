@@ -29,6 +29,7 @@ exports.extend = function (app, config) {
   // where spritesheets go
   var _spritesheetsDirectory = config.spritesheetsDirectory;
   Object.defineProperty(config, 'spritesheetsDirectory', {
+      configurable: true,
       get: function () {
         return _spritesheetsDirectory
           || (_spritesheetsDirectory = path.join(config.outputResourcePath, 'spritesheets'));
