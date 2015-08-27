@@ -1,0 +1,19 @@
+machine:
+  xcode:
+    version: "6.3.1"
+
+dependencies:
+  pre:
+    # ensure git-lfs is installed
+    - "if [ ! -d ~/swarm ]; then git clone --depth 1 --branch no-weeby https://github.com/weebygames/swarm ~/swarm; fi"
+    - "if [ ! -d ~/devkit ]; then git clone https://github.com/gameclosure/devkit ~/devkit; fi"
+    - "(cd ~/devkit && git pull && npm link)"
+  cache_directories:
+    - "~/swarm/"
+    - "~/devkit/"
+
+test:
+  override:
+    - mkdir -p ~/swarm/modules/
+    - ln -s ~/devkit-core ~/swarm/modules/devkit-core
+    - ./src/build/test/all-builds.sh ~/swarm
