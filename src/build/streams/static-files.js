@@ -11,6 +11,7 @@ exports.create = function (api) {
     onFinish: function (addFile) {
       return Promise.all(filesToAdd)
         .map(function (file) {
+          if (!file) { return; }
           if (file.filename) {
             logger.log('creating', file.filename);
           } else if (file.src) {

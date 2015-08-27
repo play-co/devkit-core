@@ -22,10 +22,11 @@ var CACHE_FILENAME = 'image-compress';
 var loggedWarning = false;
 
 exports.create = function (api, app, config) {
-  var logger = api.logging.get('imagemin');
+  var logger = api.logging.get('image-compress');
 
   var cacheFile = DiskCache.getCacheFilePath(config, CACHE_FILENAME);
   var getCache = DiskCache.load(cacheFile);
+  var tempDir = tempfile();
 
   var filter = new FilterStream(function (file, enc, cb) {
     // remove anything that's not an image
@@ -61,13 +62,17 @@ exports.create = function (api, app, config) {
               if (!loggedWarning) {
                 loggedWarning = true;
                 logger.warn([
-                  'skipping image compression step: ' + chalk.red('imagemin not found'),
+                  'skipping image compression step: ' + chalk.red('devkit-imagemin not found'),
                   '',
-                  chalk.blue('To compress images, please first install imagemin with npm:'),
+                  chalk.blue('To compress images, please first install devkit-imagemin and'),
+                  chalk.blue('imagemin-pngquant with npm:'),
                   '',
-                  chalk.green('   npm install -g imagemin-cli && npm install -g imagemin-pngquant'),
+                  chalk.green('   npm install -g https://github.com/gameclosure/devkit-imagemin'),
+                  chalk.grene('   npm install -g imagemin-pngquant'),
                   '',
-                  chalk.blue('After installing, rerun this release build and devkit will use imagemin to compress images.'),
+                  chalk.blue('After installing, rerun this release build and devkit will compress'),
+                  chalk.blue('images. These are global installs, so you only need to run these'),
+                  chalk.blue('once for all DevKit games on your computer.'),
                   '',
                 ].join('\n'));
               }
@@ -75,8 +80,8 @@ exports.create = function (api, app, config) {
         }
       },
       onFinish: function () {
-        getCache.then(function (cache) {
-          cache.save();
+        return Promise.join(getCache, fs.remove(tempDir), function (cache) {
+          return cache.save();
         });
       }
     }))
@@ -103,17 +108,18 @@ exports.create = function (api, app, config) {
           }
         }
 
-        args.push(file.path);
+        var relativePath = path.relative(config.outputResourcePath, file.path);
+        args.push(relativePath);
 
-        // imagemin-cli expects something that looks like a directory or it will
-        // print to stdout instead :(
-        var tempDir = tempfile();
-        args.push(tempDir);
+        var outDir = path.join(tempDir, path.dirname(relativePath));
+        args.push('-o', outDir);
 
-        var outFile = path.join(tempDir, file.basename);
-
-        return runImageMin(args, outFile, function onStart() {
+        var outFile = path.join(tempDir, relativePath);
+        return runImageMin(args, config.outputResourcePath, function onStart() {
             logger.log('compressing', file.relative);
+          })
+          .then(function () {
+            return fs.statAsync(outFile);
           })
           .then(function (stat) {
             if (stat.size < initialSize) {
@@ -123,9 +129,6 @@ exports.create = function (api, app, config) {
             } else {
               logger.log('compressed', file.relative, '(no reduction)');
             }
-          })
-          .then(function () {
-            return fs.remove(tempDir);
           });
       });
   };
@@ -136,7 +139,7 @@ exports.create = function (api, app, config) {
 var _detectImageMin;
 function detectImageMin() {
   if (!_detectImageMin) {
-    _detectImageMin = exec('command -v imagemin');
+    _detectImageMin = exec('command -v devkit-imagemin');
   }
 
   return _detectImageMin;
@@ -145,21 +148,18 @@ function detectImageMin() {
 // simultaneous running minifiers
 var MAX_RUNNING = require('../task-queue').DEFAULT_NUM_WORKERS;
 var queue = new Queue(MAX_RUNNING);
-function runImageMin(args, outputPath, onStart) {
+function runImageMin(args, cwd, onStart) {
   return queue.add(function () {
       return new Promise(function (resolve, reject) {
           onStart();
-          var child = spawn('imagemin', args, {stdio: 'inherit'});
+          var child = spawn('devkit-imagemin', args, {cwd: cwd, stdio: 'inherit'});
           child.on('exit', function (code) {
             if (code) {
-              reject(new Error('imagemin exited with code ' + code));
+              reject(new Error('devkit-imagemin exited with code ' + code));
             } else {
               resolve();
             }
           });
-        })
-        .then(function () {
-          return fs.statAsync(outputPath);
         });
     });
 }
