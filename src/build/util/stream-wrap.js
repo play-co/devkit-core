@@ -35,6 +35,10 @@ WrapStreams.prototype.wrap = function (stream) {
     this._lastStream = this._lastStream.pipe(stream);
   }
 
+  stream.on('error', function (err) {
+    this.emit('error', err);
+  }.bind(this));
+
   return this;
 };
 
