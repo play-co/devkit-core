@@ -124,7 +124,7 @@ function update_status {
      && -n "$CIRCLE_PROJECT_REPONAME" \
      && -n "$GITHUB_STATUS_AUTH_TOKEN" ]]; then
 
-    curl -H "Authorization: token $GITHUB_STATUS_AUTH_TOKEN" \
+    curl -s -H "Authorization: token $GITHUB_STATUS_AUTH_TOKEN" \
       -d "{\"state\":\"success\",\"context\":\"$DEVKIT_COMMAND $CACHED\",\"description\":\"$ELAPSED seconds\"}" \
       "https://api.github.com/repos/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/statuses/$CIRCLE_SHA1" \
       > /dev/null

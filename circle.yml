@@ -1,10 +1,17 @@
 machine:
   xcode:
     version: "6.3.1"
+  environment:
+    XCODE_SCHEME: none
+    XCODE_PROJECT: none
 
 dependencies:
   pre:
-    # ensure git-lfs is installed
+    - brew install node
+    - brew install caskroom/cask/brew-cask
+    - brew cask install java
+    - npm install -g https://github.com/gameclosure/devkit-imagemin
+    - npm install -g imagemin-pngquant
     - "if [ ! -d ~/swarm ]; then git clone --depth 1 --branch no-weeby https://github.com/weebygames/swarm ~/swarm; fi"
     - "if [ ! -d ~/devkit ]; then git clone https://github.com/gameclosure/devkit ~/devkit; fi"
     - "(cd ~/devkit && git pull && npm link)"
