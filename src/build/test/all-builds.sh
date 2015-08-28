@@ -54,12 +54,7 @@ function run_builds () {
 
   if command -v xcodebuild >/dev/null 2>&1; then
 
-    if [[ -n "$CIRCLE_SHA1" ]]; then
-      run devkit debug native-ios --no-open
-    else
-      run devkit debug native-ios
-    fi
-
+    run devkit debug native-ios --no-open
     check find build/debug -name '*.xcodeproj'
     contains '.xcodeproj'
 

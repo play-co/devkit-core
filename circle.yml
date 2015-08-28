@@ -10,6 +10,9 @@ dependencies:
     - brew install node
     - brew install caskroom/cask/brew-cask
     - brew cask install java
+    - brew install android-sdk android-ndk ant
+    - brew install ant
+    - "echo 'y' | android update sdk --no-ui --force --all --filter platform-tools,android-19,build-tools-20.0.0"
     - npm install -g https://github.com/gameclosure/devkit-imagemin
     - npm install -g imagemin-pngquant
     - "if [ ! -d ~/swarm ]; then git clone --depth 1 --branch no-weeby https://github.com/weebygames/swarm ~/swarm; fi"
