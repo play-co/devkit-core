@@ -20,7 +20,7 @@ var style = {
 exports.getSplashHTML = function (opts, splashImage) {
   var html = printf('<div id="%(id)s" style="%(style)s; background:#000 url(\'' + getBase64Image(splashImage) + '\') no-repeat;">', {
     id: '_GCSplash',
-    style: Object.keys(style).map(function (key) { return key + ':' + style[key] + ';'; })
+    style: Object.keys(style).map(function (key) { return key + ':' + style[key] + ';'; }).join("")
   });
 
   if (opts) {
