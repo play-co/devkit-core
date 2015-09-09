@@ -14,11 +14,14 @@ var style = {
   'width': '100%',
   'height': '100%',
   'z-index': '1',
-  'background-size': 'cover'
+  'background-size': 'cover',
+  'background-color': '#000000',
+  'background-repeat': 'no-repeat',
+  'background-position': '50% 50%'
 };
 
 exports.getSplashHTML = function (opts, splashImage) {
-  var html = printf('<div id="%(id)s" style="%(style)s; background:#000 url(\'' + getBase64Image(splashImage) + '\') no-repeat;">', {
+  var html = printf('<div id="%(id)s" style="%(style)s; background-image: url(\'' + getBase64Image(splashImage) + '\');">', {
     id: '_GCSplash',
     style: Object.keys(style).map(function (key) { return key + ':' + style[key] + ';'; }).join("")
   });
