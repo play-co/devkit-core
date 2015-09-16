@@ -1,5 +1,7 @@
 // this file is included at the end of the embedded JS
 
+/* globals NATIVE, JSIO_ENV_CTOR: true */
+
 // it's responsible for initializing the js.io environment
 var util = {};
 var formatRegExp = /%[sdj%]/g;
@@ -587,21 +589,19 @@ util._errnoException = function(err, syscall, original) {
   return e;
 };
 
-var JSIO_ENV_CTOR = function() {
-	var SLICE = Array.prototype.slice,
-		cwd = null;
+JSIO_ENV_CTOR = function() {
+  this.name = /android/i.test(GLOBAL.userAgent) ? 'android' : 'ios';
 
-	this.name = /android/.test(GLOBAL.userAgent) ? 'android' : 'ios';
+  this.global = GLOBAL;
+  this.log = util.getLogger(NATIVE.console.log);
+  this.getCwd = getCwd;
 
-	this.global = GLOBAL;
-	this.log = util.getLogger(NATIVE.console.log);
-	this.getCwd = getCwd;
+  function getCwd() { return NATIVE.location; }
 
-  function getCwd() { return NATIVE.location.substring(0, NATIVE.location.lastIndexOf('/') + 1) + 'code/__cmd__/'; }
-
-	this.getPath = function() { return './sdk/jsio/'; };
-	this.eval = function(code, path) { return NATIVE.eval(code, path); };
-	this.fetch = function(filePath) { return false; }
+  this.debugPath = function (path) { return path; };
+  this.getPath = function() { return '/'; };
+  this.eval = function(code, path) { return NATIVE.eval(code, this.debugPath(path)); };
+  this.fetch = function(filePath) { return false; };
 };
 
 NATIVE.console.log(NATIVE.location);
