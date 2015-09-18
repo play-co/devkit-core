@@ -1,5 +1,5 @@
 var path = require('path');
-var fs = require('./util/fs');
+var fs = require('../../util/fs');
 
 var printf = require('printf');
 var getBase64Image = require('./util/datauri').getBase64Image;

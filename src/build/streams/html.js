@@ -239,7 +239,7 @@ exports.GameHTML = Class(function () {
     return image && fs.existsAsync(image)
       .then(function (exists) {
         if (exists) {
-          require('./splash')
+          require('../targets/browser/splash')
             .getSplashHTML(config.browser.spinner, image);
         }
       });
