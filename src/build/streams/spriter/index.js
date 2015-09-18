@@ -24,36 +24,76 @@ var CACHE_FILENAME = "devkit-spriter";
  * @returns {Stream}
  */
 exports.sprite = function (api, config) {
-  var spriter = new DevKitSpriter(config.spritesheetsDirectory, {
-    powerOfTwoSheets: config.powerOfTwoSheets,
-    cacheFile: getCacheFilePath(config, CACHE_FILENAME)
-  });
+  var stream;
 
-  if (config.spritesheets) {
-    api.logging.get('spriter').log('reusing previous spriter result');
-    spriter.reuseSheets(config.spritesheets);
-  }
+  if (config.spriteImages) {
+    var spriter = new DevKitSpriter(config.spritesheetsDirectory, {
+      powerOfTwoSheets: config.powerOfTwoSheets,
+      cacheFile: getCacheFilePath(config, CACHE_FILENAME)
+    });
 
-  var stream = api.streams.createFileStream({
-    onFile: function (file) {
-      if ((file.extname in SPRITABLE_EXTS)
-          && file.getOption('sprite') !== false) {
-        spriter.addFile(file);
-        return api.streams.REMOVE_FILE;
-      }
-    },
-    onFinish: function (addFile) {
-      return spriter.sprite(addFile)
-        .then(function () {
-          api.build.addResult('spritesheets', spriter.getResult());
-        });
+    if (config.spritesheets) {
+      api.logging.get('spriter').log('reusing previous spriter result');
+      spriter.reuseSheets(config.spritesheets);
     }
-  });
 
-  stream.spriter = spriter;
+    stream = api.streams.createFileStream({
+      onFile: function (file) {
+        if ((file.extname in SPRITABLE_EXTS)
+            && file.getOption('sprite') !== false) {
+          spriter.addFile(file);
+          return api.streams.REMOVE_FILE;
+        }
+      },
+      onFinish: function (addFile) {
+        return spriter.sprite(addFile)
+          .then(function () {
+            api.build.addResult('spritesheets', spriter.getResult());
+          });
+      }
+    });
+
+    stream.spriter = spriter;
+  } else {
+    stream = require('./skip-spriter').getStream(api, config);
+  }
 
   return stream;
 };
+
+function scaleToString(scales) {
+  var filenames = Object.keys(scales);
+  filenames.sort();
+
+  return filenames
+    .map(function (filename) {
+      return JSON.stringify(filename) + JSON.stringify(scales[filename]);
+    })
+    .join('');
+}
+
+var Group = Class(function () {
+  this.init = function (key, sheetName, compressOpts) {
+    this.key = key;
+    this.sheetName = sheetName;
+    this.compress = compressOpts;
+    this.scale = {};
+    this.filenames = [];
+
+    var isJPG = compressOpts && compressOpts.format == 'jpg';
+    this.ext = isJPG ? '.jpg' : '.png';
+    this.mime = isJPG ? 'image/jpeg' : 'image/png';
+  };
+
+  this.addFile = function (file) {
+    var fullPath = file.sourcePath;
+    var scale = file.getOption('scale') || 1;
+    if (scale !== 1) {
+      this.scale[fullPath] = scale;
+    }
+    this.filenames.push(fullPath);
+  };
+});
 
 var DevKitSpriter = Class(function () {
 
@@ -138,6 +178,17 @@ var DevKitSpriter = Class(function () {
     return !!powerOfTwoSheets;
   }
 
+  function getUniqueSheetName(name, animFrameKey) {
+    // compute a unique sheet name
+    var baseName = name + (animFrameKey ? '-' + animFrameKey : '') + '-';
+    var i = 0;
+    var sheetName = baseName + i;
+    while (this._sheetNames[sheetName]) {
+      sheetName = baseName + (++i);
+    }
+    return sheetName;
+  }
+
   this.addFile = function (file) {
     /**
      * group images based on:
@@ -162,30 +213,12 @@ var DevKitSpriter = Class(function () {
     ].join('-');
 
     if (!this._groups[key]) {
-      // compute a unique sheet name
-      var baseName = name + (animFrameKey ? '-' + animFrameKey : '') + '-';
-      var i = 0;
-      var sheetName = baseName + i;
-      while (this._sheetNames[sheetName]) {
-        sheetName = baseName + (++i);
-      }
-
-      var isJPG = compressOpts && compressOpts.format == 'jpg';
-
-      this._groups[key] = {
-        sheetName: sheetName,
-        ext: isJPG ? '.jpg' : '.png',
-        mime: isJPG ? 'image/jpeg' : 'image/png',
-        powerOfTwoSheets: powerOfTwoSheets,
-        compress: compressOpts,
-        filenames: []
-      };
+      var sheetName = getUniqueSheetName.call(this, name, animFrameKey);
+      this._groups[key] = new Group(key, sheetName, compressOpts);
     }
 
-    var fullPath = file.sourcePath;
-    var relPath = file.targetRelativePath;
-    this._groups[key].filenames.push(fullPath);
-    this._filenameMap[fullPath] = relPath;
+    this._groups[key].addFile(file);
+    this._filenameMap[file.sourcePath] = file.targetRelativePath;
   };
 
   this.sprite = function (addFile) {
@@ -234,6 +267,36 @@ var DevKitSpriter = Class(function () {
   this._spriteIfNotCached = function (addFile, cache, key, group) {
     var filenameMap = this._filenameMap;
 
+    if (!cache) {
+      return this._runSpriter(addFile, cache, key, group);
+    }
+
+    return cache.getSheets(key, group.filenames)
+      .bind(this)
+      .tap(function () {
+        var scale = cache.getProperty(key, 'scale');
+        if (scale !== scaleToString(group.scale)) {
+          throw new spriter.NotCachedError(key + ': scales do not match');
+        }
+      })
+      .catch(function (e) {
+        if (e instanceof spriter.NotCachedError) {
+          return this._runSpriter(addFile, cache, key, group);
+        } else {
+          throw e; // unexpected error
+        }
+      })
+      .map(onSheet)
+      .catch(function (e) {
+        // a first error is probably an invalid cache file -- try respriting
+        // before giving up
+        console.warn('spritesheet cache value may be invalid', e);
+        cache.remove(key);
+        return this._runSpriter(addFile, cache, key, group)
+          .bind(this)
+          .map(onSheet);
+      });
+
     function onSheet(sheet) {
       sheet.sprites.forEach(function (info) {
         info.f = filenameMap[info.f];
@@ -253,30 +316,6 @@ var DevKitSpriter = Class(function () {
         compress: group.compress
       });
     }
-
-    if (!cache) {
-      return this._runSpriter(addFile, cache, key, group);
-    }
-
-    return cache.get(key, group.filenames)
-      .bind(this)
-      .catch(function (e) {
-        if (e instanceof spriter.NotCachedError) {
-          return this._runSpriter(addFile, cache, key, group);
-        } else {
-          throw e; // unexpected error?
-        }
-      })
-      .map(onSheet)
-      .catch(function () {
-        // a first error is probably an invalid cache file -- try respriting
-        // before giving up
-        console.warn('spritesheet cache value may be invalid');
-        cache.remove(key);
-        return this._runSpriter(addFile, cache, key, group)
-          .bind(this)
-          .map(onSheet);
-      });
   };
 
   this._runSpriter = function (addFile, cache, key, group) {
@@ -286,6 +325,7 @@ var DevKitSpriter = Class(function () {
         powerOfTwoSheets: group.powerOfTwoSheets,
         filenames: group.filenames,
         compress: group.compress,
+        scale: group.scale,
         ext: group.ext,
         mime: group.mime
       })
@@ -295,7 +335,8 @@ var DevKitSpriter = Class(function () {
         // destination directory (e.g. '/Users/.../game/resources/images/a.png'
         // --> 'resources/images/a.png') and we want to cache the original so we
         // can look it up on disk later to validate the cache
-        cache && cache.set(key, sheets);
+        cache.setSheets(key, sheets);
+        cache.setProperty(key, 'scale', scaleToString(group.scale));
       });
   };
 

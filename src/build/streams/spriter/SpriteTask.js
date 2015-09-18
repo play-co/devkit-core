@@ -5,7 +5,7 @@ var Promise = require('bluebird');
 var writeFile = Promise.promisify(fs.writeFile);
 
 exports.run = function (opts) {
-  return devkitSpriter.loadImages(opts.filenames)
+  return devkitSpriter.loadImages(opts.filenames, opts.scale)
     .then(function (images) {
       return devkitSpriter.sprite(images, opts);
     })
