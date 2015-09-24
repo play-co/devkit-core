@@ -15,5 +15,11 @@ process.on('message', function (evt) {
         id: id,
         res: res
       });
+    })
+    .catch(function (e) {
+      if (e.message === 'channel closed') {
+        return;
+      }
+      console.log(e.stack || e);
     });
 });

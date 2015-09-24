@@ -11,7 +11,7 @@
     "archiver": "^0.14.4",
     "bluebird": "^2.9.34",
     "chalk": "^1.1.1",
-    "devkit-spriter": "0.0.4",
+    "devkit-spriter": "0.0.6",
     "fs-extra": "^0.23.1",
     "glob": "^5.0.2",
     "graceful-fs": "^4.1.2",
@@ -45,6 +45,11 @@
       "native-archive": "src/build/targets/native/native-archive",
       "chrome": "src/build/targets/chrome",
       "resources-bundle": "src/build/targets/resources-bundle"
+    },
+    "extensions": {
+      "debugger": {
+        "routes": "src/build/debug-api"
+      }
     },
     "clientPaths": {
       "devkit": "src/clientapi",

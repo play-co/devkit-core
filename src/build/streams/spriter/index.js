@@ -5,6 +5,8 @@ var fs = require('../../util/fs');
 var TaskQueue = require('../../task-queue').TaskQueue;
 var getCacheFilePath = require('../../DiskCache').getCacheFilePath;
 
+var SpriterResult = require('./SpriterResult');
+
 var SPRITABLE_EXTS = {
   '.jpg': true,
   '.jpeg': true,
@@ -27,13 +29,17 @@ exports.sprite = function (api, config) {
   var stream;
 
   if (config.spriteImages) {
+    var logger = api.logging.get('spriter');
+
     var spriter = new DevKitSpriter(config.spritesheetsDirectory, {
       powerOfTwoSheets: config.powerOfTwoSheets,
-      cacheFile: getCacheFilePath(config, CACHE_FILENAME)
+      cacheFile: getCacheFilePath(config, CACHE_FILENAME),
+      removeUnusedSheets: config.removeUnusedSheets,
+      logger: logger
     });
 
     if (config.spritesheets) {
-      api.logging.get('spriter').log('reusing previous spriter result');
+      logger.log('reusing previous spriter result');
       spriter.reuseSheets(config.spritesheets);
     }
 
@@ -104,7 +110,11 @@ var DevKitSpriter = Class(function () {
     // where the spritesheets should go
     this._spritesheetsDirectory = spritesheetsDirectory;
 
+    this._removeUnusedSheets = opts.removeUnusedSheets;
+
     this._powerOfTwoSheets = opts.powerOfTwoSheets;
+
+    this._logger = opts.logger;
 
     this._minify = opts.minify;
 
@@ -114,8 +124,7 @@ var DevKitSpriter = Class(function () {
     // each group needs a unique sheet name
     this._sheetNames = {};
 
-    // maps file system paths to target directories
-    this._filenameMap = {};
+    this._result = new SpriterResult();
 
     // queue for SpriteTasks, runs in n separate processes
     this._taskQueue = new TaskQueue();
@@ -125,34 +134,24 @@ var DevKitSpriter = Class(function () {
       this._getCache = fs.mkdirsAsync(path.dirname(opts.cacheFile))
         .bind(this)
         .then(function () {
-          return spriter.loadCache(opts.cacheFile, spritesheetsDirectory);
+          return spriter.loadCache(opts.cacheFile);
         });
     }
 
     // set to true if reusing the spritesheets from a different build
     this._skipSpriting = false;
-
-    // resulting spritesheets indexed by name for map.json
-    this._sheets = {};
-
-    // sizes - storage for legacy spritesheetSizeMap.json
-    this._sizes = {};
   };
 
   this.getResult = function () {
-    return {
-      sheets: this._sheets,
-      sizes: this._sizes
-    };
+    return this._result.toJSON();
   };
 
   this.reuseSheets = function (previousResult) {
     this._skipSpriting = true;
-    this._sheets = previousResult.sheets;
-    this._sizes = previousResult.sizes;
+    this._result.update(previousResult);
   };
 
-  this.getSizes = function () { return this._sizes; };
+  this.getSizes = function () { return this._result.toJSON().sizes; };
 
   function compressOptsToString(opts) {
     var keys = Object.keys(opts);
@@ -218,7 +217,7 @@ var DevKitSpriter = Class(function () {
     }
 
     this._groups[key].addFile(file);
-    this._filenameMap[file.sourcePath] = file.targetRelativePath;
+    this._result.setRelativePath(file.sourcePath, file.targetRelativePath);
   };
 
   this.sprite = function (addFile) {
@@ -236,7 +235,7 @@ var DevKitSpriter = Class(function () {
             })
             .then(function () {
               return [
-                this._cleanup(),
+                this._removeUnusedSheets && this._cleanup(),
                 cache && cache.save()
               ];
             })
@@ -247,16 +246,7 @@ var DevKitSpriter = Class(function () {
         }
       })
       .then(function () {
-        addFile({
-          filename: 'spritesheets/map.json',
-          contents: JSON.stringify(this._sheets)
-        });
-
-        addFile({
-          filename: 'spritesheets/spritesheetSizeMap.json',
-          contents: JSON.stringify(this._sizes),
-          inline: false
-        });
+        this._result.addToStream(addFile);
       });
   };
 
@@ -265,56 +255,49 @@ var DevKitSpriter = Class(function () {
    * for the key first.  If cache lookup fails, call this._spriteGroup
    */
   this._spriteIfNotCached = function (addFile, cache, key, group) {
-    var filenameMap = this._filenameMap;
-
     if (!cache) {
       return this._runSpriter(addFile, cache, key, group);
     }
 
-    return cache.getSheets(key, group.filenames)
+    var cached = cache.get(key) || {};
+    return spriter.verifySheets(this._spritesheetsDirectory, group.filenames, cached.mtimes, cached.spritesheets)
       .bind(this)
-      .tap(function () {
-        var scale = cache.getProperty(key, 'scale');
-        if (scale !== scaleToString(group.scale)) {
+      .then(function () {
+        if (cached.scale !== scaleToString(group.scale)) {
           throw new spriter.NotCachedError(key + ': scales do not match');
         }
+
+        return cached;
       })
       .catch(function (e) {
         if (e instanceof spriter.NotCachedError) {
+          // update cached mtimes if we got new ones
+          if (e.mtimes) {
+            cached.mtimes = e.mtimes;
+          }
+
+          this._logger.info('not-cached', key, e.message);
           return this._runSpriter(addFile, cache, key, group);
         } else {
           throw e; // unexpected error
         }
       })
-      .map(onSheet)
+      .then(onResult)
       .catch(function (e) {
         // a first error is probably an invalid cache file -- try respriting
         // before giving up
-        console.warn('spritesheet cache value may be invalid', e);
+        this._logger.warn('spritesheet cache value may be invalid', e);
         cache.remove(key);
         return this._runSpriter(addFile, cache, key, group)
           .bind(this)
-          .map(onSheet);
+          .then(onResult);
       });
 
-    function onSheet(sheet) {
-      sheet.sprites.forEach(function (info) {
-        info.f = filenameMap[info.f];
-      });
-
-      this._sheets[sheet.name] = sheet.sprites;
-      this._sizes[sheet.name] = {
-        w: sheet.width,
-        h: sheet.height
-      };
-
-      addFile({
-        filename: 'spritesheets/' + sheet.name,
-        // already wrote to disk, so filter this file out before piping
-        // to the output stream
-        written: true,
-        compress: group.compress
-      });
+    function onResult(res) {
+      res.spritesheets.map(this._result.addSheet.bind(this._result));
+      res.unspritable.forEach(function (filename) {
+        this._result.addUnspritedFile(filename);
+      }, this);
     }
   };
 
@@ -329,14 +312,16 @@ var DevKitSpriter = Class(function () {
         ext: group.ext,
         mime: group.mime
       })
-      .tap(function (sheets) {
+      .tap(function (res) {
         // set the cached value for the group key here since we'll be changing
         // the filenames next from file system paths to paths relative to the
         // destination directory (e.g. '/Users/.../game/resources/images/a.png'
         // --> 'resources/images/a.png') and we want to cache the original so we
         // can look it up on disk later to validate the cache
-        cache.setSheets(key, sheets);
-        cache.setProperty(key, 'scale', scaleToString(group.scale));
+        var cached = cache.get(key);
+        cached.spritesheets = res.spritesheets;
+        cached.unspritable = res.unspritable;
+        cached.scale = scaleToString(group.scale);
       });
   };
 
@@ -348,7 +333,7 @@ var DevKitSpriter = Class(function () {
 
     validNames[CACHE_FILENAME] = true;
 
-    Object.keys(this._sheets).forEach(function (filename) {
+    Object.keys(this.getResult().sheets).forEach(function (filename) {
       validNames[filename] = true;
     });
 

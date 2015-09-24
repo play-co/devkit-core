@@ -42,6 +42,9 @@ exports.extend = function (app, config) {
   // default to non-power-of-two aligned sheets, set to true for native builds
   config.powerOfTwoSheets = false;
 
+  // default to removing unused sheets from build dir only in release mode
+  config.removeUnusedSheets = config.scheme == 'release';
+
   // compress images in the release scheme unless --no-compress was provided
   config.compressImages = config.scheme === 'release' && config.compress !== false;
 
