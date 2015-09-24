@@ -111,9 +111,9 @@ exports.File = ResourceFile;
 
 exports.getDirectories = require('./directories').get;
 exports.getMetadata = require('./metadata').get;
-exports.createFileStream = function (api, app, config, outputDirectory) {
+exports.createFileStream = function (api, app, config, outputDirectory, directories) {
   var stream = through2.obj(undefined);
-  Promise.resolve(exports.getDirectories(api, app, config))
+  Promise.resolve(directories || exports.getDirectories(api, app, config))
     .map(function (directory) {
       return glob('**/*', {cwd: directory.src, nodir: true})
         .map(function (relativePath) {

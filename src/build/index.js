@@ -87,8 +87,7 @@ exports.BuildError = BuildError;
 exports.createBuildTarget = function (buildExports) {
 
   buildExports.configure = function (api, app, config, cb) {
-    api.streams = exports.getStreamAPI(api, app, config);
-    api.build = exports.getBuildAPI(api, app, config);
+    exports.addStreamAPI(api, app, config);
 
     // add in any common config keys
     require('./commonConfig').extend(app, config);
@@ -113,6 +112,14 @@ exports.createBuildTarget = function (buildExports) {
       .then(function () {
         return buildExports.getStreamOrder(api, app, config);
       })
+      .then(function (streamIds) {
+        // must terminate in the special end-build stream
+        if (streamIds[streamIds.length - 1] != 'end-build') {
+          streamIds.push('end-build');
+        }
+
+        return streamIds;
+      })
       // pipe all the streams together in the specified order
       .map(function (streamId) {
         if (!streamId) { return; }
@@ -135,17 +142,9 @@ exports.createBuildTarget = function (buildExports) {
             }
           }));
       })
-      // add a final sink so the last pipe has something draining it
       .then(function () {
-        var sink = new FileSink();
-        buildStream.pipe(sink);
-        return sink.onFinish.then(function (files) {
-          api.build.addResult('files', files);
-        });
-      })
-      .then(function () {
-        // build result
-        return api.build.getResults();
+        // block on the end-build stream finish
+        return buildStream.onFinishBuild;
       })
       .nodeify(cb);
   };
@@ -155,7 +154,8 @@ exports.createBuildTarget = function (buildExports) {
 var REMOVE_FILE = {};
 
 // adds stream api functions to the api object
-exports.getStreamAPI = function (api, app, config) {
+exports.addStreamAPI = function (api, app, config) {
+  exports.addBuildAPI(api, app, config);
 
   var logger = api.logging.get(config.target);
 
@@ -168,7 +168,7 @@ exports.getStreamAPI = function (api, app, config) {
   var allStreams = {};
   var createFileStream = require('./util/createFileStream').bind(null, api, app, config);
 
-  return {
+  return (api.streams = {
     get: function (id) {
       return allStreams[id];
     },
@@ -180,6 +180,8 @@ exports.getStreamAPI = function (api, app, config) {
     },
     create: function (id, opts) {
       var stream;
+      if (!opts) { opts = {}; }
+
       switch (id) {
         case 'spriter':
           stream = require('./streams/spriter').sprite(api, config);
@@ -213,7 +215,7 @@ exports.getStreamAPI = function (api, app, config) {
           });
           break;
         case 'src':
-          stream = resources.createFileStream(api, app, config, config.outputResourcePath);
+          stream = resources.createFileStream(api, app, config, config.outputResourcePath, opts.directories);
           break;
         case 'write-files':
           // the spriter outputs files directly to the spritesheets directory
@@ -225,10 +227,25 @@ exports.getStreamAPI = function (api, app, config) {
             cb(file.written);
           }, {restore: true, objectMode: true, passthrough: true});
 
-          return createStreamWrapper()
+          stream = createStreamWrapper()
             .wrap(filter)
             .wrap(vfs.dest(config.outputResourcePath))
             .wrap(filter.restore);
+          break;
+        case 'end-build':
+          // The end-build is a special stream that consumes anything it's
+          // passed, ensuring that the last duplex pipe has something to drain
+          // to.  Since we use duplex streams, the last stream expects a reader
+          // or it'll eventually fill its buffer and stop streaming).  This
+          // final stream also provides an onFinishBuild property that's a
+          // promise for converting the build stream back into a promise,
+          // resolving to the build results.
+          stream = new FileSink();
+          stream.onFinishBuild = stream.onFinish.then(function (files) {
+            api.build.addResult('files', files);
+            return api.build.getResults();
+          });
+          break;
         default:
           stream = createFileStream(opts);
           break;
@@ -259,19 +276,19 @@ exports.getStreamAPI = function (api, app, config) {
     createStreamWrapper: createStreamWrapper,
 
     REMOVE_FILE: REMOVE_FILE
-  };
+  });
 };
 
 /**
  * Provides a simple API for components of the build process to interact with
  * other components
  */
-exports.getBuildAPI = function (api, app, config) {
+exports.addBuildAPI = function (api, app, config) {
   var _results = {
     config: config
   };
 
-  return {
+  return (api.build = {
     // stores a build result
     addResult: function (key, value) {
       _results[key] = value;
@@ -298,7 +315,7 @@ exports.getBuildAPI = function (api, app, config) {
           return buildTarget.build(api, app, targetConfig);
         });
     }
-  };
+  });
 };
 
 function FileSink() {
