@@ -140,7 +140,7 @@ var CSSFont = Class(function () {
 
     var split = this.name.split(/\-/g);
     if (split.length > 1) {
-      this.name = split[0];
+      // this.name = split[0];
 
       var suffix = normalizeFontType(split[1].toLowerCase());
 
