@@ -115,7 +115,10 @@ exports.createFileStream = function (api, app, config, outputDirectory, director
   var stream = through2.obj(undefined);
   Promise.resolve(directories || exports.getDirectories(api, app, config))
     .map(function (directory) {
-      return glob('**/*', {cwd: directory.src, nodir: true})
+      var files = directory.files && Promise.resolve(directory.files)
+                || glob('**/*', {cwd: directory.src, nodir: true});
+
+      return files
         .map(function (relativePath) {
           var file = new ResourceFile(directory, relativePath, outputDirectory);
           return exports.getMetadata(file)
@@ -126,10 +129,21 @@ exports.createFileStream = function (api, app, config, outputDirectory, director
         })
         .filter(function (file) {
           return file.getOption('package') !== false;
-        })
-        .map(function (file) {
-          stream.write(file);
         });
+    })
+    .then(function (resourceSets) {
+      // remove duplicate files based on target directory
+      var seen = {};
+      for (var i = resourceSets.length - 1; i >= 0; --i) {
+        var set = resourceSets[i];
+        for (var j = set.length - 1; j >= 0; --j) {
+          var file = set[j];
+          if (!seen[file.targetRelativePath]) {
+            seen[file.targetRelativePath] = true;
+            stream.write(file);
+          }
+        }
+      }
     })
     .then(function () {
       stream.end();

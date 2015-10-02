@@ -8,7 +8,7 @@ function DirectoryBuilder(logger, base) {
   this._directories = [];
 }
 
-DirectoryBuilder.prototype.add = function (src, target) {
+DirectoryBuilder.prototype.add = function (src, target, files) {
   var directory;
   if (arguments.length === 1) {
     directory = {
@@ -18,7 +18,8 @@ DirectoryBuilder.prototype.add = function (src, target) {
   } else {
     directory = {
         src: src,
-        target: target
+        target: target,
+        files: files
       };
   }
 

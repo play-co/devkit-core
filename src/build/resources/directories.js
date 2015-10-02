@@ -20,7 +20,7 @@ exports.get = function (api, app, config) {
         extension.getResourceDirectories(api, app, config)
           .map(function (directory) {
             var target = path.join('modules', module.name, directory.target);
-            builder.add(directory.src, target);
+            builder.add(directory.src, target, directory.files);
           });
       }
     }
