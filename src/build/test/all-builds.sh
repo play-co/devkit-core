@@ -10,13 +10,17 @@ function run_builds () {
 
   ##### Browser-mobile
 
-  run devkit debug browser-mobile
+  run devkit debug browser-mobile --application-cache
+  OUTPUT=`ls build/debug/browser-mobile`
+  contains 'browser-mobile.js'
+  contains 'browser-mobile.manifest'
+  contains 'index.html'
+  contains 'spritesheets'
 
   # this one will run with compression, but the rest won't (for speed)
   run devkit release browser-mobile
   OUTPUT=`ls build/release/browser-mobile`
   contains 'browser-mobile.js'
-  contains 'browser-mobile.manifest'
   contains 'index.html'
   contains 'spritesheets'
 
@@ -44,7 +48,7 @@ function run_builds () {
   run devkit release chrome --no-compress
   OUTPUT=`ls build/debug/chrome`
   contains 'chrome.js'
-  contains 'chrome.manifest'
+  contains 'manifest.json'
   contains 'icon-128.png'
   contains 'icon-16.png'
   contains 'index.html'
