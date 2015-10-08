@@ -50,12 +50,13 @@ exports.screenshot = function (cb) {
         this.fillText("X", x + w / 2, y + h / 2);
         this.restore();
       }
-    }
+    };
 
     GC.app.engine.getView().__view.wrapRender(ctx, {});
 
+    var base64Image;
     try {
-      var base64Image = _debugCanvas.toDataURL('image/png');
+      base64Image = _debugCanvas.toDataURL('image/png');
     } catch (e) {
       cb({
         NOT_SUPPORTED: true,
@@ -75,4 +76,4 @@ exports.screenshot = function (cb) {
       NOT_SUPPORTED: true
     });
   }
-}
+};
