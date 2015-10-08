@@ -342,8 +342,9 @@ var DevKitSpriter = Class(function () {
     var directory = this._spritesheetsDirectory;
     return fs.readdirAsync(directory)
       .map(function (filename) {
-        if (!(filename in validNames)) {
-          console.log("removing spritesheets/" + filename);
+        var relativePath = 'spritesheets/' + filename;
+        if (!(relativePath in validNames)) {
+          console.log('removing', relativePath);
           return fs.removeAsync(path.join(directory, filename));
         }
       });
