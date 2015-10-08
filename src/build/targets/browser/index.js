@@ -23,14 +23,18 @@ var logger;
 var INITIAL_IMPORT = 'devkit.browser.launchClient';
 
 exports.opts = require('optimist')(process.argv)
-  .alias('baseURL', 'u')
-  .describe('baseURL', 'all relative resources except for index should be'
+  .describe('application-cache', 'include an html5 ApplicationCache manifest file')
+    .default('application-cache', false)
+  .describe('web-app-manifest', 'include a WebApp manifest')
+    .default('web-app-manifest', true)
+  .describe('base-url', 'all relative resources except for index should be'
                      + 'loaded from this URL');
 
 createBuildTarget(exports);
 
 exports.init = function (api, app, config) {
   logger = api.logging.get('build-browser');
+  var argv = exports.opts.argv;
 
   var webAppManifest = {
     "name": app.manifest.title,
@@ -52,6 +56,8 @@ exports.init = function (api, app, config) {
       headHTML: [],
       bodyHTML: [],
       footerHTML: [],
+      hasApplicationCache: false,
+      hasWebAppManifest: true,
       webAppManifest: webAppManifest,
       baseURL: ''
     };
@@ -86,6 +92,9 @@ exports.init = function (api, app, config) {
         headHTML: [],
         bodyHTML: [],
         footerHTML: [],
+
+        hasApplicationCache: argv['application-cache'],
+        hasWebAppManifest: argv['web-app-manifest'],
 
         // web app manifest, converted to json
         webAppManifest: webAppManifest,
@@ -157,11 +166,14 @@ exports.setupStreams = function (api, app, config) {
       }
     });
 
-  streams.create('static-files')
+  var staticFileStream = streams.create('static-files')
     .add(cacheWorker.generate(config))
-    .add(webAppManifest.create(api, app, config))
     .add(config.browser.copy)
     .add(app.manifest.browser && app.manifest.browser.icons);
+
+  if (config.browser.hasWebAppManifest) {
+    staticFileStream.add(webAppManifest.create(api, app, config));
+  }
 };
 
 exports.getStreamOrder = function (api, app, config) {
@@ -170,9 +182,9 @@ exports.getStreamOrder = function (api, app, config) {
     'spriter',
     'fonts',
     'html',
-    'static-files',
     'app-js',
-    'application-cache-manifest',
+    'static-files',
+    config.browser.hasApplicationCache && 'application-cache-manifest',
     'write-files'
   ];
 

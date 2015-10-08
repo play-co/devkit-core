@@ -249,10 +249,11 @@ exports.GameHTML = Class(function () {
         config.compress
           ? compileJS('[bootstrap]', js, {showWarnings: false})
           : js,
-        splashImage && fs.existsAsync(splashImage) || false
+        splashImage && fs.existsAsync(splashImage) || false,
+        config.browser.hasApplicationCache && fs.readFileAsync(getStaticFilePath('app-cache-events.js'), 'utf8')
       ])
       .bind(this)
-      .spread(function (css, js, splashHTML, splashExists) {
+      .spread(function (css, js, splashExists, appCacheEvents) {
         if (!splashExists && !config.isSimulated) {
           var splashPaths = {
             'portrait': ['portrait2048', 'portrait1136',
@@ -293,10 +294,11 @@ exports.GameHTML = Class(function () {
 
         // Check if there is a manifest.
         html.push('<!DOCTYPE html>');
-        if (config.debug || config.isSimulated) {
+        if (!config.browser || !config.browser.hasApplicationCache) {
           html.push('<html>');
         } else {
           html.push('<html manifest="' + config.target + '.manifest">');
+          config.browser.footerHTML.push('<script>' + appCacheEvents + '</script>');
         }
 
         html.push(

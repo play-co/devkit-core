@@ -1,10 +1,13 @@
+var path = require('path');
 var url = require('url');
 var printf = require('printf');
 var slash = require('slash');
+var fs = require('../util/fs');
 
 // generate an HTML5 offline cache manifest file
 exports.create = function(api, app, config) {
   var resources = [];
+
   return api.streams.createFileStream({
     onFile: function (file) {
       if (!file.inlined) {
