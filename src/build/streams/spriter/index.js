@@ -179,12 +179,14 @@ var DevKitSpriter = Class(function () {
 
   function getUniqueSheetName(name, animFrameKey) {
     // compute a unique sheet name
-    var baseName = name + (animFrameKey ? '-' + animFrameKey : '') + '-';
+    var baseName = name + (animFrameKey ? '-' + animFrameKey : '');
+    var sheetName = baseName;
     var i = 0;
-    var sheetName = baseName + i;
     while (this._sheetNames[sheetName]) {
-      sheetName = baseName + (++i);
+      sheetName = baseName + '-' + (++i).toString(36);
     }
+
+    this._sheetNames[sheetName] = true;
     return sheetName;
   }
 
