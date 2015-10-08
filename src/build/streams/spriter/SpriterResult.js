@@ -47,14 +47,15 @@ SpriterResult.prototype.addSheet = function (sheet) {
     return out;
   }, this);
 
-  this._sheets[sheet.name] = sprites;
-  this._sizes[sheet.name] = {
+  var filename = 'spritesheets/' + sheet.name;
+  this._sheets[filename] = sprites;
+  this._sizes[filename] = {
     w: sheet.width,
     h: sheet.height
   };
 
   this._files.push({
-      filename: 'spritesheets/' + sheet.name,
+      filename: filename,
       // already wrote to disk, so filter this file out before piping
       // to the output stream
       written: true
@@ -79,7 +80,9 @@ SpriterResult.prototype.addUnspritedFile = function (filename) {
 
   // file was removed from stream earlier, but we didn't sprite it, so add it
   // back (copy to build)
-  this._files.push(filename);
+  this._files.push({
+    src: filename
+  });
 };
 
 SpriterResult.prototype.addToStream = function (addFile) {
