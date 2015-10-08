@@ -1,242 +1,364 @@
-function bootstrap(initialImport, target) {
-	var w = window;
-	var d = document;
-	var loc = w.location;
+window.GC_LOADER = (function (window) {
+  var document = window.document;
+  var userAgent = navigator.userAgent;
+  var CONFIG = window.CONFIG;
+  var mobile = /(iPod|iPhone|iPad)/i
+      .test(userAgent) ? 'ios'
+      : /BlackBerry/.test(userAgent) ? 'blackberry'
+      : /Mobile Safari/.test(userAgent) ? 'android'
+      : '';
 
-	// for tracking when the page started loading
-	w.__initialTime = +new Date();
+  var iosVersion;
+  if (mobile == 'ios') {
+    // detect ios operating system version
+    var match = userAgent.match(/iPhone OS ([0-9]+)/);
+    iosVersion = match && parseInt(match[1]);
+  }
 
-	// mobile safari resets device pixel ratio when we mess with the viewport
-	w.originalDevicePixelRatio = w.devicePixelRatio || 1;
+  var loaded = false;
+  var controller = {
+    startTime: Date.now(),
+    fetchApp: function () {
+      if (!loaded) {
+        loaded = true;
+        var el = document.createElement('script');
+        el.src = controller.scriptName;
+        document.getElementsByTagName('head')[0].appendChild(el);
+      }
+    },
+    init: function (target) {
+      controller.scriptName = target + '.js';
+      Promise.all(controller.pipeline.map(function (step) {
+        try {
+          return step.call();
+        } catch (e) {
+          console.error(step.name, 'failed', e.stack || e);
+        }
+      }))
+        .then(controller.fetchApp, controller.fetchApp);
+    },
+    addStep: function (name, cb, isFatal) {
+      this.pipeline.push({name: name, call: cb, fatal: isFatal !== false});
+    },
+    getStepIndex: function (name) {
+      for (var i = this.pipeline.length - 1; i >= 0; --i) {
+        if (this.pipeline[i].name === name) {
+          return i;
+        }
+      }
+    },
+    pipeline: [{
+        name: 'save-dpr',
+        call: function () {
+          // mobile safari resets device pixel ratio when we mess with the viewport
+          window.originalDevicePixelRatio = window.devicePixelRatio || 1;
+        }
+      }, {
+        name: 'override-config',
+        fatal: false,
+        call: function () {
+          // override any config params provided already
+          if (window.CONFIG_OVERRIDES) {
+            for (var key in window.CONFIG_OVERRIDES) {
+              window.CONFIG[key] = window.CONFIG_OVERRIDES[key];
+            }
+          }
 
-	try {
-		// override any config params provided already
-		if (w.CONFIG_OVERRIDES) {
-			for (var key in w.CONFIG_OVERRIDES) {
-				w.CONFIG[key] = w.CONFIG_OVERRIDES[key];
-			}
-		}
+          var uri = decodeURIComponent((window.location.search || '?').substr(1));
+          if (uri[0] == '{') {
+            // override any config params in the URL
+            var overrideCONFIG = JSON.parse(uri);
+            if (overrideCONFIG) {
+              for (var key in overrideCONFIG) {
+                window.CONFIG[key] = overrideCONFIG[key];
+              }
+            }
+          }
+        }
+      }, {
+        name: 'set-base',
+        call: function () {
+          if (window.CONFIG.CDNURL) {
+            document.write('<base href="' + window.CONFIG.CDNURL + '">');
+          }
+        }
+      }, {
+        name: 'set-viewport',
+        call: function () {
+          var scale = window.CONFIG.scaleDPR === false ? 1 : 1 / window.originalDevicePixelRatio;
 
-		var uri = decodeURIComponent((w.location.search || '?').substr(1));
-		if (uri[0] == '{') {
-			// override any config params in the URL
-			var overrideCONFIG = JSON.parse(uri);
-			if (overrideCONFIG) {
-				for (var key in overrideCONFIG) {
-					w.CONFIG[key] = overrideCONFIG[key];
-				}
-			}
-		}
-	} catch(e) {
+          // set the viewport
+          if (mobile == 'ios') {
+            // Using initial-scale on android makes everything blurry! I think only IOS
+            // correctly uses devicePixelRatio.  Medium/high-res android seems to set
+            // the dpr to 1.5 across the board, regardless of what the dpr should actually
+            // be...
+            document.write('<meta name="viewport" content="'
+                + 'user-scalable=no'
+                + ',initial-scale=' + scale
+                + ',maximum-scale=' + scale
+                + ',minimum-scale=' + scale
+                + ',width=device-width'
+              + '" />');
+          }
+        }
+      }, {
+        name: 'load-fonts',
+        call: function () {
+          if (!CONFIG.embeddedFonts || !CONFIG.embeddedFonts.length) { return; }
 
-	}
+          var TIMEOUT = 10000;
+          var defaultWidth = 0;
+          var parent = document.body;
+          var fontNodes = CONFIG.embeddedFonts.map(function (font) {
+            var el = parent.appendChild(document.createElement('span'));
+            el.innerHTML = 'giItT1WQy@!-/#';
+            el.style.cssText = 'position:absolute;left:-9999px;font-size:100px;visibility:hidden;';
+            if (!defaultWidth) {
+              defaultWidth = el.offsetWidth;
+            }
+            el.style.fontFamily = font;
+            return el;
+          });
 
-	if (w.CONFIG.CDNURL) {
-		d.write('<base href="' + w.CONFIG.CDNURL + '">');
-	}
+          return new Promise(function (resolve) {
+            function onFinish() {
+              clearInterval(interval);
+              clearTimeout(timeout);
+              fontNodes.map(function (el) { parent.removeChild(el); });
+              resolve();
+            }
 
-	var scale = w.CONFIG.scaleDPR === false ? 1 : 1 / w.originalDevicePixelRatio;
-	var ua = navigator.userAgent;
-	var mobile = (/(iPod|iPhone|iPad)/i.test(ua) ? 'ios' : /BlackBerry/.test(ua) ? 'blackberry' : /Mobile Safari/.test(ua) ? 'android' : '');
-	var isKik = /Kik\/\d/.test(ua);
+            var timeout = setTimeout(onFinish, TIMEOUT);
+            var interval = setInterval(function () {
+              var isLoaded = true;
+              for (var i = 0, n = fontNodes.length; i < n; ++i) {
+                if (fontNodes[i].offsetWidth == defaultWidth) {
+                    isLoaded = false;
+                    break;
+                }
+              }
 
-	// set the viewport
-	if (mobile == 'ios') {
-		// Using initial-scale on android makes everything blurry! I think only IOS
-		// correctly uses devicePixelRatio.  Medium/high-res android seems to set
-		// the dpr to 1.5 across the board, regardless of what the dpr should actually
-		// be...
-		d.write('<meta name="viewport" content="'
-				+ 'user-scalable=no'
-				+ ',initial-scale=' + scale
-				+ ',maximum-scale=' + scale
-				+ ',minimum-scale=' + scale
-				+ ',width=device-width'
-			+ '" />');
+              if (isLoaded) { onFinish(); }
+            }, 50);
+          });
+        }
+      },
+    ]
+  };
 
-		// detect ios operating system version
-		var match = ua.match(/iPhone OS ([0-9]+)/);
-		var iosVersion = match && parseInt(match[1]);
-	}
+  return controller;
+})(window);
 
-	if (!Image.get) {
-		Image.set = function(url, img) { CACHE[url] = img; };
-		Image.get = function(url) { return CACHE[url]; };
-	}
 
-	// TODO: Remove this automatic false. Kik does not always show up in the user agent so
-	//       default to not being able to hide the progress bar for now
-	var canHideAddressBar = false && !(iosVersion && iosVersion >= 7) && !isKik && mobile;
+// minimal Promise polyfill from https://github.com/taylorhakes/promise-polyfill
 
-	w.hideAddressBar = function() {
-		if (!mobile || !canHideAddressBar) { return; }
+/**
+* Copyright (c) 2014 Taylor Hakes
+* Copyright (c) 2014 Forbes Lindesay
+*
+* Permission is hereby granted, free of charge, to any person obtaining a copy
+* of this software and associated documentation files (the "Software"), to deal
+* in the Software without restriction, including without limitation the rights
+* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+* copies of the Software, and to permit persons to whom the Software is
+* furnished to do so, subject to the following conditions:
+*
+* The above copyright notice and this permission notice shall be included in
+* all copies or substantial portions of the Software.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+* THE SOFTWARE.
+**/
+if (!window.Promise) {
+  window.Promise = (function() {
 
-		d.body.style.height = 2 * screen.height + 'px';
-		if (mobile == 'ios') {
-			w.scrollTo(0, 1);
-			w.scrollTo(0, 0);
-		} else {
-			w.scrollTo(0, 1);
-		}
+    // Use polyfill for setImmediate for performance gains
+    var asap = (typeof setImmediate === 'function' && setImmediate) ||
+      function(fn) { setTimeout(fn, 1); };
 
-		d.body.offsetHeight;
-	};
+    // Polyfill for Function.prototype.bind
+    function bind(fn, thisArg) {
+      return function() {
+        fn.apply(thisArg, arguments);
+      }
+    }
 
-	hideAddressBar();
-	var min = w.innerHeight;
+    var isArray = Array.isArray || function(value) { return Object.prototype.toString.call(value) === "[object Array]" };
 
-	var loaded = false;
-	w._continueLoad = function() {
-		if (!loaded) {
-			loaded = true;
-			var el = d.createElement('script');
-			el.src = target + '.js';
-			d.getElementsByTagName('head')[0].appendChild(el);
-		}
-	};
+    function Promise(fn) {
+      if (typeof this !== 'object') throw new TypeError('Promises must be constructed via new');
+      if (typeof fn !== 'function') throw new TypeError('not a function');
+      this._state = null;
+      this._value = null;
+      this._deferreds = []
 
-	var fontsLoaded;
-	if (CONFIG.embeddedFonts) {
-		var defaultWidth = 0;
-		var fontNodes = [];
-		for (var i = 0, n = CONFIG.embeddedFonts.length; i < n; ++i) {
-			var font = CONFIG.embeddedFonts[i];
-			var el = d.body.appendChild(d.createElement('span'));
-			el.innerHTML = 'giItT1WQy@!-/#';
-			el.style.cssText = 'position:absolute;left:-9999px;font-size:100px;visibility:hidden;';
-			if (!defaultWidth) {
-				defaultWidth = el.offsetWidth;
-			}
-			el.style.fontFamily = font;
-			fontNodes.push(el);
-		}
-	} else {
-		fontsLoaded = true;
-	}
+      doResolve(fn, bind(resolve, this), bind(reject, this))
+    }
 
-	var orientationOk = true;
-	var supportedOrientations = CONFIG.supportedOrientations;
-	function checkOrientation() {
-		var ow = w.outerWidth;
-		var oh = w.outerHeight;
-		var isPortrait = oh > ow;
-		orientationOk = isPortrait && supportedOrientations.indexOf('portrait') != -1
-			|| !isPortrait && supportedOrientations.indexOf('landscape') != -1;
-	}
+    function handle(deferred) {
+      var me = this;
+      if (this._state === null) {
+        this._deferreds.push(deferred);
+        return
+      }
+      asap(function() {
+        var cb = me._state ? deferred.onFulfilled : deferred.onRejected
+        if (cb === null) {
+          (me._state ? deferred.resolve : deferred.reject)(me._value);
+          return;
+        }
+        var ret;
+        try {
+          ret = cb(me._value);
+        }
+        catch (e) {
+          deferred.reject(e);
+          return;
+        }
+        deferred.resolve(ret);
+      })
+    }
 
-	if (mobile && supportedOrientations) {
-		checkOrientation();
-		// if (!orientationOk) {
-		// 	var el = d.body.appendChild(d.createElement('div'));
-		// 	el.innerHTML = 'please rotate your phone<br><span style="font-size:200%">\u21bb</span>';
-		// 	var width = d.body.offsetWidth;
-		// 	el.style.cssText = 'opacity:0;z-index:9000;color:#FFF;background:rgba(40,40,40,0.8);border-radius:25px;text-align:center;padding:' + width / 10 + 'px;font-size:' + width / 20 + 'px;position:absolute;left:50%;width:' + width * 5 / 8 + 'px;margin-left:-' + width * 5 / 16 + 'px;margin-top:80px;pointer-events:none';
-		// 	w.addEventListener('resize', function () {
-		// 		checkOrientation();
-		// 		el.style.display = orientationOk ? 'none': 'block';
-		// 	});
-		// }
-	}
+    function resolve(newValue) {
+      try { //Promise Resolution Procedure: https://github.com/promises-aplus/promises-spec#the-promise-resolution-procedure
+        if (newValue === this) throw new TypeError('A promise cannot be resolved with itself.');
+        if (newValue && (typeof newValue === 'object' || typeof newValue === 'function')) {
+          var then = newValue.then;
+          if (typeof then === 'function') {
+            doResolve(bind(then, newValue), bind(resolve, this), bind(reject, this));
+            return;
+          }
+        }
+        this._state = true;
+        this._value = newValue;
+        finale.call(this);
+      } catch (e) { reject.call(this, e); }
+    }
 
-	var appCache = window.applicationCache;
-	['cached', 'checking', 'downloading', 'error', 'noupdate', 'obsolete', 'progress', 'updateready'].forEach(function (evt) {
-		appCache.addEventListener(evt, handleCacheEvent, false);
-	});
+    function reject(newValue) {
+      this._state = false;
+      this._value = newValue;
+      finale.call(this);
+    }
 
-	// status 0 == UNCACHED
-	// if (appCache.status) {
+    function finale() {
+      for (var i = 0, len = this._deferreds.length; i < len; i++) {
+        handle.call(this, this._deferreds[i]);
+      }
+      this._deferreds = null;
+    }
 
-	// 	appCache.update(); // Attempt to update the user's cache.
-	// }
+    function Handler(onFulfilled, onRejected, resolve, reject){
+      this.onFulfilled = typeof onFulfilled === 'function' ? onFulfilled : null;
+      this.onRejected = typeof onRejected === 'function' ? onRejected : null;
+      this.resolve = resolve;
+      this.reject = reject;
+    }
 
-	function handleCacheEvent(evt) {
-		if (evt.type == 'updateready') {
-			// var el = d.body.appendChild(d.createElement('div'));
-			// el.style.cssText = 'opacity:0;position:absolute;z-index:9900000;top:-20px;margin:0px auto'
-			// 	+ 'height:20px;width:200px;'
-			// 	+ '-webkit-border-radius:0px 0px 5px 5px;'
-			// 	+ '-webkit-transition:all 0.7s ease-in-out;'
-			// 	+ '-webkit-transform:scale(' + w.devicePixelRatio + ');'
-			// 	+ '-webkit-transform-origin:50% 0%;'
-			// 	+ '-webkit-box-shadow:0px 2px 3px rgba(0, 0, 0, 0.4);'
-			// 	+ 'background:rgba(0,0,0,0.7);color:#FFF;'
-			// 	+ 'padding:10px 15px;'
-			// 	+ 'font-size: 15px;';
-			// 	+ 'text-align: center;';
-			// 	+ 'cursor:pointer;';
+    /**
+     * Take a potentially misbehaving resolver function and make sure
+     * onFulfilled and onRejected are only called once.
+     *
+     * Makes no guarantees about asynchrony.
+     */
+    function doResolve(fn, onFulfilled, onRejected) {
+      var done = false;
+      try {
+        fn(function (value) {
+          if (done) return;
+          done = true;
+          onFulfilled(value);
+        }, function (reason) {
+          if (done) return;
+          done = true;
+          onRejected(reason);
+        })
+      } catch (ex) {
+        if (done) return;
+        done = true;
+        onRejected(ex);
+      }
+    }
 
-			// if (CONFIG.embeddedFonts && CONFIG.embeddedFonts.length) {
-			// 	el.style.fontFamily = CONFIG.embeddedFonts[0];
-			// }
+    Promise.prototype['catch'] = function (onRejected) {
+      return this.then(null, onRejected);
+    };
 
-			// el.innerText = 'game updated! tap here';
-			// el.style.left = (d.body.offsetWidth - 200) / 2 + 'px';
+    Promise.prototype.then = function(onFulfilled, onRejected) {
+      var me = this;
+      return new Promise(function(resolve, reject) {
+        handle.call(me, new Handler(onFulfilled, onRejected, resolve, reject));
+      })
+    };
 
-			// el.setAttribute('noCapture', true); // prevent DevKit from stopping clicks on this event
-			// el.addEventListener('click', reload, true);
-			// el.addEventListener('touchstart', reload, true);
+    Promise.all = function () {
+      var args = Array.prototype.slice.call(arguments.length === 1 && isArray(arguments[0]) ? arguments[0] : arguments);
 
-			// setTimeout(function () {
-			// 	el.style.top='0px';
-			// 	el.style.opacity='1';
-			// }, 0);
+      return new Promise(function (resolve, reject) {
+        if (args.length === 0) return resolve([]);
+        var remaining = args.length;
+        function res(i, val) {
+          try {
+            if (val && (typeof val === 'object' || typeof val === 'function')) {
+              var then = val.then;
+              if (typeof then === 'function') {
+                then.call(val, function (val) { res(i, val) }, reject);
+                return;
+              }
+            }
+            args[i] = val;
+            if (--remaining === 0) {
+              resolve(args);
+            }
+          } catch (ex) {
+            reject(ex);
+          }
+        }
+        for (var i = 0; i < args.length; i++) {
+          res(i, args[i]);
+        }
+      });
+    };
 
-			// setTimeout(function () {
-			// 	el.style.top='-20px';
-			// 	el.style.opacity='0';
-			// }, 30000);
-			console.log("update ready");
+    Promise.resolve = function (value) {
+      if (value && typeof value === 'object' && value.constructor === Promise) {
+        return value;
+      }
 
-			// reload immediately if splash is still visible
-			var splash = d.getElementById('_GCSplash');
-			if (splash && splash.parentNode) {
-				try { appCache.swapCache(); } catch (e) {}
-				//location.reload();
-			}
-		}
-	}
+      return new Promise(function (resolve) {
+        resolve(value);
+      });
+    };
 
-	// after load, we poll for the correct document height
-	w.onload = function() {
-		var now = +new Date();
-		var increased = false;
-		var poll = setInterval(function() {
-			hideAddressBar();
-			// if (orientationOk) {
-				var h = w.innerHeight;
-				if (fontNodes) {
-					var isLoaded = true;
-					for (var i = 0, n = fontNodes.length; i < n; ++i) {
-						if (fontNodes[i].offsetWidth == defaultWidth) {
-							isLoaded = false;
-							break;
-						}
-					}
+    Promise.reject = function (value) {
+      return new Promise(function (resolve, reject) {
+        reject(value);
+      });
+    };
 
-					if (isLoaded) {
-						fontsLoaded = true;
-					}
-				}
+    Promise.race = function (values) {
+      return new Promise(function (resolve, reject) {
+        for(var i = 0, len = values.length; i < len; i++) {
+          values[i].then(resolve, reject);
+        }
+      });
+    };
 
-				// timeout after 1 second and assume we have the right height, or
-				// note when the height increases (we scrolled) and launch the app
-				if (h == min && increased && fontsLoaded || +new Date() - now > 5000 || !canHideAddressBar && fontsLoaded) {
-					if (mobile == 'android') {
-						w.scrollTo(0, -1);
-					}
+    /**
+     * Set the immediate function to execute callbacks
+     * @param fn {function} Function to execute
+     * @private
+     */
+    Promise._setImmediateFn = function _setImmediateFn(fn) {
+      asap = fn;
+    };
 
-					clearInterval(poll);
-
-					setTimeout(function () {
-						jsio("import devkit.browser.bootstrap.launchBrowser");
-					}, 0);
-				}
-
-				// some android phones report correctly first, then shrink the height
-				// to fit the address bar. always reset min
-				if (h > min) { increased = true; }
-				min = h;
-			// }
-		}, 50);
-	}
+    return Promise;
+  })(this);
 }

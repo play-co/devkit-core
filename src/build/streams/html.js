@@ -18,13 +18,11 @@ function getStaticFilePath(filePath) {
   return path.join(__dirname, '..', 'targets', 'browser', 'static', filePath);
 }
 
-function getPreloadJS(config, compileJS) {
-  // get preload JS
-  if (/^native/.test(config.target)) {
-    return Promise.resolve('jsio=function(){window._continueLoad()}');
-  }
-
+exports.create = function (api, app, config, opts) {
+  var isMobile = (config.target !== 'browser-desktop');
   var isLiveEdit = (config.target === 'live-edit');
+
+  var jsConfig = new JSConfig(api, app, config);
   if (isLiveEdit && !config.preCompressCallback) {
     config.preCompressCallback = function(sourceTable) {
       for (var fullPath in sourceTable) {
@@ -44,24 +42,8 @@ function getPreloadJS(config, compileJS) {
     };
   }
 
-  return compileJS({
-    initialImport: 'devkit.browser.bootstrap.launchBrowser',
-    appendImport: false,
-    preCompress: config.preCompressCallback
-  });
-}
-
-exports.create = function (api, app, config, opts) {
-  var isMobile = (config.target !== 'browser-desktop');
-  var isLiveEdit = (config.target === 'live-edit');
-
-  var jsConfig = new JSConfig(api, app, config);
-  var jsCompiler = new JSCompiler(api, app, config, jsConfig);
-  var compileJS = Promise.promisify(jsCompiler.compile, jsCompiler);
-
   // start file-system tasks in background immediately
   var tasks = [
-    getPreloadJS(config, compileJS),
     fs.readFileAsync(STATIC_BOOTSTRAP_CSS, 'utf8'),
     fs.readFileAsync(STATIC_BOOTSTRAP_JS, 'utf8'),
     isLiveEdit && fs.readFileAsync(STATIC_LIVE_EDIT_JS, 'utf8')
@@ -72,7 +54,7 @@ exports.create = function (api, app, config, opts) {
     onFinish: function (addFile) {
       // wait for file-system tasks to finish
       return Promise.all(tasks)
-        .spread(function (preloadJS, bootstrapCSS, bootstrapJS, liveEditJS) {
+        .spread(function (bootstrapCSS, bootstrapJS, liveEditJS) {
           var gameHTML = new exports.GameHTML();
 
           gameHTML.addCSS(bootstrapCSS);
@@ -91,11 +73,9 @@ exports.create = function (api, app, config, opts) {
 
           gameHTML.addJS(jsConfig.toString());
           gameHTML.addJS(bootstrapJS);
-          gameHTML.addJS(printf('bootstrap("%(initialImport)s", "%(target)s")', {
-              initialImport: appJS.initialImports.browser,
+          gameHTML.addJS(printf('GC_LOADER.init("%(target)s")', {
               target: config.target
             }));
-          gameHTML.addJS(preloadJS);
 
           liveEditJS && gameHTML.addJS(liveEditJS);
 
