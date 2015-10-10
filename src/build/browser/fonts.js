@@ -135,12 +135,10 @@ var CSSFont = Class(function () {
   this.init = function (file) {
     this.file = file;
     this.fileBase = path.basename(file, path.extname(file));
-
     this.name = this.fileBase.trim();
 
     var split = this.name.split(/\-/g);
     if (split.length > 1) {
-      // this.name = split[0];
 
       var suffix = normalizeFontType(split[1].toLowerCase());
 
