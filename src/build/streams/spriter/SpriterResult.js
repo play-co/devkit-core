@@ -62,7 +62,7 @@ SpriterResult.prototype.addSheet = function (sheet) {
     });
 };
 
-SpriterResult.prototype.addUnspritedFile = function (filename) {
+SpriterResult.prototype.addUnspritedFile = function (filename, addToStream) {
   // the async version runs a lot slower, so we're going to stick with
   // sync for now???
   var relativePath = this._relativePaths[filename];
@@ -80,9 +80,11 @@ SpriterResult.prototype.addUnspritedFile = function (filename) {
 
   // file was removed from stream earlier, but we didn't sprite it, so add it
   // back (copy to build)
-  this._files.push({
-    src: filename
-  });
+  if (addToStream !== false) {
+    this._files.push({
+      src: filename
+    });
+  }
 };
 
 SpriterResult.prototype.addToStream = function (addFile) {

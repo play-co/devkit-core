@@ -298,7 +298,7 @@ var DevKitSpriter = Class(function () {
     function onResult(res) {
       res.spritesheets.map(this._result.addSheet.bind(this._result));
       res.unspritable.forEach(function (filename) {
-        this._result.addUnspritedFile(filename);
+        this._result.addUnspritedFile(filename, true);
       }, this);
     }
   };

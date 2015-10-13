@@ -25,7 +25,7 @@ exports.getStream = function (api, config) {
           && file.getOption('sprite') !== false) {
 
         res.setRelativePath(file.sourcePath, file.targetRelativePath);
-        res.addUnspritedFile(file.sourcePath);
+        res.addUnspritedFile(file.sourcePath, false);
       }
     },
     onFinish: function (addFile) {
