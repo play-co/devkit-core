@@ -11,7 +11,7 @@ var glob = Promise.promisify(require('glob'));
 // end up copying, so we want to be somewhat lazy about them. The StreamFile
 // class generates the content stream only on first use, which also helps
 // avoid emfile errors (too many open files).
-function ResourceFile(directory, filename, outputDirectory) {
+function ResourceFile(directory, filename, outputDirectory, statCache) {
 
   if (!filename) { throw new Error("Expected a filename"); }
 
@@ -23,7 +23,8 @@ function ResourceFile(directory, filename, outputDirectory) {
   // location
   File.call(this, {
     base: directory.src,
-    path: this.sourcePath
+    path: this.sourcePath,
+    stat: statCache && statCache[this.sourcePath]
   });
 
   this.sourceRelativePath = path.relative(this.sourceDirectory, this.sourcePath);
@@ -113,14 +114,19 @@ exports.getDirectories = require('./directories').get;
 exports.getMetadata = require('./metadata').get;
 exports.createFileStream = function (api, app, config, outputDirectory, directories) {
   var stream = through2.obj(undefined);
+  var statCache = {};
   Promise.resolve(directories || exports.getDirectories(api, app, config))
     .map(function (directory) {
       var files = directory.files && Promise.resolve(directory.files)
-                || glob('**/*', {cwd: directory.src, nodir: true});
+                || glob('**/*', {
+                        cwd: directory.src,
+                        nodir: true,
+                        statCache: statCache
+                      });
 
       return files
         .map(function (relativePath) {
-          var file = new ResourceFile(directory, relativePath, outputDirectory);
+          var file = new ResourceFile(directory, relativePath, outputDirectory, statCache);
           return exports.getMetadata(file)
             .then(function (options) {
               file.options = options;

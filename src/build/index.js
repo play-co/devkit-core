@@ -1,9 +1,7 @@
 var util = require('util');
 var EventEmitter = require('events').EventEmitter;
-var vfs = require('vinyl-fs');
 var resources = require('./resources');
 var createStreamWrapper = require('./util/stream-wrap').createStreamWrapper;
-var FilterStream = require('streamfilter');
 var Promise = require('bluebird');
 
 function BuildError(message, showStack) {
@@ -218,19 +216,7 @@ exports.addStreamAPI = function (api, app, config) {
           stream = resources.createFileStream(api, app, config, config.outputResourcePath, opts.directories);
           break;
         case 'write-files':
-          // the spriter outputs files directly to the spritesheets directory
-          // for performance reasons, and then inserts the spritesheet File
-          // objects back into the stream so future streams know about them;
-          // however, we can't actually write them out. This removes files that
-          // have already been written.
-          var filter = new FilterStream(function (file, enc, cb) {
-            cb(file.written);
-          }, {restore: true, objectMode: true, passthrough: true});
-
-          stream = createStreamWrapper()
-            .wrap(filter)
-            .wrap(vfs.dest(config.outputResourcePath))
-            .wrap(filter.restore);
+          stream = require('./streams/write-files').create(api, app, config);
           break;
         case 'end-build':
           // The end-build is a special stream that consumes anything it's
