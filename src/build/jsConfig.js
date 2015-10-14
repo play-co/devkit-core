@@ -29,7 +29,8 @@ exports.JSConfig = Class(function () {
       sdkVersion: config.sdkVersion || 'unknown',
       splash: {
         autoHide: true
-      }
+      },
+      useWebGL: manifest.browser && manifest.browser.canvas && manifest.browser.canvas.useWebGL || false
     };
 
     if (manifest.disableNativeViews) {
