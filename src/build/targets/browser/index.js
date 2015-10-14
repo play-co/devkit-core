@@ -64,9 +64,6 @@ exports.init = function (api, app, config) {
     return;
   }
 
-  // Exclude jsio in browser builds (we include it separately)
-  config.excludeJsio = !config.isSimulated;
-
   config.browser = {};
 
   merge(config.browser,
