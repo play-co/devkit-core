@@ -30,7 +30,7 @@ exports.create = function (api, app, config) {
             .wrap(vfs.dest(config.outputResourcePath))
             .wrap(api.streams.createFileStream({
               onFile: function (file) {
-                if (file.stat) {
+                if (file.stat && file.stat.atime && file.stat.mtime) {
                   var atime = file.stat.atime.getTime();
                   var mtime = file.stat.mtime.getTime();
                   if (!isNaN(atime) && !isNaN(mtime)) {
