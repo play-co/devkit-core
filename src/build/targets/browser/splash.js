@@ -2,7 +2,7 @@ var path = require('path');
 var fs = require('../../util/fs');
 
 var printf = require('printf');
-var getBase64Image = require('./util/datauri').getBase64Image;
+var getBase64Image = require('../../util/datauri').getBase64Image;
 
 var STATIC_SPINNER_HTML = path.join(__dirname, 'static/spinner.html');
 var domID = '_GCSplash';
