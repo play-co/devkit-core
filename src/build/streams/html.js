@@ -104,66 +104,67 @@ exports.create = function (api, app, config, opts) {
 exports.IndexHTML = Class(function () {
   this.generate = function (api, app, config) {
     return Promise.try(function () {
-        return [
-        '<!DOCTYPE html>',
-        '<html>',
-        '  <head>',
-        '    <title>' + app.manifest.title + '</title>',
-        '  </head>',
-        '',
-        '  <body style="margin:0;padding:0;'
+      var html = [];
+      html.push('<!DOCTYPE html>');
+      html.push('<html>');
+      html.push('  <head>');
+      html.push('    <title>' + app.manifest.title + '</title>');
+      applyOpenGraphMetaProperties(html, config);
+      html.push('  </head>');
+      html.push('');
+      html.push('  <body style="margin:0;padding:0;'
               + (config.browser.desktopBodyCSS || '')
-              + '" onresize="onResize()">',
-        '    <div id="gameWrapper">',
-        '      <iframe id="game" src="game.html"'
-                + 'style="display:block;border:0;margin:0;padding:0;">',
-        '      </iframe>',
-        '    </div>',
-        '',
-        '    <script>',
-        '      function onResize(allowResize) {',
-        '        var w = window, d = w.document, de = d.documentElement;',
-        '        var width = Math.max(de.clientWidth, w.innerWidth || 0);',
-        '        var height = Math.max(de.clientHeight, w.innerHeight || 0);',
-        '        var game = d.getElementById("game");',
-        '',
-        '        if (allowResize) {',
-        '          var BG_WIDTH = ' + config.browser.canvas.width + ';',
-        '          var BG_HEIGHT = ' + config.browser.canvas.height + ';',
-        '          var BG_RATIO = BG_WIDTH / BG_HEIGHT;',
-        '          var ratio = width / height;',
-        '          var horzFit = ratio <= BG_RATIO;',
-        '          var scale = horzFit',
-        '                    ? width / BG_WIDTH',
-        '                    : height / BG_HEIGHT;',
-        '',
-        '          game.width = scale * BG_WIDTH;',
-        '          game.height = scale * BG_HEIGHT;',
-        '',
-        '          if (game.width > BG_WIDTH) {',
-        '            game.height *= BG_WIDTH / game.width;',
-        '            game.width = BG_WIDTH;',
-        '          }',
-        '',
-        '          if (game.height > BG_HEIGHT) {',
-        '            game.width *= BG_HEIGHT / game.height;',
-        '            game.height = BG_HEIGHT;',
-        '          }',
-        '        }',
-        '',
-        '        var gameWrapper = document.getElementById("gameWrapper");',
-        '        var s = gameWrapper.style;',
-        '        s.width = "1px";',
-        '        s.height = "1px";',
-        '        s.marginTop = ((height - game.height) / 2) + "px";',
-        '        s.marginLeft = ((width - game.width) / 2) + "px";',
-        '      };',
-        '',
-        '      onResize(true);',
-        '    </script>',
-        '  </body>',
-        '</html>'
-      ].join('\n');
+              + '" onresize="onResize()">');
+      html.push('    <div id="gameWrapper">');
+      html.push('      <iframe id="game" src="game.html"'
+                + 'style="display:block;border:0;margin:0;padding:0;">');
+      html.push('      </iframe>');
+      html.push('    </div>');
+      html.push('');
+      html.push('    <script>');
+      html.push('      function onResize(allowResize) {');
+      html.push('        var w = window, d = w.document, de = d.documentElement;');
+      html.push('        var width = Math.max(de.clientWidth, w.innerWidth || 0);');
+      html.push('        var height = Math.max(de.clientHeight, w.innerHeight || 0);');
+      html.push('        var game = d.getElementById("game");');
+      html.push('');
+      html.push('        if (allowResize) {');
+      html.push('          var BG_WIDTH = ' + config.browser.canvas.width + ';');
+      html.push('          var BG_HEIGHT = ' + config.browser.canvas.height + ';');
+      html.push('          var BG_RATIO = BG_WIDTH / BG_HEIGHT;');
+      html.push('          var ratio = width / height;');
+      html.push('          var horzFit = ratio <= BG_RATIO;');
+      html.push('          var scale = horzFit');
+      html.push('                    ? width / BG_WIDTH');
+      html.push('                    : height / BG_HEIGHT;');
+      html.push('');
+      html.push('          game.width = scale * BG_WIDTH;');
+      html.push('          game.height = scale * BG_HEIGHT;');
+      html.push('');
+      html.push('          if (game.width > BG_WIDTH) {');
+      html.push('            game.height *= BG_WIDTH / game.width;');
+      html.push('            game.width = BG_WIDTH;');
+      html.push('          }');
+      html.push('');
+      html.push('          if (game.height > BG_HEIGHT) {');
+      html.push('            game.width *= BG_HEIGHT / game.height;');
+      html.push('            game.height = BG_HEIGHT;');
+      html.push('          }');
+      html.push('        }');
+      html.push('');
+      html.push('        var gameWrapper = document.getElementById("gameWrapper");');
+      html.push('        var s = gameWrapper.style;');
+      html.push('        s.width = "1px";');
+      html.push('        s.height = "1px";');
+      html.push('        s.marginTop = ((height - game.height) / 2) + "px";');
+      html.push('        s.marginLeft = ((width - game.width) / 2) + "px";');
+      html.push('      };');
+      html.push('');
+      html.push('      onResize(true);');
+      html.push('    </script>');
+      html.push('  </body>');
+      html.push('</html>)');
+      return html.join('\n');
     });
   };
 });
@@ -310,6 +311,7 @@ exports.GameHTML = Class(function () {
             app.manifest.title,
           '</title>'
         );
+        applyOpenGraphMetaProperties(html, config);
 
         // Targeting mobile browsers requires viewport settings.
         if (config.target === 'browser-mobile' || config.isSimulated) {
@@ -398,3 +400,13 @@ exports.GameHTML = Class(function () {
       });
   };
 });
+
+
+
+// add open graph meta properties to an array of HTML lines
+function applyOpenGraphMetaProperties (html, config) {
+  var og = config.browser.openGraph;
+  for (var key in og) {
+    html.push('    <meta property="og:' + key + '" content="' + og[key] + '" />');
+  }
+};

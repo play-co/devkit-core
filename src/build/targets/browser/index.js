@@ -75,6 +75,9 @@ exports.init = function (api, app, config) {
         appleTouchIcon: true,
         appleTouchStartupImage: true,
 
+        // rich social graph meta properties
+        openGraph: {},
+
         // embed fonts disabled by default (load over URL), if true, base64 encode
         // them into the css
         embedFonts: false,
