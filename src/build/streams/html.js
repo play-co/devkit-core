@@ -219,7 +219,7 @@ exports.GameHTML = Class(function () {
     return image && fs.existsAsync(image)
       .then(function (exists) {
         if (exists) {
-          require('../targets/browser/splash')
+          return require('../targets/browser/splash')
             .getSplashHTML(config.browser.spinner, image);
         }
       });
@@ -363,7 +363,7 @@ exports.GameHTML = Class(function () {
         );
 
         if (config.browser.embedSplash && splashImage) {
-          return getSplashHTML();
+          return getSplashHTML(config, splashImage);
         }
       })
       .then(function (splashHTML) {
