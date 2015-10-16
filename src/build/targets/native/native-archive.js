@@ -46,13 +46,22 @@ function createArchiveStream(api, app, config) {
   var fs = require('../../util/fs');
 
   var _files = [];
+  var _dirs = {};
   var _fileHash = {};
   return api.streams.createFileStream({
     onFile: function (file) {
       if (!_fileHash[file.path]) {
         _fileHash[file.path] = true;
+
+        var zipPath = file.path.replace(config.outputPath + path.sep, '');
+        zipPath.replace(/\//g, function (match, index) {
+          var dir = zipPath.substring(0, index + 1);
+          _dirs[dir] = true;
+        });
+
         _files.push({
           filename: file.path,
+          zipPath: zipPath,
           stream: fs.createReadStream(file.path)
         });
       }
@@ -74,9 +83,13 @@ function createArchiveStream(api, app, config) {
         archive.on('error', reject);
       });
 
+      var directoryBuffer = new Buffer(0);
+      Object.keys(_dirs).forEach(function (dir) {
+        archive.append(directoryBuffer, {name: dir});
+      });
+
       _files.forEach(function (file) {
-        var zipPath = file.filename.replace(config.outputPath + path.sep, '');
-        archive.append(file.stream, {name: zipPath});
+        archive.append(file.stream, {name: file.zipPath});
       });
 
       archive.finalize();
