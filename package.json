@@ -47,11 +47,6 @@
       "chrome": "src/build/targets/chrome",
       "resources-bundle": "src/build/targets/resources-bundle"
     },
-    "extensions": {
-      "debugger": {
-        "routes": "src/build/debug-api"
-      }
-    },
     "clientPaths": {
       "devkit": "src/clientapi",
       "*": "src/clientapi/api/"
