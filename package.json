@@ -2,7 +2,7 @@
   "name": "devkit-core",
   "author": "Game Closure",
   "description": "devkit engine",
-  "version": "4.0.0",
+  "version": "4.0.2",
   "repository": {
     "type": "git",
     "url": "http://github.com/gameclosure/devkit-core.git"
@@ -11,7 +11,7 @@
     "archiver": "^0.14.4",
     "bluebird": "^2.9.34",
     "chalk": "^1.1.1",
-    "devkit-spriter": "0.0.8",
+    "devkit-spriter": "0.0.9",
     "fs-extra": "^0.23.1",
     "glob": "^5.0.2",
     "graceful-fs": "^4.1.2",
