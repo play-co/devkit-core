@@ -14,7 +14,7 @@ exports.screenshot = function (cb) {
     var reDomain = /^https?:\/\/(.*?)\//;
     var origDrawImage = ctx.drawImage;
     ctx.drawImage = function (img, sx, sy, sw, sh, dx, dy, dw, dh) {
-      var match = img.src.match(reDomain);
+      var match = img.src && img.src.match(reDomain);
       if (match && match[1] != location.host) {
         if (dw != undefined && dh != undefined) {
           this.drawBrokenImage(dx, dy, dw, dh);
