@@ -1,6 +1,6 @@
 machine:
   xcode:
-    version: "6.3.1"
+    version: "7.0"
   environment:
     XCODE_SCHEME: none
     XCODE_PROJECT: none
@@ -8,8 +8,6 @@ machine:
 dependencies:
   pre:
     - brew install node
-    - brew install caskroom/cask/brew-cask
-    - brew cask install java
     - |
       if [ ! -d /usr/local/Cellar/android-sdk/ ]; then
         brew install android-sdk
@@ -49,6 +47,7 @@ dependencies:
     - /usr/local/lib/node_modules/devkit-imagemin/
     - /usr/local/Cellar/android-ndk/
     - /usr/local/Cellar/android-sdk/
+    - /usr/local/var/lib/android-sdk/
 
 test:
   override:
