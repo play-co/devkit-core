@@ -315,13 +315,9 @@ exports.GameHTML = Class(function () {
 
         // Targeting mobile browsers requires viewport settings.
         if (config.target === 'browser-mobile' || config.isSimulated) {
-          if (app.manifest.scaleDPR === false) {
-            html.push('<meta name="viewport"'
-                + ' content="user-scalable=no,target-densitydpi=low"/>');
-          } else {
-            html.push('<meta name="viewport"'
-                + ' content="user-scalable=no,target-densitydpi=device-dpi"/>');
-          }
+
+          html.push('<meta name="viewport"'
+              + ' content="user-scalable=no,width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,shrink-to-fit=no"/>');
 
           // Various iOS mobile settings for installing as a top application.
           html.push('<meta name="apple-mobile-web-app-capable"'

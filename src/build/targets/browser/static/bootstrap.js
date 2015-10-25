@@ -48,12 +48,6 @@ window.GC_LOADER = (function (window) {
       }
     },
     pipeline: [{
-        name: 'save-dpr',
-        call: function () {
-          // mobile safari resets device pixel ratio when we mess with the viewport
-          window.originalDevicePixelRatio = window.devicePixelRatio || 1;
-        }
-      }, {
         name: 'override-config',
         fatal: false,
         call: function () {
@@ -75,34 +69,16 @@ window.GC_LOADER = (function (window) {
             }
           }
         }
-      }, {
+      },
+      {
         name: 'set-base',
         call: function () {
           if (window.CONFIG.CDNURL) {
             document.write('<base href="' + window.CONFIG.CDNURL + '">');
           }
         }
-      }, {
-        name: 'set-viewport',
-        call: function () {
-          var scale = window.CONFIG.scaleDPR === false ? 1 : 1 / window.originalDevicePixelRatio;
-
-          // set the viewport
-          if (mobile == 'ios') {
-            // Using initial-scale on android makes everything blurry! I think only IOS
-            // correctly uses devicePixelRatio.  Medium/high-res android seems to set
-            // the dpr to 1.5 across the board, regardless of what the dpr should actually
-            // be...
-            document.write('<meta name="viewport" content="'
-                + 'user-scalable=no'
-                + ',initial-scale=' + scale
-                + ',maximum-scale=' + scale
-                + ',minimum-scale=' + scale
-                + ',width=device-width'
-              + '" />');
-          }
-        }
-      }, {
+      },
+      {
         name: 'load-fonts',
         call: function () {
           if (!CONFIG.embeddedFonts || !CONFIG.embeddedFonts.length) { return; }
