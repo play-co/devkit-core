@@ -255,7 +255,7 @@ exports.GameHTML = Class(function () {
       ])
       .bind(this)
       .spread(function (css, js, splashExists, appCacheEvents) {
-        if (!splashExists && !config.isSimulated) {
+        if (!splashExists) {
           var splashPaths = {
             'portrait': ['portrait2048', 'portrait1136',
                           'portrait1024', 'portrait960', 'portrait480'],

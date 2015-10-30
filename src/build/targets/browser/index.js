@@ -46,7 +46,7 @@ exports.init = function (api, app, config) {
 
   if (config.isSimulated) {
     config.browser = {
-      embedSplash: false,
+      embedSplash: true,
       embedFonts: false,
       appleTouchIcon: false,
       appleTouchStartupImage: false,
