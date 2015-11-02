@@ -28,7 +28,7 @@ exports.JSConfig = Class(function () {
       simulator: config.isSimulated && config.simulator,
       sdkVersion: config.sdkVersion || 'unknown',
       splash: {
-        autoHide: true
+        autoHide: !(manifest.splash && manifest.splash.autoHide === false)
       },
       useWebGL: manifest.browser && manifest.browser.canvas && manifest.browser.canvas.useWebGL || false
     };
