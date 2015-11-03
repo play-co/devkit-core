@@ -14,9 +14,11 @@
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
 
+import .HTMLElement;
+
 var lastbg;
 
-var Audio = exports = Class(function () {
+var Audio = exports = Class(HTMLElement, function () {
 
 	this.init = function (url) {
 		this._startedLoad = false;
@@ -89,15 +91,23 @@ var Audio = exports = Class(function () {
 		return true;
 	};
 
-	this.load = function (thenPlay) {
+	this.load = function () {
 		if (this.isBackgroundMusic) {
 			// Background music should not be preloaded like normal sounds
 			return;
 		}
 		var s = NATIVE.sound.preloadSound(this._src);
-		if (thenPlay) {
-			s.onload = bind(this, '_play');
-		}
+		s.onload = bind(this, function (evt) {
+			if (this.onload) { this.onload(evt); }
+			this.publish('canplaythrough', evt);
+			if (!this.paused) {
+				this._play();
+			}
+		});
+		s.onerror = bind(this, function (evt) {
+			if (this.onerror) { this.onerror(evt); }
+			this.emit('error', evt);
+		});
 		this._startedLoad = true;
 	};
 
@@ -108,6 +118,7 @@ var Audio = exports = Class(function () {
 			(this.loop === "loop" || this.loop === true)
 		);
 		this._startTime = Date.now();
+		this.emit('play');
 	};
 
 	this.play = function () {
@@ -116,9 +127,10 @@ var Audio = exports = Class(function () {
 			lastbg = this;
 			this._startedLoad = true;
 			this._startTime = Date.now();
+			this.emit('play');
 			NATIVE.sound.playBackgroundMusic(this._src, this._volume, this.loop);
 		} else if (!this._startedLoad) {
-			this.load(true);
+			this.load();
 		} else {
 			this._play();
 		}
@@ -134,6 +146,7 @@ var Audio = exports = Class(function () {
 			}
 			this._updateElapsed();
 			this._startTime = 0;
+			this.emit('paused');
 		}
 	};
 

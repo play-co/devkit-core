@@ -14,10 +14,12 @@
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
 
-import lib.PubSub;
+import .HTMLElement;
 import util.setProperty;
 
-var Image = exports = Class(lib.PubSub, function (supr) {
+var Image = exports = Class(HTMLElement, function (supr) {
+
+	this.tagName = 'IMG';
 
 	this.init = function (src, width, height, glname) {
 		this._src = src || "";
@@ -78,13 +80,14 @@ var Image = exports = Class(lib.PubSub, function (supr) {
 		}
 	}
 
-	this.addEventListener = function (type, callback, useCapture) { this.subscribe(type, this, callback); }
-	this.removeEventListener = function (type, callback, useCapture) { this.unsubscribe(type, this, callback); }
-
 	this.onload = this.onerror = this.onreload = function () {}
 });
 
 
 exports.install = function () {
 	GLOBAL.Image = Image;
+
+	document.__registerCreateElementHandler('IMG', function () {
+		return new Image();
+	});
 }

@@ -69,3 +69,28 @@ if (GLOBAL.CONFIG && CONFIG.disableNativeViews || !hasNativeViews) {
 } else {
 	exports.install = installNativeView;
 }
+
+;(function () {
+	var _engine = null;
+	var _onAnimationFrame = null;
+	window.requestAnimationFrame = function (cb) {
+		if (!_engine) {
+			if (GC.app.engine) {
+				_engine = GC.app.engine;
+				_engine.on('Render', onRender);
+			} else {
+				return setTimeout(cb, 0);
+			}
+		}
+
+		_onAnimationFrame = cb;
+	};
+
+	function onRender() {
+		var cb = _onAnimationFrame;
+		if (cb) {
+			_onAnimationFrame = null;
+			cb();
+		}
+	}
+})();
