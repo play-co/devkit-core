@@ -1,4 +1,5 @@
 var path = require('path');
+var Promise = require('bluebird');
 var stylus = require('stylus');
 var nib = require('nib');
 var printf = require('printf');

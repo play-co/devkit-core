@@ -1,3 +1,5 @@
+
+var Promise = require('bluebird');
 var path = require('path');
 var fs = require('../util/fs');
 

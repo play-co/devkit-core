@@ -17,6 +17,7 @@ var path = require('path');
 var fs = require('../../util/fs');
 var createBuildTarget = require('../../index').createBuildTarget;
 var browserBuild = require('../browser');
+var Promise = require('bluebird');
 
 var logger;
 

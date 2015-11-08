@@ -1,3 +1,4 @@
+var Promise = require('bluebird');
 var JSCompiler = require('../jsCompiler').JSCompiler;
 var JSConfig = require('../jsConfig').JSConfig;
 

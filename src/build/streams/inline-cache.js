@@ -1,5 +1,6 @@
 var through2 = require('through2');
 var Stream = require('stream').Stream;
+var Promise = require('bluebird');
 
 var fs = require('../util/fs');
 var streamToArray = require('../util/stream-to-array');

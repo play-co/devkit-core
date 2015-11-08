@@ -1,4 +1,5 @@
 var path = require('path');
+var Promise = require('bluebird');
 var fork = require('child_process').fork;
 
 var DEFAULT_NUM_WORKERS = require('os').cpus().length;

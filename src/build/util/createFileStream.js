@@ -1,6 +1,7 @@
 var path = require('path');
 var through2 = require('through2');
 var File = require('../resources').File;
+var Promise = require('bluebird');
 
 /**
  * Simplifies creation of duplex object streams for the devkit use case of

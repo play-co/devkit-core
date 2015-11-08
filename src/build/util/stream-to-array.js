@@ -1,3 +1,5 @@
+var Promise = require('bluebird');
+
 module.exports = function (stream) {
   return !stream.readable
     ? Promise.resolve([])

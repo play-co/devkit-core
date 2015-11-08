@@ -1,3 +1,5 @@
+var Promise = require('bluebird');
+
 /**
  * simple stream wrapper that exposes a functional interface to add files to the
  * end of a stream

@@ -5,6 +5,8 @@ var slash = require('slash');
 var fs = require ('../util/fs');
 var through2 = require('through2');
 var File = require('vinyl');
+
+var Promise = require('bluebird');
 var glob = Promise.promisify(require('glob'));
 
 // vinyl-fs reads all files as buffers or streams. Many files we don't actually

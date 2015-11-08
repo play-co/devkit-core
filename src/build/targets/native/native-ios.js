@@ -1,4 +1,5 @@
 var path = require('path');
+var Promise = require('bluebird');
 var createBuildTarget = require('../../index').createBuildTarget;
 
 exports.opts = require('optimist')(process.argv)

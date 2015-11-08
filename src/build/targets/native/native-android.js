@@ -1,4 +1,5 @@
 var path = require('path');
+var Promise = require('bluebird');
 var createBuildTarget = require('../../index').createBuildTarget;
 
 exports.helpText = 'For release builds, please set the environment variables '
