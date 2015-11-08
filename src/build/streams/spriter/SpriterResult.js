@@ -66,7 +66,15 @@ SpriterResult.prototype.addUnspritedFile = function (filename, addToStream) {
   // the async version runs a lot slower, so we're going to stick with
   // sync for now???
   var relativePath = this._relativePaths[filename];
-  var dimensions = sizeOf(filename);
+  var dimensions;
+  try {
+    dimensions = sizeOf(filename);
+  } catch (e) {
+    console.error('Unexpected error reading image size of:', filename);
+    console.error(e);
+    return;
+  }
+
   this._sheets[relativePath] = [{
       f: relativePath,
       w: dimensions.width,
