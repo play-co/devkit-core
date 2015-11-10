@@ -369,6 +369,13 @@ exports.GameHTML = Class(function () {
         if (splashHTML) {
           html.push(splashHTML);
         }
+        return require('../targets/browser/orientation').getOrientationHTML(app, config);
+      })
+      .then(function (orientationHTML) {
+
+        if (orientationHTML) {
+          html.push(orientationHTML);
+        }
 
         html.push(
           '</body>',
