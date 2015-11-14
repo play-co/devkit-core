@@ -197,6 +197,7 @@ var DevKitSpriter = Class(function () {
      *   - file type (jpeg versus png versus png8)
      *   - compression opts
      *   - animation name
+     *   - group name opts
      */
     var base = path.basename(file.targetRelativePath);
     var animFrameKey = base.match(IS_ANIMATION_FRAME);
@@ -204,7 +205,9 @@ var DevKitSpriter = Class(function () {
 
     var compressOpts = file.getCompressOpts();
     var powerOfTwoSheets = isPowerOfTwoSheets(file);
-    var name = path.dirname(file.targetRelativePath).replace(/\//g, '-');
+
+    var name = file.getOption('group') ||
+      path.dirname(file.targetRelativePath).replace(/\//g, '-');
 
     var key = [
       (powerOfTwoSheets ? 'a' : 'b'),
