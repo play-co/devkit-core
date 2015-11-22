@@ -1,4 +1,4 @@
-exports.getOrientationHTML = function (app, config) {
+exports.addOrientationHTML = function (app, config) {
 
   var supportedOrientations = app.manifest.supportedOrientations;
   var image = config.browser.orientationSplash;
@@ -6,6 +6,8 @@ exports.getOrientationHTML = function (app, config) {
     supportedOrientations &&
     supportedOrientations.length === 1 &&
     !!image;
+
+  var waitForOrientation = !!config.browser.waitForOrientation;
 
   if (enableOrientationSplash) {
 
@@ -23,22 +25,25 @@ exports.getOrientationHTML = function (app, config) {
       'background-image: url(' + config.browser.orientationSplash + ');'
     ].join(" ");
 
-    return [
-      '<div id="_GCOrientation" style="' + style + '"></div>',
+    config.browser.bodyHTML.push('<div id="_GCOrientation" style="' + style + '"></div>');
+    config.browser.footerHTML.push.apply(config.browser.footerHTML, [
       '<script>',
       '  var os = document.getElementById("_GCOrientation").style;',
       '  var supportedOrientation = "' + supportedOrientations[0] + '";',
       '  var onResize = function() {',
       '    var currentOrientation = window.innerHeight > window.innerWidth ? "portrait" : "landscape";',
-      '    os.display = (currentOrientation !== supportedOrientation) ? "block" : "none";',
+      '    var isValid = currentOrientation === supportedOrientation;',
+      '    os.display = isValid ? "none" : "block";',
+      waitForOrientation ? '    GC_LOADER.isOrientationValid = isValid;' : '',
+      waitForOrientation ? '    GC_LOADER.onOrientation && GC_LOADER.onOrientation(isValid)' : '',
       '  };',
       '  onResize();',
       '  window.addEventListener("resize", onResize);',
       '</script>'
-    ].join("\n");
-
+    ]);
   }
 
-  return "";
-
+  if (!enableOrientationSplash || !waitForOrientation) {
+    config.browser.footerHTML.push("<script>GC_LOADER.isOrientationValid = true;</script>");
+  }
 };

@@ -15,30 +15,59 @@ window.GC_LOADER = (function (window) {
     iosVersion = match && parseInt(match[1]);
   }
 
-  var loaded = false;
+  if (window.CONFIG.CDNURL) {
+    document.write('<base href="' + window.CONFIG.CDNURL + '">');
+  }
+
+  var loadApp;
+  var onLoadApp;
+
   var controller = {
     startTime: Date.now(),
-    fetchApp: function () {
-      if (!loaded) {
-        loaded = true;
-        var el = document.createElement('script');
-        el.src = controller.scriptName;
-        document.getElementsByTagName('head')[0].appendChild(el);
-      }
-    },
     init: function (target) {
       controller.scriptName = target + '.js';
-      Promise.all(controller.pipeline.map(function (step) {
-        try {
-          return step.call();
-        } catch (e) {
-          console.error(step.name, 'failed', e.stack || e);
-        }
-      }))
-        .then(controller.fetchApp, controller.fetchApp);
+      var pipeline = controller.pipeline;
+      var index = 0;
+      var phase = 0;
+      nextPhase();
+
+      function nextPhase() {
+        ++phase;
+
+        var step = pipeline[index];
+        if (!step) { return; }
+
+        var tasks = [];
+        do {
+          try {
+            console.log(phase + ' (' + (Date.now() - controller.startTime) + '): ' + step.name);
+            tasks.push(step.call())
+          } catch (e) {
+            console.error(step.name, 'failed', e.stack || e);
+          }
+
+          ++index;
+          step = pipeline[index];
+        } while (step && step.parallel);
+
+        return Promise.all(tasks)
+          .then(nextPhase);
+      }
     },
-    addStep: function (name, cb, isFatal) {
-      this.pipeline.push({name: name, call: cb, fatal: isFatal !== false});
+    fetchApp: function (src) {
+      if (!loadApp) {
+        var el = document.createElement('script');
+        el.src = src;
+        document.getElementsByTagName('head')[0].appendChild(el);
+        loadApp = new Promise(function (resolve) {
+          onLoadApp = resolve;
+        });
+      }
+
+      return loadApp;
+    },
+    addStep: function (name, cb) {
+      this.pipeline.push({name: name, call: cb});
     },
     getStepIndex: function (name) {
       for (var i = this.pipeline.length - 1; i >= 0; --i) {
@@ -49,7 +78,7 @@ window.GC_LOADER = (function (window) {
     },
     pipeline: [{
         name: 'override-config',
-        fatal: false,
+        parallel: true,
         call: function () {
           // override any config params provided already
           if (window.CONFIG_OVERRIDES) {
@@ -71,15 +100,23 @@ window.GC_LOADER = (function (window) {
         }
       },
       {
-        name: 'set-base',
+        name: 'fetch-js',
+        parallel: true,
         call: function () {
-          if (window.CONFIG.CDNURL) {
-            document.write('<base href="' + window.CONFIG.CDNURL + '">');
-          }
+          var el = document.createElement('script');
+          el.src = controller.scriptName;
+          document.getElementsByTagName('head')[0].appendChild(el);
+          return new Promise(function (resolve) {
+              controller.onLoadApp = resolve;
+            })
+            .then(function (initialImport) {
+              controller.initialImport = initialImport;
+            });
         }
       },
       {
         name: 'load-fonts',
+        parallel: true,
         call: function () {
           if (!CONFIG.embeddedFonts || !CONFIG.embeddedFonts.length) { return; }
 
@@ -120,6 +157,29 @@ window.GC_LOADER = (function (window) {
           });
         }
       },
+      {
+        name: 'orientation-wait',
+        parallel: false,
+        call: function () {
+          if (!controller.isOrientationValid) {
+            return new Promise(function (resolve) {
+              controller.onOrientation = function (isValid) {
+                if (isValid) {
+                  controller.onOrientation = null;
+                  resolve();
+                }
+              };
+            });
+          }
+        }
+      },
+      {
+        name: 'start-app',
+        parallel: false,
+        call: function () {
+          jsio(controller.initialImport);
+        }
+      }
     ]
   };
 

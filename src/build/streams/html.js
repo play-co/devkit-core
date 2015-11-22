@@ -252,7 +252,8 @@ exports.GameHTML = Class(function () {
           ? compileJS('[bootstrap]', js, {showWarnings: false})
           : js,
         splashImage && fs.existsAsync(splashImage) || false,
-        config.browser.hasApplicationCache && fs.readFileAsync(getStaticFilePath('app-cache-events.js'), 'utf8')
+        config.browser.hasApplicationCache && fs.readFileAsync(getStaticFilePath('app-cache-events.js'), 'utf8'),
+        require('../targets/browser/orientation').addOrientationHTML(app, config)
       ])
       .bind(this)
       .spread(function (css, js, splashExists, appCacheEvents) {
@@ -368,13 +369,6 @@ exports.GameHTML = Class(function () {
       .then(function (splashHTML) {
         if (splashHTML) {
           html.push(splashHTML);
-        }
-        return require('../targets/browser/orientation').getOrientationHTML(app, config);
-      })
-      .then(function (orientationHTML) {
-
-        if (orientationHTML) {
-          html.push(orientationHTML);
         }
 
         html.push(

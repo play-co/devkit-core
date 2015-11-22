@@ -44,7 +44,7 @@ exports.init = function (api, app, config) {
     "display": "standalone"
   };
 
-  if (config.isSimulated) {
+  if (config.isSimulated && !/browser/.test(config.target)) {
     config.browser = {
       embedSplash: false,
       embedFonts: false,
@@ -162,7 +162,7 @@ exports.setupStreams = function (api, app, config) {
         return 'NATIVE=false;'
           + 'CACHE=' + JSON.stringify(cache) + ';\n'
           + js + ';'
-          + 'jsio("import ' + INITIAL_IMPORT + '");';
+          + 'GC_LOADER.onLoadApp("import ' + INITIAL_IMPORT + '");';
       }
     });
 
