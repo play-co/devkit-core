@@ -76,9 +76,39 @@ var _renderHighlights = (function () {
       }
     }
 
-    _highlightViews.forEach(function (view) {
+    var gray = Math.round(255 * highlight / FADE_IN_TIME);
+
+    ctx.save();
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.strokeStyle = 'rgba(' + gray + ',' + gray + ',' + gray + ',' + gray / 512 + ')';
+
+    var outlinedParents = {};
+    _highlightViews.forEach(function (highlight) {
+      var view = highlight.view;
+      var opts = highlight.opts;
+      if (opts.outlineParents) {
+        var superview = view.getSuperview();
+        while (superview) {
+          view = superview;
+          superview = view.getSuperview();
+          if (!(view.uid in outlinedParents)) {
+            outlinedParents[view.uid] = true;
+            var pos = view.getPosition();
+            ctx.save();
+            ctx.strokeStyle = 'rgba(' + gray + ',0,0,1)';
+            ctx.translate(pos.x, pos.y);
+            ctx.rotate(pos.r);
+            ctx.strokeRect(-0.5, -0.5, pos.width + 1, pos.height + 1);
+            ctx.restore();
+          }
+        }
+      }
+    });
+
+    _highlightViews.forEach(function (highlight) {
+      var view = highlight.view;
+      var opts = highlight.opts;
       var pos = view.getPosition();
-      var gray = Math.round(255 * highlight / FADE_IN_TIME);
       ctx.save();
       ctx.fillStyle = 'rgba(' + gray + ',' + gray + ',' + gray + ',' + gray / 512 + ')';
       ctx.strokeStyle = 'rgba(' + gray + ',0,0,1)';
@@ -88,27 +118,54 @@ var _renderHighlights = (function () {
       ctx.strokeRect(-0.5, -0.5, pos.width + 1, pos.height + 1);
       ctx.restore();
     });
+
+    ctx.restore();
   };
 })();
 
 exports.unhighlightViews = function () {
   _highlightViews = [];
+  disableHighlighting();
 };
 
-exports.highlightView = function (view) {
-  if (_highlightViews.indexOf(view) == -1) {
-    _highlightViews.push(view);
-    if (!_isHighlighting) {
-      _isHighlighting = true;
-      GC.app.engine.on('Render', _renderHighlights);
+function getHighlightIndex(view) {
+  var n = _highlightViews.length;
+  for (var i = 0; i < n; ++i) {
+    if (_highlightViews[i].view === view) {
+      return i;
     }
+  }
+
+  return -1;
+}
+
+function enableHighlighting() {
+  if (!_isHighlighting) {
+    _isHighlighting = true;
+    GC.app.engine.on('Render', _renderHighlights);
+  }
+}
+
+function disableHighlighting() {
+  _isHighlighting = false;
+  GC.app.engine.removeListener('Render', _renderHighlights);
+}
+
+exports.highlightView = function (view, opts) {
+  if (getHighlightIndex(view) === -1) {
+    _highlightViews.push({view: view, opts: opts || {}});
+    enableHighlighting();
   }
 };
 
 exports.unhighlightView = function (view) {
-  var i = _highlightViews.indexOf(view);
-  if (i != -1) {
+  var i = getHighlightIndex(view);
+  if (i !== -1) {
     _highlightViews.splice(i, 1);
+  }
+
+  if (!_highlightViews.length) {
+    disableHighlighting();
   }
 };
 
