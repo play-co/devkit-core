@@ -54,7 +54,7 @@ if (exports.isEnabled) {
     .then(function (res) {
       console.log('spritesheets now available offline');
 
-      if (res && res.failedURLs) {
+      if (res && res.failedURLs && res.failedURLs.length > 0) {
         console.error('following spritesheets failed to load:',
                       res.failedURLs);
       }
