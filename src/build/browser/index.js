@@ -56,7 +56,7 @@ exports.build = function (api, app, config, cb) {
   logger = api.logging.get('build-browser');
 
   var isMobile = (config.target !== 'browser-desktop');
-  var isLiveEdit = (config.target === 'live-edit');
+  var isLiveEdit = (config.target === 'live-edit') || config.liveEdit;
   var resources = require('../common/resources');
   var CSSFontList = require('./fonts').CSSFontList;
   var JSConfig = require('../common/jsConfig').JSConfig;
@@ -76,28 +76,29 @@ exports.build = function (api, app, config, cb) {
 
   function getPreloadJS() {
     // get preload JS
-    if (/^native/.test(config.target)) {
-      return Promise.resolve('jsio=function(){window._continueLoad()}');
-    }
+    if (!isLiveEdit) {
+      if (/^native/.test(config.target)) {
+        return Promise.resolve('jsio=function(){window._continueLoad()}');
+      }
+    } else {
+      if (!config.preCompressCallback) {
+        config.preCompressCallback = function(sourceTable) {
+          for (var fullPath in sourceTable) {
+            var fileValues = sourceTable[fullPath];
+            if (fileValues.friendlyPath === 'ui.resource.Image') {
+              logger.log('Patching ui.resource.Image to look for'
+                       + 'GC_LIVE_EDIT._imgBase');
 
-    var isLiveEdit = (config.target === 'live-edit');
-    if (isLiveEdit && !config.preCompressCallback) {
-      config.preCompressCallback = function(sourceTable) {
-        for (var fullPath in sourceTable) {
-          var fileValues = sourceTable[fullPath];
-          if (fileValues.friendlyPath === 'ui.resource.Image') {
-            logger.log('Patching ui.resource.Image to look for'
-                     + 'GC_LIVE_EDIT._imgBase');
+              var regex = /(this._setSrcImg.+{)/;
+              var insert = 'if(url&&GC_LIVE_EDIT._imgBase){'
+                         + 'url=GC_LIVE_EDIT._imgBase+url;'
+                         + '}';
 
-            var regex = /(this._setSrcImg.+{)/;
-            var insert = 'if(url&&GC_LIVE_EDIT._imgBase){'
-                       + 'url=GC_LIVE_EDIT._imgBase+url;'
-                       + '}';
-
-            fileValues.src = fileValues.src.replace(regex, '$1' + insert);
+              fileValues.src = fileValues.src.replace(regex, '$1' + insert);
+            }
           }
-        }
-      };
+        };
+      }
     }
 
     return compileJS({
@@ -171,8 +172,6 @@ exports.build = function (api, app, config, cb) {
         }));
       gameHTML.addJS(preloadJS);
 
-      liveEditJS && gameHTML.addJS(liveEditJS);
-
       var hasWebAppManifest = !!config.browser.webAppManifest;
       if (hasWebAppManifest) {
         config.browser.headHTML.push('<link rel="manifest" href="web-app-manifest.json">');
@@ -212,13 +211,18 @@ exports.build = function (api, app, config, cb) {
             .filter(addToInlineCache);
         })
         .then(function (files) {
+          var nativejsContents = 'NATIVE=false;';
+          if (liveEditJS) {
+            nativejsContents += liveEditJS;
+          }
+          nativejsContents += 'CACHE=' + JSON.stringify(inlineCache) + ';\n'
+            + jsSrc + ';'
+            + 'jsio("import ' + INITIAL_IMPORT + '");';
+
           files.push(new File({
               base: baseDirectory,
               path: path.join(baseDirectory, config.target + '.js'),
-              contents: new Buffer('NATIVE=false;'
-                + 'CACHE=' + JSON.stringify(inlineCache) + ';\n'
-                + jsSrc + ';'
-                + 'jsio("import ' + INITIAL_IMPORT + '");')
+              contents: new Buffer(nativejsContents)
             }));
 
           files.forEach(function (file) {

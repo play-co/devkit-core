@@ -27,8 +27,12 @@ var GC_LIVE_EDIT = GC_LIVE_EDIT || { _isLiveEdit: true, _liveEditReady: false };
 
     switch (cmd.cmd) {
       case 'LIVE_EDIT':
-        if (cmd.data === 'ready') GC_LIVE_EDIT._liveEditReady = true;
-        if (cmd.data === 'not_ready') GC_LIVE_EDIT._liveEditReady = false;
+        if (cmd.data === 'ready') {
+          GC_LIVE_EDIT._liveEditReady = true;
+        }
+        if (cmd.data === 'not_ready') {
+          GC_LIVE_EDIT._liveEditReady = false;
+        }
         break;
 
       case 'SOURCE':
