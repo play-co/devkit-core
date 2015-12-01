@@ -16,7 +16,6 @@
 
 import lib.PubSub;
 import lib.Callback;
-import device;
 
 exports.isShim = true;
 exports.backButton = new lib.PubSub();
@@ -140,7 +139,7 @@ merge(exports.alerts, {
 
 exports.social = new lib.PubSub();
 
-exports.isSimulator = function() { return device.isNativeSimulator; };
+exports.isSimulator = function() { return jsio('import device').isNativeSimulator; };
 
 if (!GLOBAL.NATIVE) {
   GLOBAL.NATIVE = exports;

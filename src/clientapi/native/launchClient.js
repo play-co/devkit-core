@@ -14,7 +14,14 @@
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
 
-/* globals jsio, logging, logger */
+/* globals jsio, logging, logger, CONFIG, DEBUG */
+
+var env = jsio.__env;
+env.debugPath = function (path) {
+  var protocol = 'http:';
+  var domain = env.name == 'android' ? CONFIG.packageName : CONFIG.bundleID;
+  return protocol + '//' + domain + '/' + path.replace(/^[.\/\\]+/, '');
+};
 
 GLOBAL.console = logging.get('console');
 window.self = window;

@@ -1,0 +1,56 @@
+machine:
+  xcode:
+    version: "7.0"
+  environment:
+    XCODE_SCHEME: none
+    XCODE_PROJECT: none
+
+dependencies:
+  pre:
+    - brew install node
+    - |
+      if [ ! -d /usr/local/Cellar/android-sdk/ ]; then
+        brew install android-sdk
+        echo 'y' | android update sdk --no-ui --force --all --filter platform-tools,android-19,build-tools-20.0.0
+      else
+        brew link android-sdk
+      fi
+    - |
+      if [ ! -d /usr/local/Cellar/android-ndk/ ]; then
+        brew install android-ndk
+      else
+        brew link android-ndk
+      fi
+    - |
+      if [ ! -d /usr/local/Cellar/ant/ ]; then
+        brew install ant
+      else
+        brew link ant
+      fi
+    - |
+      if [ ! -d /usr/local/lib/node_modules/devkit-imagemin ]; then
+        npm install -g https://github.com/gameclosure/devkit-imagemin
+      else
+        ln -s /usr/local/lib/node_modules/devkit-imagemin/cli.js /usr/local/bin/devkit-imagemin
+      fi
+    - |
+      if [ ! -d /usr/local/lib/node_modules/imagemin-pngquant/ ]; then
+        npm install -g imagemin-pngquant;
+      fi
+    - "if [ ! -d ~/swarm ]; then git clone --depth 1 --branch no-weeby https://github.com/weebygames/swarm ~/swarm; fi"
+    - "if [ ! -d ~/devkit ]; then git clone https://github.com/gameclosure/devkit ~/devkit; fi"
+    - "(cd ~/devkit && git pull && npm link)"
+  cache_directories:
+    - "~/swarm/"
+    - "~/devkit/"
+    - /usr/local/lib/node_modules/imagemin-pngquant/
+    - /usr/local/lib/node_modules/devkit-imagemin/
+    - /usr/local/Cellar/android-ndk/
+    - /usr/local/Cellar/android-sdk/
+    - /usr/local/var/lib/android-sdk/
+
+test:
+  override:
+    - mkdir -p ~/swarm/modules/
+    - ln -s ~/devkit-core ~/swarm/modules/devkit-core
+    - ./src/build/test/all-builds.sh ~/swarm
