@@ -135,9 +135,21 @@ exports.ClientAPI = Class(lib.PubSub, function () {
     logger.warn("spritesheet map failed to parse", e);
   }
 
+  var soundMap;
+  try {
+    if (GLOBAL.CACHE) {
+      soundMap = JSON.parse(GLOBAL.CACHE['resources/sound-map.json']);
+    }
+  } catch (e) {
+    logger.warn("sound map failed to parse", e);
+  }
+
   import ui.resource.loader;
   this.resources = ui.resource.loader;
   this.resources.addSheets(spritesheets);
+  if (this.resources.addAudioMap) {
+    this.resources.addAudioMap(soundMap);
+  }
 
   import AudioManager;
 

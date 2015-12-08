@@ -5,6 +5,13 @@ var path = require('path');
 var SOUND_EXTS = {
   '.mp3': true,
   '.ogg': true,
+  '.mp4': true,
+  '.3gp': true,
+  '.m4a': true,
+  '.aac': true,
+  '.flac': true,
+  '.mkv': true,
+  '.wav': true
 };
 
 /**
