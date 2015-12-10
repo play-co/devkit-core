@@ -147,9 +147,7 @@ exports.ClientAPI = Class(lib.PubSub, function () {
   import ui.resource.loader;
   this.resources = ui.resource.loader;
   this.resources.addSheets(spritesheets);
-  if (this.resources.addAudioMap) {
-    this.resources.addAudioMap(soundMap);
-  }
+  this.resources.addAudioMap(soundMap);
 
   import AudioManager;
 
