@@ -151,6 +151,7 @@ exports.setupStreams = function (api, app, config) {
 
   streams.register('resource-source-map', createSourceMap(api, 'resource_source_map.json'));
   streams.create('spriter');
+  streams.create('sound-map');
   var fontStream = streams.create('fonts');
   streams.create('html', {fontStream: fontStream});
   streams.create('app-js', {
@@ -180,6 +181,7 @@ exports.getStreamOrder = function (api, app, config) {
   var order = [
     'resource-source-map',
     'spriter',
+    'sound-map',
     'fonts',
     'html',
     'app-js',
