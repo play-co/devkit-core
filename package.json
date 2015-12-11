@@ -2,7 +2,7 @@
   "name": "devkit-core",
   "author": "Game Closure",
   "description": "devkit engine",
-  "version": "3.0.2",
+  "version": "3.0.2.5",
   "repository": {
     "type": "git",
     "url": "http://github.com/gameclosure/devkit-core.git"
