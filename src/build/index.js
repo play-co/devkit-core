@@ -181,6 +181,9 @@ exports.addStreamAPI = function (api, app, config) {
       if (!opts) { opts = {}; }
 
       switch (id) {
+        case 'sound-map':
+          stream = require('./streams/sound-map').create(api, config);
+          break;
         case 'spriter':
           stream = require('./streams/spriter').sprite(api, config);
           break;
