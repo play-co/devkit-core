@@ -126,18 +126,28 @@ exports.ClientAPI = Class(lib.PubSub, function () {
   //  data: campaign
   // });
 
-  var map;
+  var spritesheets;
   try {
     if (GLOBAL.CACHE) {
-      map = JSON.parse(GLOBAL.CACHE['spritesheets/map.json']);
+      spritesheets = JSON.parse(GLOBAL.CACHE['spritesheets/map.json']);
     }
   } catch (e) {
     logger.warn("spritesheet map failed to parse", e);
   }
 
+  var soundMap;
+  try {
+    if (GLOBAL.CACHE) {
+      soundMap = JSON.parse(GLOBAL.CACHE['resources/sound-map.json']);
+    }
+  } catch (e) {
+    logger.warn("sound map failed to parse", e);
+  }
+
   import ui.resource.loader;
   this.resources = ui.resource.loader;
-  this.resources.setMap(map);
+  this.resources.addSheets(spritesheets);
+  this.resources.addAudioMap(soundMap);
 
   import AudioManager;
 
