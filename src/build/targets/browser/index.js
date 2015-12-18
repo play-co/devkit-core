@@ -49,7 +49,7 @@ exports.init = function (api, app, config) {
     "display": "standalone"
   };
 
-  if (config.isSimulated) {
+  if (config.isSimulated && !/browser/.test(config.target)) {
     config.browser = {
       embedSplash: false,
       embedFonts: false,
@@ -158,6 +158,7 @@ exports.setupStreams = function (api, app, config) {
 
   streams.register('resource-source-map', createSourceMap(api, 'resource_source_map.json'));
   streams.create('spriter');
+  streams.create('sound-map');
   var fontStream = streams.create('fonts');
   streams.create('html', {fontStream: fontStream});
   streams.create('app-js', {
@@ -175,7 +176,7 @@ exports.setupStreams = function (api, app, config) {
           nativejsContents += tasks[0];
         }
 
-        nativejsContents += js + ';' + 'jsio("import ' + INITIAL_IMPORT + '");';
+        nativejsContents += js + ';' + 'GC_LOADER.onLoadApp("import ' + INITIAL_IMPORT + '");';
         return nativejsContents;
       }
     });
@@ -194,6 +195,7 @@ exports.getStreamOrder = function (api, app, config) {
   var order = [
     'resource-source-map',
     'spriter',
+    'sound-map',
     'fonts',
     'html',
     'app-js',
