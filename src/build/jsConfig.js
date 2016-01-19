@@ -44,7 +44,9 @@ exports.JSConfig = Class(function () {
           'browser-desktop': 'browser',
           'native-bundle': 'native',
           'native-ios': 'native',
-          'native-android': 'native'
+          'native-ios-old': 'native',
+          'native-android': 'native',
+          'native-android-old': 'native'
         }[config.target] || 'browser',
       DEBUG: !!config.debug
     };

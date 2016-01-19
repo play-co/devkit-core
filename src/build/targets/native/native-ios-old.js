@@ -79,7 +79,7 @@ exports.setupStreams = function (api, app, config) {
   nativeBuild.setupStreams(api, app, config);
 
   function runIOSBuild() {
-    var iosBuild = require('../../../../modules/tealeaf/native-ios/build');
+    var iosBuild = require('../../../../modules/native-ios/build');
     return Promise
       .resolve()
       .then(function () {

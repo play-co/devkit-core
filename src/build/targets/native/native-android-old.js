@@ -78,7 +78,7 @@ exports.setupStreams = function (api, app, config) {
   nativeBuild.setupStreams(api, app, config);
 
   function androidBuild() {
-    var android = require('../../../../modules/tealeaf/native-android/build');
+    var android = require('../../../../modules/native-android/build');
     var build = Promise.promisify(android.build, android);
     return build(api, app, config);
   }

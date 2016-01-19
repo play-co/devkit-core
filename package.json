@@ -42,7 +42,9 @@
       "browser-desktop": "src/build/targets/browser/",
       "live-edit": "src/build/targets/browser/",
       "native-ios": "src/build/targets/native/native-ios",
+      "native-ios-old": "src/build/targets/native/native-ios-old",
       "native-android": "src/build/targets/native/native-android",
+      "native-android-old": "src/build/targets/native/native-android-old",
       "native-archive": "src/build/targets/native/native-archive",
       "chrome": "src/build/targets/chrome",
       "resources-bundle": "src/build/targets/resources-bundle"
