@@ -50,8 +50,6 @@ exports.install = function () {
   import .timestep;
   timestep.install();
 
-  // publisher for the overlay UIWebView
-  NATIVE.overlay.delegate = new lib.PubSub();
   CONFIG.splash = CONFIG.splash || {};
   var oldHide = CONFIG.splash.hide || function () {};
   CONFIG.splash.hide = function (cb) {

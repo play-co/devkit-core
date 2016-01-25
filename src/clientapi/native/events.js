@@ -64,7 +64,6 @@ jsio('import .inputPrompt');
 jsio('import .log');
 jsio('import .offscreenBuffer');
 jsio('import .online');
-jsio('import .overlay');
 jsio('import .pauseResume');
 jsio('import .plugins');
 jsio('import .purchase');
