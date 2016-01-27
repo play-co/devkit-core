@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "native-android": "git@github.com:gameclosure/native-android.git#3f1e619d7cc556d41147c790c212139cb46d2ffd",
+    "native-ios": "git@github.com:gameclosure/native-ios.git#6b0b6a2bcb3ba0b24fa936f9e06d9e792c1e2eaf",
+    "squill": "git@github.com:gameclosure/squill.git#95b46c2a2c64c60fefaebb3413a8c7ef37cc06d4",
+    "timestep": "git@github.com:gameclosure/timestep.git#9f45aa0d741a7e748e256dbf707fb5a81f4d1118"
+  }
+}
