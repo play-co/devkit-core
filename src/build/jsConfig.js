@@ -1,3 +1,5 @@
+var setVal = require('./util/obj').setVal;
+
 function deepCopy(obj) { return obj && JSON.parse(JSON.stringify(obj)); }
 
 exports.JSConfig = Class(function () {
@@ -64,6 +66,19 @@ exports.JSConfig = Class(function () {
     var src = [";(function() {var w=window;\n"];
     for (var key in this._defines) {
       src.push("w." + key + "=" + JSON.stringify(this._defines[key]) + ";\n");
+    }
+
+    var argv = process.argv;
+    var n = argv.length;
+    for (var i = 0; i < n; ++i) {
+      if (/^--config:/.test(argv[i])) {
+        var key = argv[i].substring(9);
+        try {
+          setVal(this._config, key, JSON.parse(argv[i + 1]));
+        } catch (e) {
+          console.warn('Not JSON parseable:', argv[i + 1]);
+        }
+      }
     }
 
     return src.concat([
