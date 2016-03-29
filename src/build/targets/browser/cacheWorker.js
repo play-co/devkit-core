@@ -2,7 +2,7 @@ var path = require('path');
 var fs = require('../../util/fs');
 
 function string(value) {
-  return '\'' + value
+  return '\'' + ('' + value)
       .replace(/\\/g, '\\\\')
       .replace(/\'/g, '\\\'')
     + '\'';
