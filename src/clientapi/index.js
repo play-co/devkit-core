@@ -129,7 +129,8 @@ exports.ClientAPI = Class(lib.PubSub, function () {
   var spritesheets;
   try {
     if (GLOBAL.CACHE) {
-      spritesheets = JSON.parse(GLOBAL.CACHE['spritesheets/map.json']);
+      var spriteSheetCache = GLOBAL.CACHE['spritesheets/map.json'] || GLOBAL.CACHE['spritesheets\\map.json'];
+      spritesheets = JSON.parse(spriteSheetCache);
     }
   } catch (e) {
     logger.warn("spritesheet map failed to parse", e);
@@ -138,7 +139,8 @@ exports.ClientAPI = Class(lib.PubSub, function () {
   var soundMap;
   try {
     if (GLOBAL.CACHE) {
-      soundMap = JSON.parse(GLOBAL.CACHE['resources/sound-map.json']);
+      var soundMapCache = GLOBAL.CACHE['resources/sound-map.json'] || GLOBAL.CACHE['resources\\sound-map.json'];
+      soundMap = JSON.parse(soundMapCache);
     }
   } catch (e) {
     logger.warn("sound map failed to parse", e);
