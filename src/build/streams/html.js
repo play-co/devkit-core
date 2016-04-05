@@ -164,7 +164,7 @@ exports.IndexHTML = Class(function () {
       html.push('      onResize(true);');
       html.push('    </script>');
       html.push('  </body>');
-      html.push('</html>)');
+      html.push('</html>');
       return html.join('\n');
     });
   };
