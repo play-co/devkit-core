@@ -34,7 +34,11 @@ exports.create = function (api, app, config) {
                   var atime = file.stat.atime.getTime();
                   var mtime = file.stat.mtime.getTime();
                   if (!isNaN(atime) && !isNaN(mtime)) {
-                    return fs.utimesAsync(file.path, atime, mtime);
+                    try {
+                      return fs.utimesAsync(file.path, atime, mtime);
+                    } catch (e) {
+                      // this may fail on windows
+                    }
                   }
                 }
               }
