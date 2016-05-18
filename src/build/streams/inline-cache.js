@@ -1,6 +1,7 @@
 var through2 = require('through2');
 var Stream = require('stream').Stream;
 var Promise = require('bluebird');
+var slash = require('slash');
 
 var fs = require('../util/fs');
 var streamToArray = require('../util/stream-to-array');
@@ -55,13 +56,13 @@ exports.create = function (api) {
           }
         }
 
-        cache[file.relative] = contents;
+        cache[slash(file.relative)] = contents;
       })
       .then(cb);
   });
 
   stream.has = function (relativePath) {
-    return relativePath in cache;
+    return slash(relativePath) in cache;
   };
 
   stream.toJSON = function () {
