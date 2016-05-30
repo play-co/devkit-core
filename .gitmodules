@@ -1,12 +1,12 @@
 [submodule "modules/native-android"]
 	path = modules/native-android
-	url = git@bitbucket.org:hashcube/native-android.git
+	url = https://github.com/hashcube/native-android.git
 [submodule "modules/native-ios"]
 	path = modules/native-ios
-	url = git@bitbucket.org:hashcube/native-ios.git
+	url = https://github.com/hashcube/native-ios.git
 [submodule "modules/timestep"]
 	path = modules/timestep
-	url = git@bitbucket.org:hashcube/timestep.git
+	url = https://github.com/hashcube/timestep.git
 [submodule "modules/squill"]
 	path = modules/squill
 	url = https://github.com/gameclosure/squill
