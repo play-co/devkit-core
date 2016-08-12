@@ -28,7 +28,7 @@ var CACHE_FILENAME = "devkit-spriter";
 exports.sprite = function (api, config) {
   var stream;
 
-  if (config.createSpritesheets) {
+  if (true || config.createSpritesheets) {
     var logger = api.logging.get('spriter');
 
     var spriter = new DevKitSpriter(config.spritesheetsDirectory, {

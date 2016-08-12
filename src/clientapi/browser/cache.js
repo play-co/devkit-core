@@ -23,7 +23,7 @@ function init() {
     });
 }
 
-exports.isEnabled = ('serviceWorker' in navigator) && !device.isSimulator;
+exports.isEnabled = false; //('serviceWorker' in navigator) && !device.isSimulator;
 
 var _onInit;
 if (exports.isEnabled) {
