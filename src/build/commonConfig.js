@@ -54,6 +54,11 @@ exports.extend = function (app, config) {
     config.compressImages = !!config.argv['compress-images'];
   }
 
+  // generate a resource source map
+  if ('resource-source-map' in config.argv) {
+    config.resourceSourceMap = !!config.argv['resource-source-map'];
+  }
+
   // Generate a default bundleID
 
   // construct a bundleID the same way Android constructs the packageName:

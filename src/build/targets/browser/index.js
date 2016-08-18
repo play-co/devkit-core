@@ -139,6 +139,7 @@ function createSourceMap(api, filename) {
     onFinish: function (addFile) {
       addFile({
         filename: filename,
+        inline: false,
         contents: JSON.stringify(sourceMap)
       });
     }
@@ -179,7 +180,7 @@ exports.setupStreams = function (api, app, config) {
 
 exports.getStreamOrder = function (api, app, config) {
   var order = [
-    'resource-source-map',
+    config.resourceSourceMap && 'resource-source-map',
     'spriter',
     'sound-map',
     'fonts',
