@@ -35,26 +35,42 @@ var FontRenderer = device.get('FontRenderer');
 if (!GLOBAL.CONFIG) { GLOBAL.CONFIG = {}; }
 if (!GLOBAL.DEBUG) { GLOBAL.DEBUG = false; }
 
-exports.ClientAPI = Class(lib.PubSub, function () {
 
-  var ua = navigator.userAgent;
-  this.isNative = /TeaLeaf/.test(ua);
-  if (this.isNative) {
-    this.isIOS = /iPhone OS/.test(ua);
-    this.isAndroid = /Android/.test(ua);
-  } else if (/(iPod|iPhone|iPad)/i.test(ua)) {
-    this.isMobileBrowser = true;
-    this.isIOS = true;
-    this.isUIWebView = !/Safari/.test(ua);
-  } else if (/Android/.test(ua)) {
-    this.isMobileBrowser = true;
-    this.isAndroid = true;
-  } else {
-    this.isDesktop = true;
-    this.isFacebook = GLOBAL.CONFIG.isFacebookApp;
+var spritesheets;
+try {
+  if (GLOBAL.CACHE) {
+    spritesheets = JSON.parse(GLOBAL.CACHE['spritesheets/map.json']);
+  }
+} catch (e) {
+  logger.warn("spritesheet map failed to parse", e);
+}
+
+var soundMap;
+try {
+  if (GLOBAL.CACHE) {
+    soundMap = JSON.parse(GLOBAL.CACHE['resources/sound-map.json']);
+  }
+} catch (e) {
+  logger.warn("sound map failed to parse", e);
+}
+
+
+var PluginManager = Class(function () {
+  this.init = function () {
+    this._plugins = {};
   }
 
-  this.isKik = /Kik\/\d/.test(ua);
+  this.register = function (name, plugin) {
+    this._plugins[name] = plugin;
+  }
+
+  this.getPlugin = function (name) {
+    return this._plugins[name];
+  }
+});
+
+
+exports.ClientAPI = Class(lib.PubSub, function () {
 
   this.init = function (opts) {
     window.addEventListener('pageshow', bind(this, '_onShow'), false);
@@ -104,20 +120,6 @@ exports.ClientAPI = Class(lib.PubSub, function () {
 
   this.Application = ui.StackView;
 
-  var PluginManager = Class(function () {
-    this.init = function () {
-      this._plugins = {};
-    }
-
-    this.register = function (name, plugin) {
-      this._plugins[name] = plugin;
-    }
-
-    this.getPlugin = function (name) {
-      return this._plugins[name];
-    }
-  });
-
   this.plugins = new PluginManager();
 
   this.ui = new UI();
@@ -130,28 +132,7 @@ exports.ClientAPI = Class(lib.PubSub, function () {
   //  data: campaign
   // });
 
-  var spritesheets;
-  try {
-    if (GLOBAL.CACHE) {
-      spritesheets = JSON.parse(GLOBAL.CACHE['spritesheets/map.json']);
-    }
-  } catch (e) {
-    logger.warn("spritesheet map failed to parse", e);
-  }
-
-  var soundMap;
-  try {
-    if (GLOBAL.CACHE) {
-      soundMap = JSON.parse(GLOBAL.CACHE['resources/sound-map.json']);
-    }
-  } catch (e) {
-    logger.warn("sound map failed to parse", e);
-  }
-
   this.resources = ui.resource.loader;
-  this.resources.addSheets(spritesheets);
-  this.resources.addAudioMap(soundMap);
-
 
   this._onHide = function () {
     // signal to the app that the window is going away
@@ -238,7 +219,6 @@ exports.ClientAPI = Class(lib.PubSub, function () {
     }
   };
 
-  this.hideSplash =
   this.hidePreloader = function (cb) {
     var splash = CONFIG.splash;
     if (splash && splash.hide && !splash.hidden) {
@@ -249,3 +229,30 @@ exports.ClientAPI = Class(lib.PubSub, function () {
     }
   };
 });
+
+
+var ua = navigator.userAgent;
+exports.ClientAPI.prototype.isNative = /TeaLeaf/.test(ua);
+if (exports.ClientAPI.prototype.isNative) {
+  exports.ClientAPI.prototype.isIOS = /iPhone OS/.test(ua);
+  exports.ClientAPI.prototype.isAndroid = /Android/.test(ua);
+} else if (/(iPod|iPhone|iPad)/i.test(ua)) {
+  exports.ClientAPI.prototype.isMobileBrowser = true;
+  exports.ClientAPI.prototype.isIOS = true;
+  exports.ClientAPI.prototype.isUIWebView = !/Safari/.test(ua);
+} else if (/Android/.test(ua)) {
+  exports.ClientAPI.prototype.isMobileBrowser = true;
+  exports.ClientAPI.prototype.isAndroid = true;
+} else {
+  exports.ClientAPI.prototype.isDesktop = true;
+  exports.ClientAPI.prototype.isFacebook = GLOBAL.CONFIG.isFacebookApp;
+}
+
+exports.ClientAPI.prototype.isKik = /Kik\/\d/.test(ua);
+
+
+exports.ClientAPI.prototype.hideSplash = exports.ClientAPI.prototype.hidePreloader;
+
+exports.ClientAPI.prototype.resources.addSheets(spritesheets);
+exports.ClientAPI.prototype.resources.addAudioMap(soundMap);
+

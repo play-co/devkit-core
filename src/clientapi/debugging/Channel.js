@@ -1,8 +1,31 @@
 import lib.PubSub;
 
-exports = Class(lib.PubSub, function (supr) {
 
-  var reqId = 0;
+var Response = Class(function () {
+  this.init = function (channel, id) {
+    this.channel = channel;
+    this.id = id;
+    this.responded = false;
+  };
+
+  this.error = function (err) {
+    if (this.responded) { return; }
+    this.responded = true;
+    this.channel._send({error: err, res: this.id});
+  };
+
+  this.send = function (data) {
+    if (this.responded) { return; }
+    this.responded = true;
+    this.channel._send({data: data, res: this.id});
+  };
+});
+
+
+var reqId = 0;
+
+
+exports = Class(lib.PubSub, function (supr) {
 
   this.init = function (name) {
     this._name = name;
@@ -31,7 +54,6 @@ exports = Class(lib.PubSub, function (supr) {
   // is someone on the other end of this channel listening
   this.isConnected = function () { return this._isConnected; };
 
-  this.disconnect =
   this.close = function () {
     this._sendInternalMessage('disconnect');
   };
@@ -108,26 +130,6 @@ exports = Class(lib.PubSub, function (supr) {
     }
   };
 
-  var Response = Class(function () {
-    this.init = function (channel, id) {
-      this.channel = channel;
-      this.id = id;
-      this.responded = false;
-    };
-
-    this.error = function (err) {
-      if (this.responded) { return; }
-      this.responded = true;
-      this.channel._send({error: err, res: this.id});
-    };
-
-    this.send = function (data) {
-      if (this.responded) { return; }
-      this.responded = true;
-      this.channel._send({data: data, res: this.id});
-    };
-  });
-
   this._send = function (data) {
     if (this._transport) {
       this._transport.emit(this._name, data);
@@ -160,3 +162,7 @@ exports = Class(lib.PubSub, function (supr) {
     });
   };
 });
+
+
+exports.prototype.disconnect = exports.prototype.close;
+

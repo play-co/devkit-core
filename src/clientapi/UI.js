@@ -19,17 +19,18 @@ import ui.widget.Spinner as Spinner;
 
 var config = window.CONFIG;
 
+var baseScale;
+if (navigator.displayMetrics) {
+	baseScale = navigator.displayMetrics.densityDpi / 160;
+} else if (!CONFIG.scaleDPR && device.isMobileBrowser) {
+	baseScale = 1;
+} else {
+	baseScale = window.devicePixelRatio || 1;
+}
+
+
 exports = Class(function () {
 	this._spinnerCounter = 0;
-
-	var baseScale;
-	if (navigator.displayMetrics) {
-		baseScale = navigator.displayMetrics.densityDpi / 160;
-	} else if (!CONFIG.scaleDPR && device.isMobileBrowser) {
-		baseScale = 1;
-	} else {
-		baseScale = window.devicePixelRatio || 1;
-	}
 
 	this._scale = baseScale;
 

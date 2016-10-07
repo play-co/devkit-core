@@ -1,6 +1,14 @@
 import lib.PubSub as EventEmitter;
 import nextTick;
 
+
+var Transport = Class(EventEmitter, function (supr) {
+  this.emit = function (name, data) {
+    nextTick(EventEmitter.prototype.emit.bind(this.target, name, data));
+  }
+});
+
+
 /**
  * The BridgeTransport creates two Transport objects that look like vaguely
  * like socket.io connections (have `.on` and `.emit`) where `.emit` on
@@ -16,10 +24,4 @@ module.exports = Class(function () {
     this.a.target = this.b;
     this.b.target = this.a;
   }
-
-  var Transport = Class(EventEmitter, function (supr) {
-    this.emit = function (name, data) {
-      nextTick(EventEmitter.prototype.emit.bind(this.target, name, data));
-    }
-  });
 });

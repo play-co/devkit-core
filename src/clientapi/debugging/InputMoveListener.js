@@ -3,9 +3,11 @@ import event.Emitter;
 import event.input.dispatch as dispatch;
 import math.geom.Point as Point;
 
-exports = Class(event.Emitter, function () {
 
-  var _useDOMEvents = device.isSimulator && document.body.addEventListener;
+var _useDOMEvents = device.isSimulator && document.body.addEventListener;
+
+
+exports = Class(event.Emitter, function () {
 
   this.init = function (opts) {
     opts = opts || {};

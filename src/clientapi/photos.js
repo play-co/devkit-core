@@ -3,54 +3,11 @@
 import device;
 import lib.PubSub;
 
+
+var _pendingPhoto;
+
+
 var PhotosAPI = Class(lib.PubSub, function () {
-  this.hasNativeCamera = NATIVE && NATIVE.camera;
-  this.hasNativeGallery = NATIVE && NATIVE.gallery;
-  this._input = {
-    camera: GLOBAL.document && document.createElement && document.createElement('input')
-  };
-  this.hasFileUpload = !!this._input.camera && window.File && window.FileReader && window.FileList && window.Blob;
-
-  var _pendingPhoto;
-
-  if (this.hasNativeCamera || this.hasNativeGallery) {
-    NATIVE.events.registerHandler('PhotoBeginLoaded', function (data) {
-      if (_pendingPhoto) {
-        this.emit('photoLoading', data);
-      }
-    }.bind(this));
-
-    NATIVE.events.registerHandler('PhotoLoaded', function (data) {
-      if (_pendingPhoto) {
-        var resolve = _pendingPhoto.resolve;
-        _pendingPhoto = null;
-        resolve(data);
-        this.emit('photoLoaded', data);
-      }
-    }.bind(this));
-  }
-
-  if (this.hasFileUpload) {
-    this._input.camera.type = 'file';
-    this._input.camera.setAttribute('accept', 'image/*;capture=camera');
-
-    this._input.gallery = document.createElement('input');
-    this._input.gallery.type = 'file';
-    this._input.gallery.setAttribute('accept', 'image/*;capture=gallery');
-
-    if (window.document && document.body) {
-
-      var form = document.createElement('form');
-      form.appendChild(this._input.camera);
-      form.appendChild(this._input.gallery);
-      form.style.cssText = 'position:absolute;width:1px;height:1px;visibility:hidden;top:-1px;left:-1px;overflow:hidden';
-      document.body.appendChild(form);
-
-      this._input.camera.addEventListener('change', bind(this, '_onUploadFile'));
-      this._input.gallery.addEventListener('change', bind(this, '_onUploadFile'));
-    }
-  }
-
   this._onUploadFile = function (evt) {
     if (!evt || !evt.target || !evt.target.files) { return; }
 
@@ -115,5 +72,52 @@ var PhotosAPI = Class(lib.PubSub, function () {
   };
 });
 
-module.exports = new PhotosAPI();
 
+PhotosAPI.prototype.hasNativeCamera = NATIVE && NATIVE.camera;
+PhotosAPI.prototype.hasNativeGallery = NATIVE && NATIVE.gallery;
+PhotosAPI.prototype._input = {
+  camera: GLOBAL.document && document.createElement && document.createElement('input')
+};
+PhotosAPI.prototype.hasFileUpload = !!PhotosAPI.prototype._input.camera && window.File && window.FileReader && window.FileList && window.Blob;
+
+
+if (PhotosAPI.prototype.hasNativeCamera || PhotosAPI.prototype.hasNativeGallery) {
+  NATIVE.events.registerHandler('PhotoBeginLoaded', function (data) {
+    if (_pendingPhoto) {
+      PhotosAPI.prototype.emit('photoLoading', data);
+    }
+  }.bind(PhotosAPI.prototype));
+
+  NATIVE.events.registerHandler('PhotoLoaded', function (data) {
+    if (_pendingPhoto) {
+      var resolve = _pendingPhoto.resolve;
+      _pendingPhoto = null;
+      resolve(data);
+      PhotosAPI.prototype.emit('photoLoaded', data);
+    }
+  }.bind(PhotosAPI.prototype));
+}
+
+if (PhotosAPI.prototype.hasFileUpload) {
+  PhotosAPI.prototype._input.camera.type = 'file';
+  PhotosAPI.prototype._input.camera.setAttribute('accept', 'image/*;capture=camera');
+
+  PhotosAPI.prototype._input.gallery = document.createElement('input');
+  PhotosAPI.prototype._input.gallery.type = 'file';
+  PhotosAPI.prototype._input.gallery.setAttribute('accept', 'image/*;capture=gallery');
+
+  if (window.document && document.body) {
+
+    var form = document.createElement('form');
+    form.appendChild(PhotosAPI.prototype._input.camera);
+    form.appendChild(PhotosAPI.prototype._input.gallery);
+    form.style.cssText = 'position:absolute;width:1px;height:1px;visibility:hidden;top:-1px;left:-1px;overflow:hidden';
+    document.body.appendChild(form);
+
+    PhotosAPI.prototype._input.camera.addEventListener('change', bind(PhotosAPI.prototype, '_onUploadFile'));
+    PhotosAPI.prototype._input.gallery.addEventListener('change', bind(PhotosAPI.prototype, '_onUploadFile'));
+  }
+}
+
+
+module.exports = new PhotosAPI();

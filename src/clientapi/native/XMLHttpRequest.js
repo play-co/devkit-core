@@ -14,14 +14,15 @@
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
 
+var state = {
+	"UNSENT": 0,
+	"OPENED": 1,
+	"HEADERS_RECEIVED": 2,
+	"LOADING": 3,
+	"DONE": 4
+};
+
 var XMLHttpRequest = Class(function () {
-	var state = {
-		"UNSENT": 0,
-		"OPENED": 1,
-		"HEADERS_RECEIVED": 2,
-		"LOADING": 3,
-		"DONE": 4
-	};
 	this.init = function () {
 		this.readyState = state.UNSENT;
 		this.responseText = null;

@@ -48,7 +48,8 @@ var Sound = Class(function (supr) {
 		this.complete = opts.complete || null;
 	}
 
-	this.onload = this.onerror = function () {}
+	this.onload = function () {};
+	this.onerror = function () {};
 });
 NATIVE.sound.preloadSound = function (url) {
 	NATIVE.sound.loadSound(url);

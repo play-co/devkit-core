@@ -19,9 +19,10 @@
 import lib.Callback;
 
 
-var chromeFrameClass = Class(function () {
+var REQUEST_ID = 0;
 
-	var REQUEST_ID = 0;
+
+var chromeFrameClass = Class(function () {
 
 	this.init = function () {
 		this._callBacks = {};

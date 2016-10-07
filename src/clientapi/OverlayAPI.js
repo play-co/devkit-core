@@ -98,12 +98,11 @@ var OverlayAPI = exports = Class(function () {
 
 exports.prototype.BaseOverlay = Class(function () {
 	this.pauseTimestep = function () { return true; }
-	
-	this.onEvent = 
-	this.onShow = 
-	this.onHide = 
-	this.onBeforeClose =
-		function () {}
+
+	this.onEvent = function () {};
+	this.onShow = function () {};
+	this.onHide = function () {};
+	this.onBeforeClose = function () {};
 });
 
 from util.browser import $;

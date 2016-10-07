@@ -29,19 +29,6 @@ var Image = exports = Class(lib.PubSub, function (supr) {
 		this._fireReload = false;
 	}
 
-	util.setProperty(this, 'src', {
-		set: function (value) {
-			if (!value) {
-				logger.error('empty src set on an image!');
-				this._onerror();
-				return;
-			}
-
-			this._src = value;
-			NATIVE.gl.loadImage(this);
-		}
-	});
-
 	this._onload = function (width, height, gl_name) {
 		logger.log('onload called with', width, height, gl_name);
 		this.complete = true;
@@ -81,7 +68,22 @@ var Image = exports = Class(lib.PubSub, function (supr) {
 	this.addEventListener = function (type, callback, useCapture) { this.subscribe(type, this, callback); }
 	this.removeEventListener = function (type, callback, useCapture) { this.unsubscribe(type, this, callback); }
 
-	this.onload = this.onerror = this.onreload = function () {}
+	this.onload = function () {};
+	this.onerror = function () {};
+	this.onreload = function () {};
+});
+
+util.setProperty(Image.prototype, 'src', {
+	set: function (value) {
+		if (!value) {
+			logger.error('empty src set on an image!');
+			this._onerror();
+			return;
+		}
+
+		this._src = value;
+		NATIVE.gl.loadImage(this);
+	}
 });
 
 

@@ -45,46 +45,6 @@ var Audio = exports = Class(function () {
 		}
 	};
 
-	this.__defineSetter__("src", function (url) {
-		logger.log("audio source is ", url);
-		this._src = url;
-
-		// wait one frame in case preload gets set
-		setTimeout(bind(this, function () {
-			if ((this.autoplay || this.preload == "auto") && !this.isBackgroundMusic) {
-				this.load();
-			}
-
-			if (this.autoplay) {
-				this.play();
-			}
-		}), 0);
-	});
-
-	this.__defineGetter__("src", function () {
-		return this._src;
-	});
-
-	this.__defineSetter__("volume", function (volume) {
-		this._volume = volume;
-		if (!this.isBackgroundMusic || this == lastbg) {
-			NATIVE.sound.setVolume(this._src, volume);
-		}
-	});
-
-	this.__defineGetter__("currentTime", function () {
-		this._updateElapsed();
-		return this._et / 1000;
-	});
-
-	this.__defineSetter__("currentTime", function (t) {
-		this._et = t * 1000;
-		this._startTime = Date.now();
-		if (this == lastbg) {
-			NATIVE.sound.seekTo(this._src, t);
-		}
-	});
-
 	this.canPlayType = function (type) {
 		return true;
 	};
@@ -161,6 +121,48 @@ var Audio = exports = Class(function () {
 	}
 
 });
+
+
+Audio.prototype.__defineSetter__("src", function (url) {
+	logger.log("audio source is ", url);
+	this._src = url;
+
+	// wait one frame in case preload gets set
+	setTimeout(bind(this, function () {
+		if ((this.autoplay || this.preload == "auto") && !this.isBackgroundMusic) {
+			this.load();
+		}
+
+		if (this.autoplay) {
+			this.play();
+		}
+	}), 0);
+});
+Audio.prototype
+this.__defineGetter__("src", function () {
+	return this._src;
+});
+
+Audio.prototype.__defineSetter__("volume", function (volume) {
+	this._volume = volume;
+	if (!this.isBackgroundMusic || this == lastbg) {
+		NATIVE.sound.setVolume(this._src, volume);
+	}
+});
+
+Audio.prototype.__defineGetter__("currentTime", function () {
+	this._updateElapsed();
+	return this._et / 1000;
+});
+
+Audio.prototype.__defineSetter__("currentTime", function (t) {
+	this._et = t * 1000;
+	this._startTime = Date.now();
+	if (this == lastbg) {
+		NATIVE.sound.seekTo(this._src, t);
+	}
+});
+
 
 exports.install = function () {
 	GLOBAL.Audio = Audio;
