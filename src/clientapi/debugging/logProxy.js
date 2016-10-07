@@ -14,6 +14,8 @@
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
 
+import base;
+
 // this whole file should not get included in release
 if (DEBUG) {
 	function stringify(value) {
@@ -44,8 +46,6 @@ if (DEBUG) {
 	exports.install = function (conn) {
 		if (_isInstalled) { return; }
 		_isInstalled = true;
-
-		import base;
 
 		var oldLog = base.log;
 

@@ -25,6 +25,8 @@ function init() {
 
 exports.isEnabled = ('serviceWorker' in navigator) && !device.isSimulator;
 
+import ui.resource.loader;
+
 var _onInit;
 if (exports.isEnabled) {
   _onInit = init();
@@ -34,7 +36,6 @@ if (exports.isEnabled) {
     .resolve(_onInit)
     .then(function () {
       // cache spritesheets
-      import ui.resource.loader;
       var map = ui.resource.loader.getMap();
       var sheets = {};
       for (var uri in map) {

@@ -22,6 +22,13 @@
 
 /* globals GC, bind, logger */
 
+import ui.ImageView;
+import ui.ImageScaleView;
+import ui.View;
+import ui.resource.Image;
+import ui.TextView;
+import ui.ScrollView;
+
 exports.traverse = function (f) { return GC.app && exports.traverseView(f, GC.app.view); };
 exports.traverseView = function (f, view) {
   var data = f(view);
@@ -173,8 +180,6 @@ exports.getViewById =
 exports.getViewByID = function (uid) { return exports.find(function (view) { return view.uid == uid; }); };
 
 exports.getImages = function (view) {
-  import ui.ImageView;
-  import ui.ImageScaleView;
 
   var hash = {};
   exports.traverseView(function (view) {
@@ -194,10 +199,9 @@ exports.getImages = function (view) {
 };
 
 exports.pack = function () { return GC.app && exports.packView(GC.app.view); };
+
+
 exports.packView = function (view) {
-  import ui.ImageView;
-  import ui.ImageScaleView;
-  import ui.TextView;
 
   return exports.traverseView(function (view) {
     var imageData;
@@ -242,13 +246,8 @@ exports.packView = function (view) {
   }, view);
 };
 
-exports.unpack = function (data) {
-  import ui.View;
-  import ui.ImageView;
-  import ui.resource.Image;
-  import ui.TextView;
-  import ui.ScrollView;
 
+exports.unpack = function (data) {
   function buildView (superview, data) {
     var view;
 

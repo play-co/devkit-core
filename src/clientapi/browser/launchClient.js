@@ -30,14 +30,16 @@ if (isSimulator) {
   jsio.__env.debugPath = function (path) { return 'http://' + (CONFIG.bundleID || CONFIG.packageName) + '/' + path.replace(/^[\.\/]+/, ''); };
 
   if (isNative) {
-    import ..debugging.nativeShim;
+    require('../debugging/nativeShim');
   }
 }
 
 // shims
 
+jsio('import std.JSON as stdJSON');
+
 if (!window.JSON) {
-  jsio('import std.JSON').createGlobal();
+  stdJSON.createGlobal();
 }
 
 if (!window.console) {
@@ -57,7 +59,7 @@ if (typeof localStorage !== 'undefined') {
 
 if (!isSimulator) {
   // start the cache service-worker
-  import .cache;
+  require('./cache');
 }
 
 var splash = document.getElementById('_GCSplash');
@@ -81,8 +83,8 @@ if (splash) {
 }
 
 // parsing options
-import std.uri;
-var uri = new std.uri(window.location);
+import std.uri as stdUri;
+var uri = new stdUri(window.location);
 var mute = uri.hash('mute');
 CONFIG.isMuted = mute !== undefined && mute !== 'false' && mute !== '0' && mute !== 'no';
 
@@ -94,17 +96,18 @@ if (DEBUG && isSimulator && Array.isArray(CONFIG.simulator.modules)) {
   // optionally block on a returned promise for up to 5 seconds
   Promise
     .map(CONFIG.simulator.modules, function (name) {
-      try {
-        var module = jsio(name);
-        if (module) {
-          simulatorModules.push(module);
-          if (typeof module.onLaunch == 'function') {
-            return module.onLaunch();
-          }
-        }
-      } catch (e) {
-        console.warn(e);
-      }
+      // try {
+      //   var module = jsio(name);
+      //   if (module) {
+      //     simulatorModules.push(module);
+      //     if (typeof module.onLaunch == 'function') {
+      //       return module.onLaunch();
+      //     }
+      //   }
+      // } catch (e) {
+      //   console.warn(e);
+      // }
+      console.error('TODO: Dynamic require ctx');
     })
     .timeout(5000)
     .finally(queueStart);
@@ -132,16 +135,17 @@ function queueStart() {
   /* jshint +W117 */
 }
 
-function startApp () {
 
+import device;
+import platforms.browser.initialize;
+
+import devkit;
+
+function startApp () {
   // setup timestep device API
-  import device;
-  import platforms.browser.initialize;
   device.init();
 
   // init sets up the GC object
-  import devkit;
-
   GLOBAL.GC = new devkit.ClientAPI();
   if (simulatorModules) {
     GLOBAL.GC.on('app', function (app) {

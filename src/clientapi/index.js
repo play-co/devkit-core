@@ -25,6 +25,11 @@ import ui.View;
 import ui.StackView;
 
 import device;
+
+import .UI;
+import ui.resource.loader;
+import AudioManager;
+
 var FontRenderer = device.get('FontRenderer');
 
 if (!GLOBAL.CONFIG) { GLOBAL.CONFIG = {}; }
@@ -115,7 +120,6 @@ exports.ClientAPI = Class(lib.PubSub, function () {
 
   this.plugins = new PluginManager();
 
-  import .UI;
   this.ui = new UI();
 
 
@@ -144,12 +148,10 @@ exports.ClientAPI = Class(lib.PubSub, function () {
     logger.warn("sound map failed to parse", e);
   }
 
-  import ui.resource.loader;
   this.resources = ui.resource.loader;
   this.resources.addSheets(spritesheets);
   this.resources.addAudioMap(soundMap);
 
-  import AudioManager;
 
   this._onHide = function () {
     // signal to the app that the window is going away
@@ -171,7 +173,7 @@ exports.ClientAPI = Class(lib.PubSub, function () {
   };
 
   this.buildApp = function (entry) {
-    import src.Application as Application;
+    var Application = require('src/Application');
 
     Application.prototype.__root = true;
     this.app = new Application();

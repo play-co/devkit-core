@@ -22,8 +22,6 @@ var config = window.CONFIG;
 exports = Class(function () {
 	this._spinnerCounter = 0;
 
-	import device;
-
 	var baseScale;
 	if (navigator.displayMetrics) {
 		baseScale = navigator.displayMetrics.densityDpi / 160;

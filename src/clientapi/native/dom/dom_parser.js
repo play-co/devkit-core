@@ -247,9 +247,9 @@ function appendElement (hander,node) {
     }
 }//appendChild and setAttributeNS are preformance key
 
-import .sax;
+import .sax as saxImport;
 import .dom;
-var XMLReader = sax.XMLReader;
+var XMLReader = saxImport.XMLReader;
 var DOMImplementation = exports.DOMImplementation = dom.DOMImplementation;
 exports.XMLSerializer = dom.XMLSerializer ;
 exports.DOMParser = DOMParser;

@@ -14,6 +14,8 @@
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
 
+import ui.engineInstance as engineInstance;
+
 var OverlayAPI = exports = Class(function () {
 	this.init = function (env) {
 		logger.log('env', env);
@@ -42,8 +44,7 @@ var OverlayAPI = exports = Class(function () {
 		logger.log('showing overlay');
 
 		if (this.controller.pauseTimestep()) {
-			import ui.Engine;
-			ui.Engine.get().pause();
+			engineInstance.get().pause();
 		}
 
 		this.controller.onShow();
@@ -54,8 +55,7 @@ var OverlayAPI = exports = Class(function () {
 		logger.log('hiding overlay');
 
 		if (this.controller.pauseTimestep()) {
-			import ui.Engine;
-			ui.Engine.get().resume();
+			engineInstance.get().resume();
 		}
 		
 		this.controller.onHide();
@@ -88,10 +88,11 @@ var OverlayAPI = exports = Class(function () {
 			return;
 		}
 
-		var ctor = jsio('import overlay.' + name);
-		this.setController(new ctor(opts));
-		this.delegate.load(name);
-		return this.controller;
+		// var ctor = jsio('import overlay.' + name);
+		// this.setController(new ctor(opts));
+		// this.delegate.load(name);
+		// return this.controller;
+		throw new Error('TODO: Where is this supposed to import from?');
 	}
 });
 
@@ -105,11 +106,14 @@ exports.prototype.BaseOverlay = Class(function () {
 		function () {}
 });
 
+from util.browser import $;
+import device;
+
+import .doc;
+import std.uri;
+
 var BrowserDelegate = Class(function () {
 	this.init = function (api) {
-		from util.browser import $;
-		import device;
-		
 		this._api = api;
 		this._removeListener = $.onEvent(window, 'message', this, '_onMessage');
 	}
@@ -122,9 +126,6 @@ var BrowserDelegate = Class(function () {
 	}
 	
 	this.load = function (name) {
-		import .doc;
-		import std.uri;
-		
 		if (!this._el) {
 			this._el = $({
 				src: 'javascript:var d=document;d.open();d.close()',

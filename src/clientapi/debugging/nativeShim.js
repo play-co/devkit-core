@@ -139,7 +139,10 @@ merge(exports.alerts, {
 
 exports.social = new lib.PubSub();
 
-exports.isSimulator = function() { return jsio('import device').isNativeSimulator; };
+jsio('import device');
+exports.isSimulator = function() {
+  return device.isNativeSimulator;
+};
 
 if (!GLOBAL.NATIVE) {
   GLOBAL.NATIVE = exports;

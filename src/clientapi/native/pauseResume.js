@@ -16,9 +16,10 @@
 
 NATIVE.events.registerHandler('pause', bind(window, '__fireEvent', 'pagehide'));
 
+import ui.resource.Image as Image;
+
 NATIVE.events.registerHandler('resume', function () {
 	// reset any cached loading events
-	import ui.resource.Image as Image;
 	if (Image.__clearCache__) {
 		Image.__clearCache__();
 	}

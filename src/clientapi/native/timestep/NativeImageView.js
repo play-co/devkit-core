@@ -14,9 +14,9 @@
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
 
-exports.install = function () {
-	import ui.ImageView as ImageView;
+import ui.ImageView as ImageView;
 
+exports.install = function () {
 	var proto = ImageView.prototype;
 	var setImage = proto.setImage;
 

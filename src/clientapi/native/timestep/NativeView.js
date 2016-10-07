@@ -17,10 +17,9 @@
 // monkey patch the View prototype (object composition)
 
 from ui.filter import Filter;
+import ui.View as View;
 
 exports.install = function () {
-	import ui.View as View;
-
 	var proto = View.prototype;
 
 	proto.setFilter = function (filter) {

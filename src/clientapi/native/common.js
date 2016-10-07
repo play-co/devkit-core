@@ -18,25 +18,33 @@
 
 import lib.PubSub;
 
+var req = require.context(
+  '.',
+  true,
+  /^.*\.js$/
+);
+
+import device;
+
+
 exports.install = function () {
   logger.log('installing native support');
 
   /* jshint ignore:start */
-  import device;
-  import .Window;
-  import .Document;
-  import .localStorage;
-  import .events;
-  import .launchInfo;
-  import .plugins;
-  import .screen;
-  import platforms.native.Canvas;
+  req('./Window');
+  req('./Document');
+  req('./localStorage');
+  req('./events');
+  req('./launchInfo');
+  req('./plugins');
+  req('./screen');
+  device.get('Canvas');
   /* jshint ignore:end */
 
-  import .Image;
-  import .XMLHttpRequest;
-  import .Audio;
-  import .dom.DOMParser;
+  req('./Image');
+  req('./XMLHttpRequest');
+  req('./Audio');
+  req('./dom.DOMParser');
 
   Image.install();
   XMLHttpRequest.install();
@@ -47,7 +55,7 @@ exports.install = function () {
     NATIVE.device.info = JSON.parse(NATIVE.device.native_info);
   }
 
-  import .timestep;
+  req('./timestep');
   timestep.install();
 
   // publisher for the overlay UIWebView

@@ -16,10 +16,11 @@
 
 // ensure that the ViewBacking update and copy methods
 // are present on the native View prototype
-exports.install = function () {
-	import device;
-	import ui.backend.BaseBacking as BaseBacking;
 
+import device;
+import ui.backend.BaseBacking as BaseBacking;
+
+exports.install = function () {
 	var ViewBacking = device.importUI('ViewBacking');
 
 	var proto = NATIVE.timestep.View.prototype;

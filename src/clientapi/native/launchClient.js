@@ -62,8 +62,9 @@ function analytics () {
   xhr.send();
 }
 
+import devkit;
+
 function startApp() {
-  import devkit;
   GLOBAL.GC = new devkit.ClientAPI();
 
   analytics();

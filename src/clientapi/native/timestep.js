@@ -24,19 +24,21 @@ var VIEW_TYPES = {
 	IMAGE_VIEW: 1
 };
 
+import .timestep.NativeView;
+import ui.View as View;
+import .timestep.NativeViewBacking;
+import .timestep.NativeImageView;
+import ui.ImageView as ImageView;
+
 function installNativeView() {
 	// extend the timestep View class
-	import .timestep.NativeView;
 	timestep.NativeView.install();
 
-	import ui.View as View;
 	View.setDefaultViewBacking(NATIVE.timestep.View);
 
 	// extend the timestep ViewBacking class
-	import .timestep.NativeViewBacking;
 	timestep.NativeViewBacking.install();
 
-	import .timestep.NativeImageView;
 	timestep.NativeImageView.install();
 
 	var animate = device.importUI('animate');
@@ -51,10 +53,8 @@ function installNativeView() {
 	NATIVE.timestep.Animator.prototype._removeFromGroup = ViewAnimator.prototype._removeFromGroup;
 
 	// add some properties to View and ImageView to defer to native rendering
-	import ui.View as View;
 	View.prototype.__type = VIEW_TYPES.DEFAULT;
 
-	import ui.ImageView as ImageView;
 	ImageView.prototype.__type = VIEW_TYPES.IMAGE_VIEW;
 	ImageView.prototype.render.HAS_NATIVE_IMPL = true;
 

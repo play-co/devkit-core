@@ -5,6 +5,8 @@ from .screenshot import screenshot;
 
 import .Channel;
 
+import .BridgeTransport;
+
 var API = Class(function () {
   this.init = function () {
     this._channels = {};
@@ -65,7 +67,6 @@ var tryToConnect = function () {
 
     var simulator = devkit.getSimulator(CONFIG.simulator.deviceId);
     if (simulator) {
-      import .BridgeTransport;
       var bridge = new BridgeTransport();
       simulator.setTransport(bridge.a);
       setTransport(bridge.b);
