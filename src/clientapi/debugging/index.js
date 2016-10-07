@@ -49,30 +49,34 @@ var setTransport = bind(exports, function (transport) {
   this.__onConnect(transport);
 });
 
-// try to connect
-if (CONFIG.simulator) {
-  // try a direct connection to an outer frame (assuming we're in a
-  // simulator iframe)
-  var devkit;
-  try {
-    devkit = window.parent.devkit;
-  } catch (e) {}
+var tryToConnect = function () {
+  // try to connect
+  if (CONFIG.simulator) {
+    // try a direct connection to an outer frame (assuming we're in a
+    // simulator iframe)
+    var devkit;
+    try {
+      devkit = window.parent.devkit;
+    } catch (e) {}
 
-  if (!devkit || !devkit.getSimulator) {
-    return;
-  }
+    if (!devkit || !devkit.getSimulator) {
+      return;
+    }
 
-  var simulator = devkit.getSimulator(CONFIG.simulator.deviceId);
-  if (simulator) {
-    import .BridgeTransport;
-    var bridge = new BridgeTransport();
-    simulator.setTransport(bridge.a);
-    setTransport(bridge.b);
-  }
-} else {
-  if (/^browser/.test(CONFIG.target)) {
-    // TODO: loadSocketIO();
+    var simulator = devkit.getSimulator(CONFIG.simulator.deviceId);
+    if (simulator) {
+      import .BridgeTransport;
+      var bridge = new BridgeTransport();
+      simulator.setTransport(bridge.a);
+      setTransport(bridge.b);
+    }
   } else {
-    // TODO: loadTCP();
+    if (/^browser/.test(CONFIG.target)) {
+      // TODO: loadSocketIO();
+    } else {
+      // TODO: loadTCP();
+    }
   }
-}
+};
+
+tryToConnect();

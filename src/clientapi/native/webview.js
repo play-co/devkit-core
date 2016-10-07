@@ -22,5 +22,5 @@ exports.install = function () {
 	
 	NATIVE.__defineGetter__('deviceUUID', function () {
 		return _NATIVE.getDeviceID();
-	}
+	});
 }
