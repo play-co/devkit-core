@@ -5,6 +5,8 @@ var argv = require('optimist').argv;
 var mkdirp = require('mkdirp');
 var EventEmitter = require('events').EventEmitter;
 
+var jsioWebpack = require('jsio-webpack');
+
 // clone to modify the path for this jsio but not any others
 var jsio = require('jsio').clone();
 
@@ -89,9 +91,9 @@ exports.JSCompiler = Class(function () {
       importStatement += ', util.syntax';
     }
 
-    var _jsio = jsio.clone();
-    _jsio.path.add(path.join(_jsio.__env.getPath(), '..', 'compilers'));
-    var compiler = _jsio('import jsio_compile.compiler');
+    // var _jsio = jsio.clone();
+    // _jsio.path.add(path.join(_jsio.__env.getPath(), '..', 'compilers'));
+    // var compiler = _jsio('import jsio_compile.compiler');
 
     // for debugging purposes, build the equivalent command that can be executed
     // from the command-line (not used for anything other than logging to the screen)
@@ -111,19 +113,92 @@ exports.JSCompiler = Class(function () {
     // The DevKitJsioInterface implements platform-specific functions that the js.io
     // compiler needs like basic control flow and compression.  It's really more
     // like a controller that conforms to the js.io-compiler's (controller) interface.
-    jsioOpts.interface = new DevKitJsioInterface(this)
-      .on('error', cb)
-      .on('code', function (code) {
-        cb && cb(null, code);
-      });
+    // jsioOpts.interface = new DevKitJsioInterface(this)
+    //   .on('error', cb)
+    //   .on('code', function (code) {
+    //     cb && cb(null, code);
+    //   });
 
-    jsioOpts.preCompress = opts.preCompress;//this.precompress.bind(this);
+    jsioOpts.preCompress = opts.preCompress; //this.precompress.bind(this);
 
     // start the compile by passing something equivalent to argv (first argument is
     // ignored, but traditionally should be the name of the executable?)
 
+    const mapPath = (p) => {
+      if (path.isAbsolute(p)) {
+        return p;
+      }
+      return path.resolve(jsioOpts.cwd, p);
+    };
+
+    const jsioWebpackConfig = {
+      configure: (configurator, options) => {
+        configurator.merge({
+          entry: {
+            app: path.resolve(jsioOpts.cwd, 'src', 'Application.js')
+          },
+          output: {
+            filename: '[name].js',
+            // path: path.resolve(jsioOpts.cwd, 'dist'),
+            path: path.dirname(jsCachePath),
+            publicPath: '/'
+          }
+        });
+
+        return configurator;
+      },
+      postConfigure: (configurator, options) => {
+        configurator.removePreLoader('eslint');
+
+        configurator.merge(current => {
+          const paths = jsioOpts.path.map(mapPath);
+          current.resolve.root = current.resolve.root.concat(paths);
+
+          current.resolve.alias = current.resolve.alias || {};
+          for (var pathCacheKey in jsioOpts.pathCache) {
+            current.resolve.alias[pathCacheKey] = mapPath(jsioOpts.pathCache[pathCacheKey]);
+          }
+
+          current.resolve.alias.timestepInit = path.resolve(
+            __dirname, '..', 'clientapi', 'browser'
+          );
+
+          // current.resolve.alias.jsio = path.dirname(require.resolve('jsio'));
+          current.resolve.alias.jsio = path.resolve(
+            path.dirname(require.resolve('jsio')),
+            'jsio-web'
+          );
+
+          current.resolve.alias.devkitCore = path.resolve(__dirname, '..');
+
+          // original code, no breakpoints
+          // current.devtool = 'cheap-module-eval-source-map';
+          // transformed code, no breakpoints
+          // current.devtool = 'cheap-eval-source-map';
+          // bundle, yes breakpoints
+          current.devtool = 'cheap-source-map';
+          current.output.pathinfo = true;
+
+          return current;
+        });
+      }
+    };
+
     mkdirp(jsCachePath, function () {
-      compiler.start(['jsio_compile', jsioOpts.cwd || '.', importStatement], jsioOpts);
+      // compiler.start(['jsio_compile', jsioOpts.cwd || '.', importStatement], jsioOpts);
+      const outputPath = path.join(path.dirname(jsCachePath), 'app.js');
+      if (fs.existsSync(outputPath)) {
+        fs.unlinkSync(outputPath);
+      }
+
+      jsioWebpack.build(jsioWebpackConfig, () => {
+        if (!fs.existsSync(outputPath)) {
+          cb(new Error('Webpack build failed'));
+        }
+        // TODO: handle errors
+        const code = fs.readFileSync(outputPath, 'utf-8');
+        cb(null, code);
+      });
     });
   };
 

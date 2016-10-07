@@ -22,13 +22,13 @@ exports.create = function (api, app, config, opts) {
   }
 
   var compileAppJS = compileJS({
-        env: opts.env,
-        initialImport: imports.join(', '),
-        appendImport: false,
-        includeJsio: !config.excludeJsio,
-        debug: config.scheme === 'debug',
-        preCompress: config.preCompressCallback
-      });
+    env: opts.env,
+    initialImport: imports.join(', '),
+    appendImport: false,
+    includeJsio: !config.excludeJsio,
+    debug: config.scheme === 'debug',
+    preCompress: config.preCompressCallback
+  });
 
   var stream = api.streams.createStreamWrapper()
     .wrap(inlineCache)
