@@ -1,3 +1,8 @@
+import {
+  isArray,
+  delay
+} from 'base';
+
 /* @preserve
  * The MIT License (MIT)
  *

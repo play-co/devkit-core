@@ -30,6 +30,12 @@ NATIVE.events.registerHandler = function (name, handler) {
   handlers[name] = handler;
 };
 
+import {
+  NATIVE,
+  logger,
+  log
+} from 'base';
+
 NATIVE.events.dispatchEvent = function (evt, id) {
   if (typeof evt == 'string') {
     try {

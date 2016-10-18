@@ -15,6 +15,8 @@
  */
 // ensure that the ViewBacking update and copy methods
 // are present on the native View prototype
+import { NATIVE } from 'base';
+
 import device from 'device';
 import BaseBacking from 'ui/backend/BaseBacking';
 

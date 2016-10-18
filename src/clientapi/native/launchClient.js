@@ -22,9 +22,15 @@ env.debugPath = function (path) {
 };
 
 GLOBAL.console = logging.get('console');
+// add bluebird promise implementation to global scope
+import {
+  CONFIG,
+  GLOBAL,
+  logging
+} from 'base';
+
 window.self = window;
 
-// add bluebird promise implementation to global scope
 import Promise from 'Promise';
 GLOBAL.Promise = Promise;
 

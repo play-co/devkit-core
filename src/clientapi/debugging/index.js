@@ -1,3 +1,9 @@
+import {
+  merge,
+  bind,
+  CONFIG
+} from 'base';
+
 import PubSub from 'lib/PubSub';
 
 import traversal from './traversal';

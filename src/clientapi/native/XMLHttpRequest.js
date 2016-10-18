@@ -1,3 +1,9 @@
+import {
+  logger,
+  NATIVE,
+  GLOBAL
+} from 'base';
+
 /**
  * @license
  * This file is part of the Game Closure SDK.

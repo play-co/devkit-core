@@ -19,6 +19,11 @@
  *   GLOBAL._DEBUG = new exports();
  */
 /* globals GC, bind, logger */
+import {
+  bind,
+  logger
+} from 'base';
+
 import ImageView from 'ui/ImageView';
 import ImageScaleView from 'ui/ImageScaleView';
 import View from 'ui/View';

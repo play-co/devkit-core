@@ -14,6 +14,12 @@
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
 /* globals logger, CONFIG, NATIVE */
+import {
+  logger,
+  NATIVE,
+  CONFIG
+} from 'base';
+
 import PubSub from 'lib/PubSub';
 
 var req = require.context('.', true, /^.*\.js$/);

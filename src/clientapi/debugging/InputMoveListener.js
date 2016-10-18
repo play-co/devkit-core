@@ -1,3 +1,5 @@
+import { bind } from 'base';
+
 import device from 'device';
 import Emitter from 'event/Emitter';
 import dispatch from 'event/input/dispatch';

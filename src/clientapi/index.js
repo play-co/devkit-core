@@ -15,6 +15,14 @@
 // Import this before importing GC
 // _api.client.init sets up the GC object for the client apis
 /* globals CONFIG, Class, bind, logger, merge */
+import {
+  GLOBAL,
+  logger,
+  bind,
+  CONFIG,
+  merge
+} from 'base';
+
 import PubSub from 'lib/PubSub';
 import Callback from 'lib/Callback';
 import Engine from 'ui/Engine';

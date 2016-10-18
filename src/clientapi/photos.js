@@ -1,4 +1,11 @@
 /* global NATIVE, Class, logger */
+import {
+  logger,
+  NATIVE,
+  GLOBAL,
+  bind
+} from 'base';
+
 import device from 'device';
 import PubSub from 'lib/PubSub';
 
