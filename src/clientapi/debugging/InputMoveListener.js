@@ -1,14 +1,13 @@
-import device;
-import event.Emitter;
-import event.input.dispatch as dispatch;
-import math.geom.Point as Point;
+jsio('import device');
+jsio('import event.Emitter');
+jsio('import event.input.dispatch as dispatch');
+jsio('import math.geom.Point as Point');
 
 
 var _useDOMEvents = device.isSimulator && document.body.addEventListener;
 
 
 exports = Class(event.Emitter, function () {
-
   this.init = function (opts) {
     opts = opts || {};
 
@@ -17,6 +16,7 @@ exports = Class(event.Emitter, function () {
     this._checkShift = bind(this, this._checkShift);
     this.onContextMenu = bind(this, this.onContextMenu);
   }
+;
 
   this.connect = function () {
     if (_useDOMEvents) {
@@ -25,10 +25,12 @@ exports = Class(event.Emitter, function () {
       window.addEventListener('mousedown', this._checkShift, true);
     }
 
+
     GC.app.view.subscribe('InputMoveCapture', this, 'onInputMoveCapture');
     GC.app.view.subscribe('InputStartCapture', this, '_cancelEvent');
     GC.app.view.subscribe('InputSelectCapture', this, 'onInputSelectCapture');
   }
+;
 
   this.disconnect = function () {
     if (_useDOMEvents) {
@@ -37,14 +39,17 @@ exports = Class(event.Emitter, function () {
       window.removeEventListener('contextmenu', this.onContextMenu, true);
     }
 
+
     GC.app.view.unsubscribe('InputMoveCapture', this, 'onInputMoveCapture');
     GC.app.view.unsubscribe('InputStartCapture', this, '_cancelEvent');
     GC.app.view.unsubscribe('InputSelectCapture', this, 'onInputSelectCapture');
   }
+;
 
   this._cancelEvent = function (evt) {
     evt.cancel();
   }
+;
 
   this._checkShift = function (e) {
     if (e.which === 3 || e.button === 2) {
@@ -53,11 +58,16 @@ exports = Class(event.Emitter, function () {
       return false;
     }
 
+
     this._shiftDown = !!e.shiftKey;
 
     if (!GC.app.engine.isRunning()) {
       // get the event to the active target
-      var mockEvt = {pt: [], trace: [], depth: 0};
+      var mockEvt = {
+        pt: [],
+        trace: [],
+        depth: 0
+      };
       var mockPt = new Point(e.pageX, e.pageY);
       dispatch.traceEvt(GC.app.view, mockEvt, mockPt);
 
@@ -67,10 +77,14 @@ exports = Class(event.Emitter, function () {
       e.preventDefault();
     }
   }
+;
 
   this.onContextMenu = function (e) {
     var fullTrace = this.getFullTrace(e.pageX, e.pageY);
-    if (!fullTrace.trace.length) { return; }
+    if (!fullTrace.trace.length) {
+      return;
+    }
+
 
     this.emit('trace', {
       x: e.pageX,
@@ -83,6 +97,7 @@ exports = Class(event.Emitter, function () {
     e.preventDefault();
     return false;
   }
+;
 
   this.onInputMoveCapture = function (evt, pt, allEvt, allPt) {
     var fullTrace = this.getFullTrace(pt.x, pt.y);
@@ -91,12 +106,15 @@ exports = Class(event.Emitter, function () {
       x: pt.x,
       y: pt.y,
       target: fullTrace.target,
-      evtTrace: evt.trace, // trace of just the views that can receive input events
-      trace: fullTrace.trace // trace of all visible views
+      evtTrace: evt.trace,
+      // trace of just the views that can receive input events
+      trace: fullTrace.trace
     };
 
+    // trace of all visible views
     this.emit('move', data);
   }
+;
 
   this.onInputSelectCapture = function (evt, pt) {
     if (!this._requireShiftClick || this._shiftDown) {
@@ -105,25 +123,35 @@ exports = Class(event.Emitter, function () {
       this.emit('select', trace);
     }
   }
+;
 
   this.getFullTrace = function (x, y) {
-    var fullTrace = {pt: [], trace: [], depth: 0};
+    var fullTrace = {
+      pt: [],
+      trace: [],
+      depth: 0
+    };
     this._getFullTrace(GC.app.view, fullTrace, new Point(x, y), 0);
     return fullTrace;
   }
+;
 
   this._getFullTrace = function (view, evt, pt, depth) {
     var localPt = view.style.localizePoint(new Point(pt));
 
     //if the point is contained add it to the trace
     if (view.containsLocalPoint(localPt)) {
-      evt.trace.unshift({view: view, depth: depth});
+      evt.trace.unshift({
+        view: view,
+        depth: depth
+      });
       evt.pt[view.uid] = localPt;
       if (depth >= evt.depth) {
         evt.depth = depth;
         evt.target = view;
       }
     }
+
 
     var subviews = view.getSubviews();
     var n = subviews.length;
@@ -137,11 +165,15 @@ exports = Class(event.Emitter, function () {
   this.onMouseMoveCapture = function (e) {
     if (!GC.app.engine.isRunning()) {
       // get the event to the active target
-      var mockEvt = {pt: [], trace: [], depth: 0};
+      var mockEvt = {
+        pt: [],
+        trace: [],
+        depth: 0
+      };
       var mockPt = new Point(e.pageX, e.pageY);
       dispatch.traceEvt(GC.app.view, mockEvt, mockPt);
 
       this.onInputMoveCapture(mockEvt, mockPt);
     }
-  }
+  };
 });

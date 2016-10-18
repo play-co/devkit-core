@@ -13,23 +13,22 @@
  * You should have received a copy of the Mozilla Public License v. 2.0
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
-
 /*
  * debug tools for traversing views from the JS console.
  * This class ends up being in the global scope:
  *   GLOBAL._DEBUG = new exports();
  */
-
 /* globals GC, bind, logger */
+jsio('import ui.ImageView');
+jsio('import ui.ImageScaleView');
+jsio('import ui.View');
+jsio('import ui.resource.Image');
+jsio('import ui.TextView');
+jsio('import ui.ScrollView');
 
-import ui.ImageView;
-import ui.ImageScaleView;
-import ui.View;
-import ui.resource.Image;
-import ui.TextView;
-import ui.ScrollView;
-
-exports.traverse = function (f) { return GC.app && exports.traverseView(f, GC.app.view); };
+exports.traverse = function (f) {
+  return GC.app && exports.traverseView(f, GC.app.view);
+};
 exports.traverseView = function (f, view) {
   var data = f(view);
   var subviews = view.getSubviews().map(bind(this, 'traverseView', f));
@@ -40,14 +39,21 @@ exports.traverseView = function (f, view) {
   };
 };
 
-exports.find = function (f) { return GC.app && exports.findView(f, GC.app.view); };
+exports.find = function (f) {
+  return GC.app && exports.findView(f, GC.app.view);
+};
 exports.findView = function (f, view) {
-  if (f(view)) { return view; }
+  if (f(view)) {
+    return view;
+  }
   var subviews = view.getSubviews();
   for (var i = 0, sub; sub = subviews[i]; ++i) {
     var res = exports.findView(f, sub);
-    if (res) { return res; }
+    if (res) {
+      return res;
+    }
   }
+
 
   return false;
 };
@@ -55,7 +61,7 @@ exports.findView = function (f, view) {
 var _isHighlighting = false;
 var _highlightViews = [];
 
-var _renderHighlights = (function () {
+var _renderHighlights = function () {
   var prev = null;
   var highlight = 0;
   var fadeIn = true;
@@ -66,6 +72,7 @@ var _renderHighlights = (function () {
     if (prev) {
       dt = now - prev;
     }
+
 
     prev = now;
 
@@ -82,6 +89,7 @@ var _renderHighlights = (function () {
         highlight = 0;
       }
     }
+
 
     var gray = Math.round(255 * highlight / FADE_IN_TIME);
 
@@ -128,7 +136,7 @@ var _renderHighlights = (function () {
 
     ctx.restore();
   };
-})();
+}();
 
 exports.unhighlightViews = function () {
   _highlightViews = [];
@@ -143,8 +151,10 @@ function getHighlightIndex(view) {
     }
   }
 
+
   return -1;
 }
+
 
 function enableHighlighting() {
   if (!_isHighlighting) {
@@ -153,14 +163,19 @@ function enableHighlighting() {
   }
 }
 
+
 function disableHighlighting() {
   _isHighlighting = false;
   GC.app.engine.removeListener('Render', _renderHighlights);
 }
 
+
 exports.highlightView = function (view, opts) {
   if (getHighlightIndex(view) === -1) {
-    _highlightViews.push({view: view, opts: opts || {}});
+    _highlightViews.push({
+      view: view,
+      opts: opts || {}
+    });
     enableHighlighting();
   }
 };
@@ -171,16 +186,19 @@ exports.unhighlightView = function (view) {
     _highlightViews.splice(i, 1);
   }
 
+
   if (!_highlightViews.length) {
     disableHighlighting();
   }
 };
 
-exports.getViewById =
-exports.getViewByID = function (uid) { return exports.find(function (view) { return view.uid == uid; }); };
+exports.getViewById = exports.getViewByID = function (uid) {
+  return exports.find(function (view) {
+    return view.uid == uid;
+  });
+};
 
 exports.getImages = function (view) {
-
   var hash = {};
   exports.traverseView(function (view) {
     if (view instanceof ui.ImageView || view instanceof ui.ImageScaleView) {
@@ -191,6 +209,7 @@ exports.getImages = function (view) {
       }
     }
 
+
   }, view || GC.app);
 
   var images = Object.keys(hash);
@@ -198,11 +217,12 @@ exports.getImages = function (view) {
   return images;
 };
 
-exports.pack = function () { return GC.app && exports.packView(GC.app.view); };
+exports.pack = function () {
+  return GC.app && exports.packView(GC.app.view);
+};
 
 
 exports.packView = function (view) {
-
   return exports.traverseView(function (view) {
     var imageData;
     var sourceSlices;
@@ -213,6 +233,7 @@ exports.packView = function (view) {
         imageData = img.getOriginalURL() || img.getMap();
       }
 
+
       if (view.getScaleMethod) {
         var scaleMethod = view.getScaleMethod();
         if (/slice$/.test(scaleMethod)) {
@@ -222,10 +243,12 @@ exports.packView = function (view) {
       }
     }
 
+
     var text;
     if (view instanceof ui.TextView) {
       text = view.getText();
     }
+
 
     var s = view.style;
     return {
@@ -248,7 +271,7 @@ exports.packView = function (view) {
 
 
 exports.unpack = function (data) {
-  function buildView (superview, data) {
+  function buildView(superview, data) {
     var view;
 
     var opts = data.data;
@@ -266,10 +289,8 @@ exports.unpack = function (data) {
         height: opts.height,
         scale: opts.scale,
         clip: opts.clip,
-
         scaleMethod: opts.scaleMethod,
         slices: opts.slices,
-
         superview: superview,
         image: typeof img == 'string' ? img : new ui.resource.Image({
           url: img.url,
@@ -287,7 +308,7 @@ exports.unpack = function (data) {
         tag: opts.tag
       });
     } else {
-      view = new (opts.text ? ui.TextView : (opts.clip ? ui.ScrollView : ui.View))({
+      view = new (opts.text ? ui.TextView : opts.clip ? ui.ScrollView : ui.View)({
         x: opts.x,
         y: opts.y,
         clip: opts.clip,
@@ -302,6 +323,7 @@ exports.unpack = function (data) {
       });
     }
 
+
     view.uid = data.uid;
 
     if (data.subviews) {
@@ -310,6 +332,7 @@ exports.unpack = function (data) {
       }
     }
   }
+
 
   GC.app.view.updateOpts(data.data);
   for (var i = 0, sub; sub = data.subviews[i]; ++i) {
@@ -328,20 +351,32 @@ exports.eachView = function (list, f) {
   }
 };
 
-exports.hideViews = function (/* id1, id2, id3, ... */) {
-  exports.eachView(arguments, function (view) { view.style.visible = false; });
-};
+exports.hideViews = function ()
+  /* id1, id2, id3, ... */
+  {
+    exports.eachView(arguments, function (view) {
+      view.style.visible = false;
+    });
+  };
 
-exports.showViews = function (/* id1, id2, id3, ... */) {
-  exports.eachView(arguments, function (view) { view.style.visible = true; });
-};
+exports.showViews = function ()
+  /* id1, id2, id3, ... */
+  {
+    exports.eachView(arguments, function (view) {
+      view.style.visible = true;
+    });
+  };
 
 exports.hideAllViews = function () {
-  exports.traverse(function (view) { view.style.visible = false; });
+  exports.traverse(function (view) {
+    view.style.visible = false;
+  });
 };
 
 exports.showAllViews = function () {
-  exports.traverse(function (view) { view.style.visible = true; });
+  exports.traverse(function (view) {
+    view.style.visible = true;
+  });
 };
 
 exports.hideViewRange = function (a, b) {
@@ -349,6 +384,7 @@ exports.hideViewRange = function (a, b) {
   for (var i = a; i < b; ++i) {
     range.push(i);
   }
+
 
   exports.hideViews.apply(this, range);
 };
@@ -358,6 +394,7 @@ exports.showViewRange = function (a, b) {
   for (var i = a; i < b; ++i) {
     range.push(i);
   }
+
 
   exports.showViews.apply(this, range);
 };

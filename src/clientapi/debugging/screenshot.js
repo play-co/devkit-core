@@ -1,13 +1,13 @@
-import device;
+jsio('import device');
 
 exports.screenshot = function (cb) {
   var canvas = GC.app.engine.getElement();
 
   var Canvas = device.get('Canvas');
   var _debugCanvas = new Canvas({
-      width: canvas.width,
-      height: canvas.height
-    });
+    width: canvas.width,
+    height: canvas.height
+  });
 
   if (_debugCanvas && _debugCanvas.toDataURL) {
     var ctx = _debugCanvas.getContext('2d');
@@ -47,7 +47,7 @@ exports.screenshot = function (cb) {
         this.font = 'bold 15px Helvetica';
         this.textAlign = 'center';
         this.textBaseline = 'middle';
-        this.fillText("X", x + w / 2, y + h / 2);
+        this.fillText('X', x + w / 2, y + h / 2);
         this.restore();
       }
     };
@@ -64,6 +64,8 @@ exports.screenshot = function (cb) {
       });
     }
 
+
+
     if (base64Image) {
       cb(null, {
         width: _debugCanvas.width,
@@ -72,8 +74,6 @@ exports.screenshot = function (cb) {
       });
     }
   } else {
-    cb({
-      NOT_SUPPORTED: true
-    });
+    cb({ NOT_SUPPORTED: true });
   }
 };

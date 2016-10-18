@@ -13,8 +13,7 @@
  * You should have received a copy of the Mozilla Public License v. 2.0
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
-
-import lib.PubSub;
+jsio('import lib.PubSub');
 
 NATIVE.backButton = new lib.PubSub();
 
@@ -24,15 +23,15 @@ NATIVE.backButton = new lib.PubSub();
  * returns true.
  */
 NATIVE.events.registerHandler('backButton', function (evt) {
-	if (NATIVE.onBackButton) {
-		var result = NATIVE.onBackButton();
-		
-		logger.log('back button pushed');
+  if (NATIVE.onBackButton) {
+    var result = NATIVE.onBackButton();
 
-		if ( result === false && typeof NATIVE.sendActivityToBack === 'function' ) {
-			NATIVE.sendActivityToBack();
-		}
-	} else {
-		NATIVE.backButton.emit('pressed');
-	}
+    logger.log('back button pushed');
+
+    if (result === false && typeof NATIVE.sendActivityToBack === 'function') {
+      NATIVE.sendActivityToBack();
+    }
+  } else {
+    NATIVE.backButton.emit('pressed');
+  }
 });

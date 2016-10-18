@@ -13,45 +13,44 @@
  * You should have received a copy of the Mozilla Public License v. 2.0
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
-
-import lib.PubSub;
-import device;
+jsio('import lib.PubSub');
+jsio('import device');
 
 merge(NATIVE.input, lib.PubSub.prototype);
 
 NATIVE.events.registerHandler('InputPromptSubmit', function (evt) {
-	NATIVE.input.publish('InputPromptSubmit', evt);
+  NATIVE.input.publish('InputPromptSubmit', evt);
 });
 
 NATIVE.events.registerHandler('InputKeyboardSubmit', function (evt) {
-	NATIVE.input.publish('Submit', evt);
+  NATIVE.input.publish('Submit', evt);
 });
 
 NATIVE.events.registerHandler('InputKeyboardCancel', function (evt) {
-	NATIVE.input.publish('Cancel', evt);
+  NATIVE.input.publish('Cancel', evt);
 });
 
 NATIVE.events.registerHandler('InputKeyboardKeyUp', function (evt) {
-    NATIVE.input.publish('KeyUp', evt);
+  NATIVE.input.publish('KeyUp', evt);
 });
 
 NATIVE.events.registerHandler('InputKeyboardFocusNext', function (evt) {
-    NATIVE.input.publish('FocusNext', evt);
+  NATIVE.input.publish('FocusNext', evt);
 });
 
 var __keyboardIsOpen = false;
 NATIVE.events.registerHandler('keyboardScreenResize', function (evt) {
-	if (evt.height < .75 * device.screen.height) {
-		evt.opened = true;
-		window.__fireEvent('keyboardScreenResize', evt);
-		if (!__keyboardIsOpen) {
-			__keyboardIsOpen = true;
-			window.__fireEvent('keyboardOpened', evt);
-		}
-	} else if (__keyboardIsOpen) {
-		evt.opened = false;
-		window.__fireEvent('keyboardScreenResize', evt);
-		__keyboardIsOpen = false;
-		window.__fireEvent('keyboardClosed', evt);
-	}
+  if (evt.height < 0.75 * device.screen.height) {
+    evt.opened = true;
+    window.__fireEvent('keyboardScreenResize', evt);
+    if (!__keyboardIsOpen) {
+      __keyboardIsOpen = true;
+      window.__fireEvent('keyboardOpened', evt);
+    }
+  } else if (__keyboardIsOpen) {
+    evt.opened = false;
+    window.__fireEvent('keyboardScreenResize', evt);
+    __keyboardIsOpen = false;
+    window.__fireEvent('keyboardClosed', evt);
+  }
 });

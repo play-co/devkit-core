@@ -13,33 +13,31 @@
  * You should have received a copy of the Mozilla Public License v. 2.0
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
-
 // ensure that the ViewBacking update and copy methods
 // are present on the native View prototype
-
-import device;
-import ui.backend.BaseBacking as BaseBacking;
+jsio('import device');
+jsio('import ui.backend.BaseBacking as BaseBacking');
 
 exports.install = function () {
-	var ViewBacking = device.importUI('ViewBacking');
+  var ViewBacking = device.importUI('ViewBacking');
 
-	var proto = NATIVE.timestep.View.prototype;
+  var proto = NATIVE.timestep.View.prototype;
 
-	if (proto) {
+  if (proto) {
+    var srcProto = ViewBacking.prototype;
 
-		var srcProto = ViewBacking.prototype;
+    proto.__proto__ = BaseBacking.prototype;
 
-		proto.__proto__ = BaseBacking.prototype;
+    // legacy
+    proto.__firstRender = true;
 
-		// legacy
-		proto.__firstRender = true;
+    if (!proto.copy) {
+      proto.copy = srcProto.copy;
+    }
 
-		if (!proto.copy) {
-			proto.copy = srcProto.copy;
-		}
 
-		if (!proto.localizePoint && proto.localizePt) {
-			proto.localizePoint = proto.localizePt;
-		}
-	}
+    if (!proto.localizePoint && proto.localizePt) {
+      proto.localizePoint = proto.localizePt;
+    }
+  }
 };

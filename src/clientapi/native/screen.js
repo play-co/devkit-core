@@ -13,28 +13,27 @@
  * You should have received a copy of the Mozilla Public License v. 2.0
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
-
-import device;
+jsio('import device');
 
 NATIVE.screen.onResize = function (width, height) {
-	logger.log('native screen resize', width, height);
-	window.screen.width = width;
-	window.screen.height= height;
-	device.screen.publish('Resize', width, height);
-	if (width > height) {
-		device.screen.isPortrait = false;
-		device.screen.isLandscape = true;
-		device.screen.orientation = 'landscape';
-	} else {
-		device.screen.isPortrait = true;
-		device.screen.isLandscape = false;
-		device.screen.orientation = 'portrait';
-	}
-	device.screen.width = width;
-	device.screen.height = height;
-	device.width = width;
-	device.height = height;
-	
-	device.screen.publish('Resize', width, height);
-	logger.log('onResize', JSON.stringify(device.screen));
-}
+  logger.log('native screen resize', width, height);
+  window.screen.width = width;
+  window.screen.height = height;
+  device.screen.publish('Resize', width, height);
+  if (width > height) {
+    device.screen.isPortrait = false;
+    device.screen.isLandscape = true;
+    device.screen.orientation = 'landscape';
+  } else {
+    device.screen.isPortrait = true;
+    device.screen.isLandscape = false;
+    device.screen.orientation = 'portrait';
+  }
+  device.screen.width = width;
+  device.screen.height = height;
+  device.width = width;
+  device.height = height;
+
+  device.screen.publish('Resize', width, height);
+  logger.log('onResize', JSON.stringify(device.screen));
+};

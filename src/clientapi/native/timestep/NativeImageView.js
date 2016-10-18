@@ -13,23 +13,23 @@
  * You should have received a copy of the Mozilla Public License v. 2.0
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
-
-import ui.ImageView as ImageView;
+jsio('import ui.ImageView as ImageView');
 
 exports.install = function () {
-	var proto = ImageView.prototype;
-	var setImage = proto.setImage;
+  var proto = ImageView.prototype;
+  var setImage = proto.setImage;
 
-	proto.setImage = function (img, opts) {
-		if (opts && opts.forceReload && typeof img == 'string') {
-			NATIVE.gl.deleteTexture(img);
-		}
-		var retVal = setImage.apply(this, arguments);
-		
-		if (this._img) {
-			NATIVE.timestep.setImageOnImageView(this.__view, this._img.getMap());
-		}
-		
-		return retVal
-	}
-}
+  proto.setImage = function (img, opts) {
+    if (opts && opts.forceReload && typeof img == 'string') {
+      NATIVE.gl.deleteTexture(img);
+    }
+    var retVal = setImage.apply(this, arguments);
+
+    if (this._img) {
+      NATIVE.timestep.setImageOnImageView(this.__view, this._img.getMap());
+    }
+
+
+    return retVal;
+  };
+};

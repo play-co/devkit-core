@@ -13,8 +13,7 @@
  * You should have received a copy of the Mozilla Public License v. 2.0
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
-
-import lib.PubSub;
+jsio('import lib.PubSub');
 
 module.exports = new lib.PubSub();
 
@@ -23,13 +22,17 @@ window.open = window.open || window.setLocation;
 window.addEventListener = function (evtName, cb, isBubble) {
   module.exports.on(evtName, cb);
 }
+;
 
 window.removeEventListener = function (evtName, cb, isBubble) {
   module.exports.removeListener(evtName, cb);
 }
+;
 
 window.__fireEvent = function (name, evt) {
-  if (!evt) { evt = {}; }
+  if (!evt) {
+    evt = {};
+  }
   evt.type = name;
   module.exports.publish(name, evt);
-}
+};

@@ -13,8 +13,7 @@
  * You should have received a copy of the Mozilla Public License v. 2.0
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
-
-NATIVE.events.registerHandler("networkStatus", function (evt) {
-	// evt.type is either "online" or "offline"
-	window.__fireEvent(evt.type, evt);
+NATIVE.events.registerHandler('networkStatus', function (evt) {
+  // evt.type is either "online" or "offline"
+  window.__fireEvent(evt.type, evt);
 });

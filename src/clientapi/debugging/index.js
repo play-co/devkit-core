@@ -1,16 +1,17 @@
-import lib.PubSub;
+jsio('import lib.PubSub');
 
-import .traversal;
-from .screenshot import screenshot;
+jsio('import .traversal');
+jsio('from .screenshot import screenshot');
 
-import .Channel;
+jsio('import .Channel');
 
-import .BridgeTransport;
+jsio('import .BridgeTransport');
 
 var API = Class(function () {
   this.init = function () {
     this._channels = {};
   }
+;
 
   this.getChannel = function (channelName) {
     var channel = this._channels[channelName];
@@ -23,14 +24,17 @@ var API = Class(function () {
       }
     }
 
+
     return channel;
   }
+;
 
   this.__onConnect = function (transport) {
     for (var channel in this._channels) {
       this._channels[channel].setTransport(transport);
     }
   }
+;
 
   this.screenshot = screenshot;
 });
@@ -59,11 +63,15 @@ var tryToConnect = function () {
     var devkit;
     try {
       devkit = window.parent.devkit;
-    } catch (e) {}
+    } catch (e) {
+    }
+
+
 
     if (!devkit || !devkit.getSimulator) {
       return;
     }
+
 
     var simulator = devkit.getSimulator(CONFIG.simulator.deviceId);
     if (simulator) {
@@ -73,9 +81,7 @@ var tryToConnect = function () {
     }
   } else {
     if (/^browser/.test(CONFIG.target)) {
-      // TODO: loadSocketIO();
     } else {
-      // TODO: loadTCP();
     }
   }
 };

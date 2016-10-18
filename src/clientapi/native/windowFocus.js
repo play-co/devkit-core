@@ -13,6 +13,5 @@
  * You should have received a copy of the Mozilla Public License v. 2.0
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
-
 NATIVE.events.registerHandler('windowFocusAcquired', bind(window, '__fireEvent', 'onblur'));
 NATIVE.events.registerHandler('windowFocusAcquired', bind(window, '__fireEvent', 'onfocus'));

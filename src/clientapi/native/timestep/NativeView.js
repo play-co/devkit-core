@@ -13,28 +13,26 @@
  * You should have received a copy of the Mozilla Public License v. 2.0
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
-
 // monkey patch the View prototype (object composition)
-
-from ui.filter import Filter;
-import ui.View as View;
+jsio('from ui.filter import Filter');
+jsio('import ui.View as View');
 
 exports.install = function () {
-	var proto = View.prototype;
+  var proto = View.prototype;
 
-	proto.setFilter = function (filter) {
-		this.removeFilter();
-		this._filter = filter;
-		filter.setView(this);
-		filter.update();
-	};
+  proto.setFilter = function (filter) {
+    this.removeFilter();
+    this._filter = filter;
+    filter.setView(this);
+    filter.update();
+  };
 
-	proto.removeFilter = function () {
-		if (this._filter) {
-			this._filter.removeView(this);
-			this._filter = null;
-			this.__view.filterType = 0;
-			this.__view.filterColor = 'rgba(0,0,0,0)';
-		}
-	};
+  proto.removeFilter = function () {
+    if (this._filter) {
+      this._filter.removeView(this);
+      this._filter = null;
+      this.__view.filterType = 0;
+      this.__view.filterColor = 'rgba(0,0,0,0)';
+    }
+  };
 };

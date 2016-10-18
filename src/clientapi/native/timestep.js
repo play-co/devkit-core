@@ -13,59 +13,60 @@
  * You should have received a copy of the Mozilla Public License v. 2.0
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
-
-import device;
-import lib.PubSub as PubSub;
+jsio('import device');
+jsio('import lib.PubSub as PubSub');
 
 var hasNativeViews = GLOBAL.NATIVE && NATIVE.timestep && NATIVE.timestep.View;
 
 var VIEW_TYPES = {
-	DEFAULT: 0,
-	IMAGE_VIEW: 1
+  DEFAULT: 0,
+  IMAGE_VIEW: 1
 };
 
-import .timestep.NativeView;
-import ui.View as View;
-import .timestep.NativeViewBacking;
-import .timestep.NativeImageView;
-import ui.ImageView as ImageView;
+jsio('import .timestep.NativeView');
+jsio('import ui.View as View');
+jsio('import .timestep.NativeViewBacking');
+jsio('import .timestep.NativeImageView');
+jsio('import ui.ImageView as ImageView');
 
 function installNativeView() {
-	// extend the timestep View class
-	timestep.NativeView.install();
+  // extend the timestep View class
+  timestep.NativeView.install();
 
-	View.setDefaultViewBacking(NATIVE.timestep.View);
+  View.setDefaultViewBacking(NATIVE.timestep.View);
 
-	// extend the timestep ViewBacking class
-	timestep.NativeViewBacking.install();
+  // extend the timestep ViewBacking class
+  timestep.NativeViewBacking.install();
 
-	timestep.NativeImageView.install();
+  timestep.NativeImageView.install();
 
-	var animate = device.importUI('animate');
-	var ViewAnimator = animate.getViewAnimator();
-	// use accelerated native view animators
-	animate.setViewAnimator(NATIVE.timestep.Animator);
-	// native view animators inherit from PubSub (Emitter) to match JS
-	merge(NATIVE.timestep.Animator.prototype, PubSub.prototype);
-	// native view animators need to add themselves to animate groups in JS
-	NATIVE.timestep.Animator.prototype._addToGroup = ViewAnimator.prototype._addToGroup;
-	// native view animators need to remove themselves from animate groups in JS
-	NATIVE.timestep.Animator.prototype._removeFromGroup = ViewAnimator.prototype._removeFromGroup;
+  var animate = device.importUI('animate');
+  var ViewAnimator = animate.getViewAnimator();
+  // use accelerated native view animators
+  animate.setViewAnimator(NATIVE.timestep.Animator);
+  // native view animators inherit from PubSub (Emitter) to match JS
+  merge(NATIVE.timestep.Animator.prototype, PubSub.prototype);
+  // native view animators need to add themselves to animate groups in JS
+  NATIVE.timestep.Animator.prototype._addToGroup = ViewAnimator.prototype._addToGroup;
+  // native view animators need to remove themselves from animate groups in JS
+  NATIVE.timestep.Animator.prototype._removeFromGroup = ViewAnimator.prototype._removeFromGroup;
 
-	// add some properties to View and ImageView to defer to native rendering
-	View.prototype.__type = VIEW_TYPES.DEFAULT;
+  // add some properties to View and ImageView to defer to native rendering
+  View.prototype.__type = VIEW_TYPES.DEFAULT;
 
-	ImageView.prototype.__type = VIEW_TYPES.IMAGE_VIEW;
-	ImageView.prototype.render.HAS_NATIVE_IMPL = true;
+  ImageView.prototype.__type = VIEW_TYPES.IMAGE_VIEW;
+  ImageView.prototype.render.HAS_NATIVE_IMPL = true;
 
-	logger.log("USING NATIVE VIEWS");
+  logger.log('USING NATIVE VIEWS');
 }
+
 
 logger.log(typeof GLOBAL.CONFIG, GLOBAL.CONFIG && CONFIG.disableNativeViews);
 
 if (GLOBAL.CONFIG && CONFIG.disableNativeViews || !hasNativeViews) {
-	logger.log("USING JS VIEWS");
-	exports.install = function () {};
+  logger.log('USING JS VIEWS');
+  exports.install = function () {
+  };
 } else {
-	exports.install = installNativeView;
+  exports.install = installNativeView;
 }

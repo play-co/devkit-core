@@ -13,18 +13,12 @@
  * You should have received a copy of the Mozilla Public License v. 2.0
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
-
 /* globals logger, CONFIG, NATIVE */
+jsio('import lib.PubSub');
 
-import lib.PubSub;
+var req = require.context('.', true, /^.*\.js$/);
 
-var req = require.context(
-  '.',
-  true,
-  /^.*\.js$/
-);
-
-import device;
+jsio('import device');
 
 
 exports.install = function () {
@@ -39,8 +33,8 @@ exports.install = function () {
   req('./plugins');
   req('./screen');
   device.get('Canvas');
-  /* jshint ignore:end */
 
+  /* jshint ignore:end */
   req('./Image');
   req('./XMLHttpRequest');
   req('./Audio');
@@ -55,21 +49,25 @@ exports.install = function () {
     NATIVE.device.info = JSON.parse(NATIVE.device.native_info);
   }
 
+
   req('./timestep');
   timestep.install();
 
   // publisher for the overlay UIWebView
   NATIVE.overlay.delegate = new lib.PubSub();
   CONFIG.splash = CONFIG.splash || {};
-  var oldHide = CONFIG.splash.hide || function () {};
+  var oldHide = CONFIG.splash.hide || function () {
+  };
   CONFIG.splash.hide = function (cb) {
     if (NATIVE.doneLoading instanceof Function) {
       NATIVE.doneLoading();
     }
 
+
     if (oldHide instanceof Function) {
       oldHide();
     }
+
 
     cb && cb();
   };

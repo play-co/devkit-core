@@ -12,7 +12,5 @@
  * You should have received a copy of the Mozilla Public License v. 2.0
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
-
 // this file bootstraps the loading screen in a web browser
-
 window._continueLoad();

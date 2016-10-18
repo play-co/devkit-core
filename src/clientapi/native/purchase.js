@@ -13,13 +13,9 @@
  * You should have received a copy of the Mozilla Public License v. 2.0
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
-
 NATIVE.events.registerHandler('purchase', function (evt) {
-	var state = evt.state,
-		product = evt.product,
-		order = evt.order,
-		notifyId = evt.notifyId;
-	if (NATIVE.purchase.onResult(state, product, order)) {
-		NATIVE.purchase.confirmPurchase(notifyId);
-	}
+  var state = evt.state, product = evt.product, order = evt.order, notifyId = evt.notifyId;
+  if (NATIVE.purchase.onResult(state, product, order)) {
+    NATIVE.purchase.confirmPurchase(notifyId);
+  }
 });

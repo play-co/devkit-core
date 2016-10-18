@@ -13,13 +13,13 @@
  * You should have received a copy of the Mozilla Public License v. 2.0
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
-
 var inputQueue = [];
 
 if (NATIVE.events.setResponder) {
-	NATIVE.events.setResponder(inputQueue);
+  NATIVE.events.setResponder(inputQueue);
 }
 
+
 NATIVE.input.getTouchEvents = function () {
-	return inputQueue.splice(0, inputQueue.length);
-}
+  return inputQueue.splice(0, inputQueue.length);
+};

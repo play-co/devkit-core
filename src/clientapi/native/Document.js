@@ -13,23 +13,24 @@
  * You should have received a copy of the Mozilla Public License v. 2.0
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
-
 if (typeof document == 'undefined') {
-	GLOBAL.document = {};
+  GLOBAL.document = {};
 }
 
+
 if (!document.createElement) {
-	var handlers = {};
-	
-	document.createElement = function (type) {
-		type = type.toUpperCase(); 
-		if (type in handlers) {
-			return handlers[type]();
-		}
-	}
-	
-	document.__registerCreateElementHandler = function (type, cb) {
-		type = type.toUpperCase();
-		handlers[type] = cb;
-	}
+  var handlers = {};
+
+  document.createElement = function (type) {
+    type = type.toUpperCase();
+    if (type in handlers) {
+      return handlers[type]();
+    }
+  }
+;
+
+  document.__registerCreateElementHandler = function (type, cb) {
+    type = type.toUpperCase();
+    handlers[type] = cb;
+  };
 }

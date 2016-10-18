@@ -13,38 +13,42 @@
  * You should have received a copy of the Mozilla Public License v. 2.0
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
-
 var getAttribute = function (name) {
-	return this.xml['@'+name].toXMLString();
+  return this.xml['@' + name].toXMLString();
 }
 
+;
+
 var getElementsByTagName = function (tag) {
-	var ret = [];
-	var elements = this.xml[tag];
-	for (var i = 0; i < elements.length(); i++) {
-		ret.push({
-			xml: elements[i],
-			getAttribute: getAttribute,
-			getElementsByTagName: getElementsByTagName,
-			textContent:elements[i].text()
-		});
-	};
-	return ret;
+  var ret = [];
+  var elements = this.xml[tag];
+  for (var i = 0; i < elements.length(); i++) {
+    ret.push({
+      xml: elements[i],
+      getAttribute: getAttribute,
+      getElementsByTagName: getElementsByTagName,
+      textContent: elements[i].text()
+    });
+  }
+  ;
+  return ret;
 };
 
 exports = {
-	parseString: function (data) {
-		data = data.replace(/^<\?xml\s+version\s*=\s*(["'])[^\1]+\1[^?]*\?>/, "")
+  parseString: function (data) {
+    data = data.replace(/^<\?xml\s+version\s*=\s*(["'])[^\1]+\1[^?]*\?>/, '');
 
-		var xml = new XML(data);
-		return {
-			xml: xml,
-			getAttribute: getAttribute,
-			getElementsByTagName: getElementsByTagName
-		};
+    var xml = new XML(data);
+    return {
+      xml: xml,
+      getAttribute: getAttribute,
+      getElementsByTagName: getElementsByTagName
+    };
 
-	}
+  }
 };
+
+
 
 
 

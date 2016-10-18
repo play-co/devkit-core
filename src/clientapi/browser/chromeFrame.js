@@ -13,66 +13,65 @@
  * You should have received a copy of the Mozilla Public License v. 2.0
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
+'use import';
 
-"use import";
-
-import lib.Callback;
+jsio('import lib.Callback');
 
 
 var REQUEST_ID = 0;
 
 
 var chromeFrameClass = Class(function () {
+  this.init = function () {
+    this._callBacks = {};
+    this._isChromeFrame = !!window.externalHost;
+    if (this._isChromeFrame) {
+      window.externalHost.onmessage = bind(this, function (event) {
+        var data = JSON.parse(event.data);
+        var requestID = data.requestID;
+        var cb = this._callBacks[requestID];
+        if (cb) {
+          cb.apply(this, data.args);
+          delete this._callBacks[requestID];
+        }
+      });
+    }
+  };
 
-	this.init = function () {
-		this._callBacks = {};
-		this._isChromeFrame = !!window.externalHost;
-		if (this._isChromeFrame) {
-			window.externalHost.onmessage = bind(this, function (event) {
-				var data = JSON.parse(event.data);
-				var requestID = data.requestID;
-				var cb = this._callBacks[requestID];
-				if (cb) {
-					cb.apply(this, data.args);
-					delete this._callBacks[requestID];
-				}
-			});
-		}
-	};
+  this.send = function (destination, data, cb) {
+    var id = ++REQUEST_ID;
 
-	this.send = function (destination, data, cb) {
-		var id = ++REQUEST_ID;
+    if (typeof cb == 'function') {
+      this._callBacks[id] = cb;
+    }
 
-		if (typeof(cb) == "function") {
-			this._callBacks[id] = cb;
-		}
-		
-		window.externalHost.postMessage(JSON.stringify({
-			destination:destination,
-			data: data,
-			requestID: id
-		}), "*");
-	};
 
-	this.isChromeFrame = function () {
-		return this._isChromeFrame;
-	};
+    window.externalHost.postMessage(JSON.stringify({
+      destination: destination,
+      data: data,
+      requestID: id
+    }), '*');
+  };
 
-	this._postMessage = function () {
-		if (!this._isChromeFrame) {
-			logger.log('Cannot post message to chrome frame, ');
-			return;
-		}
-		return !!window.externalHost;
-	};
+  this.isChromeFrame = function () {
+    return this._isChromeFrame;
+  };
 
-	/*
+  this._postMessage = function () {
+    if (!this._isChromeFrame) {
+      logger.log('Cannot post message to chrome frame, ');
+      return;
+    }
+    return !!window.externalHost;
+  };
+
+});
+
+/*
 	this._receiveMessage = function (event) {
 		data = JSON.parse(event.data);
 		this._callBacks[data.requestID](data.data);
 	};
 	*/
-});
-
 // only export our chrome frame object if chrome frame exists in current context
 exports = new chromeFrameClass();

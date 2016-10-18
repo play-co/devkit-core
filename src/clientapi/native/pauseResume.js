@@ -13,16 +13,16 @@
  * You should have received a copy of the Mozilla Public License v. 2.0
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
-
 NATIVE.events.registerHandler('pause', bind(window, '__fireEvent', 'pagehide'));
 
-import ui.resource.Image as Image;
+jsio('import ui.resource.Image as Image');
 
 NATIVE.events.registerHandler('resume', function () {
-	// reset any cached loading events
-	if (Image.__clearCache__) {
-		Image.__clearCache__();
-	}
+  // reset any cached loading events
+  if (Image.__clearCache__) {
+    Image.__clearCache__();
+  }
 
-	window.__fireEvent('pageshow');
+
+  window.__fireEvent('pageshow');
 });

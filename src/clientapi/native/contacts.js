@@ -15,17 +15,16 @@
  * You should have received a copy of the GNU General Public License
  * along with the Game Closure SDK.  If not, see <http://www.gnu.org/licenses/>.
  */
+'use import';
 
-"use import";
+jsio('import lib.PubSub');
 
-import lib.PubSub;
-
-NATIVE.contacts.getContacts = function(cb) {
-	NATIVE.contacts._cb = cb;
-	NATIVE.contacts._getContacts();
+NATIVE.contacts.getContacts = function (cb) {
+  NATIVE.contacts._cb = cb;
+  NATIVE.contacts._getContacts();
 };
 
 NATIVE.events.registerHandler('contacts', function (evt) {
-	logger.log('got a bunch of contacts, need to upload them!');
-	NATIVE.contacts._cb && NATIVE.contacts._cb(evt.data);
+  logger.log('got a bunch of contacts, need to upload them!');
+  NATIVE.contacts._cb && NATIVE.contacts._cb(evt.data);
 });

@@ -13,9 +13,8 @@
  * You should have received a copy of the Mozilla Public License v. 2.0
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
-
 /*
-import device;
+jsio('import device');
 
 if (device.isIOS && GLOBAL.Proxy) {
 	var _ls = {
@@ -42,11 +41,22 @@ if (device.isIOS && GLOBAL.Proxy) {
 		GLOBAL.localStorage = Proxy.create(localStorageHandler);
 	}
 } else {*/
-	GLOBAL.localStorage = {
-		setItem: function (key, value) { NATIVE.localStorage.setItem(key.toString(), value.toString()); },
-		getItem: function (key) { return NATIVE.localStorage.getItem(key.toString() || null); },
-		removeItem: function (key) { NATIVE.localStorage.removeItem(key.toString()); },
-		clear: function () { NATIVE.localStorage.clear(); },
-		key: function () { logger.log('ERROR: localStorage.key() unimplemented'); return null }
-	};
-//}
+GLOBAL.localStorage = {
+  setItem: function (key, value) {
+    NATIVE.localStorage.setItem(key.toString(), value.toString());
+  },
+  getItem: function (key) {
+    return NATIVE.localStorage.getItem(key.toString() || null);
+  },
+  removeItem: function (key) {
+    NATIVE.localStorage.removeItem(key.toString());
+  },
+  clear: function () {
+    NATIVE.localStorage.clear();
+  },
+  key: function () {
+    logger.log('ERROR: localStorage.key() unimplemented');
+    return null;
+  }
+};  //}
+

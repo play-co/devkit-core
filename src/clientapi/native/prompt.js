@@ -15,17 +15,17 @@
  * You should have received a copy of the GNU General Public License
  * along with the Game Closure SDK.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 /**
  * Does nothing by default.
  */
-NATIVE.onRotation = function () {};
+NATIVE.onRotation = function () {
+};
 
 
 /**
  * Register rotation event. Calls NATIVE.onRotation.
  */
 NATIVE.events.registerHandler('prompt', function (evt) {
-	logger.log('prompt!', evt);
-	NATIVE.onPrompt && NATIVE.onPrompt(evt.text, evt.canceled);
+  logger.log('prompt!', evt);
+  NATIVE.onPrompt && NATIVE.onPrompt(evt.text, evt.canceled);
 });

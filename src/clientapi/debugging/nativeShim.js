@@ -13,18 +13,17 @@
  * You should have received a copy of the Mozilla Public License v. 2.0
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
-
-import lib.PubSub;
-import lib.Callback;
+jsio('import lib.PubSub');
+jsio('import lib.Callback');
 
 exports.isShim = true;
 exports.backButton = new lib.PubSub();
 exports.dialogs = {
   showDialog: function () {
-    logger.log("Showing a dialog!");
+    logger.log('Showing a dialog!');
   },
   showAppRater: function () {
-    logger.log("Showing rate dialog!");
+    logger.log('Showing rate dialog!');
   }
 };
 
@@ -32,31 +31,26 @@ var _withContacts = new lib.Callback();
 _withContacts.fire();
 
 exports.contacts = merge(new lib.PubSub(), {
-
   getContactList: function () {
     return [];
   },
-
-  withContacts: function () { _withContacts.forward(arguments); },
-
+  withContacts: function () {
+    _withContacts.forward(arguments);
+  },
   sendAutomatedSMS: function (phone, msg, cb) {
     logger.log('Send Automated SMS:', phone, msg);
     cb && cb();
   },
-
   sendSMS: function (phone, msg, cb) {
     logger.log('Send SMS:', phone, msg);
     cb && cb();
   },
-
   getPicture: function (id) {
     return null;
   },
-
   getPictures: function (ids) {
     return null;
   },
-
   getPictureBase64: function (id) {
     return null;
   }
@@ -70,17 +64,16 @@ var _withPhoneNumber = new lib.Callback();
 _withPhoneNumber.fire(null);
 
 exports.profile = {
-  fullName: "",
-
+  fullName: '',
   getPicture: function (id) {
     return null;
   },
-
   getPictureBase64: function (id) {
     return null;
   },
-
-  withPhoneNumber: function () { _withPhoneNumber.forward(arguments); }
+  withPhoneNumber: function () {
+    _withPhoneNumber.forward(arguments);
+  }
 };
 
 exports.sound = {
@@ -111,28 +104,28 @@ exports.sound = {
 };
 
 exports.events = {
-  registerHandler: function(eventName) {
-    // logger.log('NATIVE shim: register an event handler for the ' + eventName + ' event');
+  registerHandler: function (eventName) {
   }
 };
 
 exports.plugins = {
-  sendEvent: function(plugin, eventName) {
+  sendEvent: function (plugin, eventName) {
     logger.log('NATIVE shim: send a ' + eventName + ' event to the ' + plugin + ' plugin');
   },
-  sendRequest: function(plugin, name, cb) {
+  sendRequest: function (plugin, name, cb) {
     logger.log('NATIVE shim: send a ' + name + ' request to the ' + plugin + ' plugin');
   }
 };
 
 exports.alerts = new lib.PubSub();
 merge(exports.alerts, {
-  onNotificationLoad: function () {},
+  onNotificationLoad: function () {
+  },
   showNotification: function () {
     return -1;
   },
   showRecurringNotification: function () {
-    logger.log("Setting up a recurring notification!");
+    logger.log('Setting up a recurring notification!');
     return -1;
   }
 });
@@ -140,7 +133,7 @@ merge(exports.alerts, {
 exports.social = new lib.PubSub();
 
 jsio('import device');
-exports.isSimulator = function() {
+exports.isSimulator = function () {
   return device.isNativeSimulator;
 };
 

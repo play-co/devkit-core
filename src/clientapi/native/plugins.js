@@ -13,9 +13,8 @@
  * You should have received a copy of the Mozilla Public License v. 2.0
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
-
-import lib.Callback;
-import lib.PubSub;
+jsio('import lib.Callback');
+jsio('import lib.PubSub');
 
 var pluginsPubSub = new lib.PubSub();
 
@@ -25,44 +24,46 @@ NATIVE.plugins.subscribeOnce = bind(pluginsPubSub, 'subscribeOnce');
 NATIVE.plugins.unsubscribe = bind(pluginsPubSub, 'unsubscribe');
 
 NATIVE.events.registerHandler('plugins', function (evt, id) {
-	if (id) {
-		var cb = _requestCbs[id];
-		delete _requestCbs[id];
-		cb && cb(evt.error, evt.response);
-	} else {
-		// TODO: probably this shouldn't be like this... maybe namespace by plugin name too, not just 'plugins'
-		NATIVE.plugins.publish('Plugins', evt.data);
-	}
+  if (id) {
+    var cb = _requestCbs[id];
+    delete _requestCbs[id];
+    cb && cb(evt.error, evt.response);
+  } else {
+    // TODO: probably this shouldn't be like this... maybe namespace by plugin name too, not just 'plugins'
+    NATIVE.plugins.publish('Plugins', evt.data);
+  }
 });
 
 NATIVE.events.registerHandler('pluginEvent', function (evt) {
-	var plugin = GC.plugins.getPlugin(evt.pluginName);
-	if (plugin) {
-		plugin.publish(evt.eventName, evt.data);
-	} else {
-		logger.warn('plugin', evt.pluginName, 'not found');
-	}
+  var plugin = GC.plugins.getPlugin(evt.pluginName);
+  if (plugin) {
+    plugin.publish(evt.eventName, evt.data);
+  } else {
+    logger.warn('plugin', evt.pluginName, 'not found');
+  }
 });
 
 var _requestId = 0;
 var _requestCbs = {};
 NATIVE.plugins.sendRequest = function (pluginName, name, data, cb) {
-	if (typeof data == 'function') {
-		cb = data;
-		data = null;
-	}
+  if (typeof data == 'function') {
+    cb = data;
+    data = null;
+  }
 
-	var id = ++_requestId;
-	_requestCbs[id] = cb;
 
-	var dataStr;
-	if (data) {
-		try {
-			dataStr = JSON.stringify(data);
-		} catch (e) {
-			logger.error(e);
-		}
-	}
+  var id = ++_requestId;
+  _requestCbs[id] = cb;
 
-	NATIVE.plugins._sendRequest.call(this, pluginName, name, dataStr || '{}', id);
-}
+  var dataStr;
+  if (data) {
+    try {
+      dataStr = JSON.stringify(data);
+    } catch (e) {
+      logger.error(e);
+    }
+  }
+
+
+  NATIVE.plugins._sendRequest.call(this, pluginName, name, dataStr || '{}', id);
+};

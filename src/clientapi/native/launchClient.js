@@ -13,9 +13,7 @@
  * You should have received a copy of the Mozilla Public License v. 2.0
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
-
 /* globals jsio, logging, logger, CONFIG, DEBUG */
-
 var env = jsio.__env;
 env.debugPath = function (path) {
   var protocol = 'http:';
@@ -27,16 +25,16 @@ GLOBAL.console = logging.get('console');
 window.self = window;
 
 // add bluebird promise implementation to global scope
-import Promise;
+jsio('import Promise');
 GLOBAL.Promise = Promise;
 
 // initialize native JS API wrappers
-import platforms.native.initialize;
+jsio('import platforms.native.initialize');
 
-import device;
+jsio('import device');
 device.init();
 
-import .common;
+jsio('import .common');
 common.install();
 
 startApp();
@@ -47,22 +45,17 @@ startApp();
  *
  * You can remove this or replace it with your own analytics if you like.
  */
-function analytics () {
+function analytics() {
   var config = GLOBAL.CONFIG;
-  var params = 'appID:' + encodeURIComponent(config.appID || '') + '&' +
-      'bundleID:' + encodeURIComponent(config.bundleID || '') + '&' +
-      'appleID:' + encodeURIComponent(config.appleID || '') + '&' +
-      'version:' + encodeURIComponent(config.version || '') + '&' +
-      'sdkVersion:' + encodeURIComponent(config.sdkVersion || '') + '&' +
-      'isAndroid:' + (device.isAndroid ? 1 : 0) + '&' +
-      'isIOS:' + (device.isIOS ? 1 : 0);
+  var params = 'appID:' + encodeURIComponent(config.appID || '') + '&' + 'bundleID:' + encodeURIComponent(config.bundleID || '') + '&' + 'appleID:' + encodeURIComponent(config.appleID || '') + '&' + 'version:' + encodeURIComponent(config.version || '') + '&' + 'sdkVersion:' + encodeURIComponent(config.sdkVersion || '') + '&' + 'isAndroid:' + (device.isAndroid ? 1 : 0) + '&' + 'isIOS:' + (device.isIOS ? 1 : 0);
 
   var xhr = new XMLHttpRequest();
   xhr.open('GET', 'http://www.gameclosure.com/analytics?' + params, true);
   xhr.send();
 }
 
-import devkit;
+
+jsio('import devkit');
 
 function startApp() {
   GLOBAL.GC = new devkit.ClientAPI();
@@ -70,4 +63,5 @@ function startApp() {
   analytics();
   GLOBAL.GC.buildApp('launchUI');
 }
+
 

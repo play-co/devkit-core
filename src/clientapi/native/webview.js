@@ -13,14 +13,13 @@
  * You should have received a copy of the Mozilla Public License v. 2.0
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
-
-"use import";
+'use import';
 
 var GLOBAL = window;
 exports.install = function () {
-	var NATIVE = GLOBAL.NATIVE = {};
-	
-	NATIVE.__defineGetter__('deviceUUID', function () {
-		return _NATIVE.getDeviceID();
-	});
-}
+  var NATIVE = GLOBAL.NATIVE = {};
+
+  NATIVE.__defineGetter__('deviceUUID', function () {
+    return _NATIVE.getDeviceID();
+  });
+};

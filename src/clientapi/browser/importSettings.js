@@ -13,17 +13,16 @@
  * You should have received a copy of the Mozilla Public License v. 2.0
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
-
-"use import";
-import std.uri as URI;
+'use import';
+jsio('import std.uri as URI');
 
 exports.importSettings = function () {
-	var url = new URI(window.location);
-	var settings = url.query("settings");
-	if (settings) {
-		settings = JSON.parse(settings);
-		for (var key in settings) {
-			localStorage.setItem(key, settings[key]);
-		}
-	}
-}
+  var url = new URI(window.location);
+  var settings = url.query('settings');
+  if (settings) {
+    settings = JSON.parse(settings);
+    for (var key in settings) {
+      localStorage.setItem(key, settings[key]);
+    }
+  }
+};

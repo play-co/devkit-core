@@ -12,28 +12,31 @@
  * You should have received a copy of the Mozilla Public License v. 2.0
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
-
 // Import this before importing GC
 // _api.client.init sets up the GC object for the client apis
-
 /* globals CONFIG, Class, bind, logger, merge */
+jsio('import lib.PubSub');
+jsio('import lib.Callback');
+jsio('import ui.Engine');
+jsio('import ui.View');
+jsio('import ui.StackView');
 
-import lib.PubSub;
-import lib.Callback;
-import ui.Engine;
-import ui.View;
-import ui.StackView;
+jsio('import device');
 
-import device;
-
-import .UI;
-import ui.resource.loader;
-import AudioManager;
+jsio('import .UI');
+jsio('import ui.resource.loader');
+jsio('import AudioManager');
 
 var FontRenderer = device.get('FontRenderer');
 
-if (!GLOBAL.CONFIG) { GLOBAL.CONFIG = {}; }
-if (!GLOBAL.DEBUG) { GLOBAL.DEBUG = false; }
+if (!GLOBAL.CONFIG) {
+  GLOBAL.CONFIG = {};
+}
+if (!GLOBAL.DEBUG) {
+  GLOBAL.DEBUG = false;
+}
+
+
 
 
 var spritesheets;
@@ -42,8 +45,10 @@ try {
     spritesheets = JSON.parse(GLOBAL.CACHE['spritesheets/map.json']);
   }
 } catch (e) {
-  logger.warn("spritesheet map failed to parse", e);
+  logger.warn('spritesheet map failed to parse', e);
 }
+
+
 
 var soundMap;
 try {
@@ -51,27 +56,32 @@ try {
     soundMap = JSON.parse(GLOBAL.CACHE['resources/sound-map.json']);
   }
 } catch (e) {
-  logger.warn("sound map failed to parse", e);
+  logger.warn('sound map failed to parse', e);
 }
+
+
+
+
 
 
 var PluginManager = Class(function () {
   this.init = function () {
     this._plugins = {};
   }
+;
 
   this.register = function (name, plugin) {
     this._plugins[name] = plugin;
   }
+;
 
   this.getPlugin = function (name) {
     return this._plugins[name];
-  }
+  };
 });
 
 
 exports.ClientAPI = Class(lib.PubSub, function () {
-
   this.init = function (opts) {
     window.addEventListener('pageshow', bind(this, '_onShow'), false);
     window.addEventListener('pagehide', bind(this, '_onHide'), false);
@@ -80,6 +90,7 @@ exports.ClientAPI = Class(lib.PubSub, function () {
       cards.browser.on('foreground', bind(this, '_onShow'));
       cards.browser.on('background', bind(this, '_onHide'));
     }
+
 
     this.isOnline = navigator.onLine;
 
@@ -97,6 +108,7 @@ exports.ClientAPI = Class(lib.PubSub, function () {
       }
     }), false);
 
+
     // var uri = new URI(window.location);
     // var campaign = uri.query('campaign') || "NO CAMPAIGN";
     //
@@ -110,8 +122,10 @@ exports.ClientAPI = Class(lib.PubSub, function () {
     // if (!localStorage.getItem("campaignID")) {
     //  localStorage.setItem("campaignID", campaign)
     // }
+    if (this.env == 'browser') {
+      setTimeout(bind(this, '_onShow'), 0);
+    }
 
-    if (this.env == 'browser') { setTimeout(bind(this, '_onShow'), 0); }
 
     if (CONFIG.version) {
       logger.log('Version', CONFIG.version);
@@ -125,13 +139,13 @@ exports.ClientAPI = Class(lib.PubSub, function () {
   this.ui = new UI();
 
 
+
   // this.track({
   //  name: "campaignID",
   //  category: "campaign",
   //  subcategory: "id",
   //  data: campaign
   // });
-
   this.resources = ui.resource.loader;
 
   this._onHide = function () {
@@ -156,23 +170,30 @@ exports.ClientAPI = Class(lib.PubSub, function () {
   this.buildApp = function (entry, ApplicationCtor) {
     ApplicationCtor.prototype.__root = true;
     this.app = new ApplicationCtor();
-    this.buildEngine(merge({view: this.app}, this.app._settings));
+    this.buildEngine(merge({ view: this.app }, this.app._settings));
 
     this.emit('app', this.app);
   };
 
   this.buildEngine = function (opts) {
-    if (!opts) { opts = {}; }
-    if (!opts.entry) { opts.entry = 'launchUI'; }
+    if (!opts) {
+      opts = {};
+    }
+    if (!opts.entry) {
+      opts.entry = 'launchUI';
+    }
+
 
     var view = opts.view;
     if (!view) {
-      throw "a timestep.Engine must be created with a root view";
+      throw 'a timestep.Engine must be created with a root view';
     }
 
+
     if (!(view instanceof ui.View)) {
-      throw "src/Application.js must export a Class that inherits from ui.View";
+      throw 'src/Application.js must export a Class that inherits from ui.View';
     }
+
 
     view.subscribe('onLoadError', this, '_onAppLoadError');
 
@@ -181,7 +202,9 @@ exports.ClientAPI = Class(lib.PubSub, function () {
       launch = bind(view, opts.entry);
     }
 
-    view.view = view; // legacy, deprecated
+
+    view.view = view;
+    // legacy, deprecated
     view.engine = new ui.Engine(opts);
     view.engine.show();
     view.engine.startLoop();
@@ -192,19 +215,26 @@ exports.ClientAPI = Class(lib.PubSub, function () {
 
     var settings = view._settings || {};
     var preload = settings.preload;
-    var autoHide = CONFIG.splash && (CONFIG.splash.autoHide !== false);
+    var autoHide = CONFIG.splash && CONFIG.splash.autoHide !== false;
     if (preload && preload.length) {
       var cb = new lib.Callback();
       for (var i = 0, group; group = preload[i]; ++i) {
         this.resources.preload(group, cb.chain());
       }
 
+
       // note that hidePreloader takes a null cb argument to avoid
       // forwarding the preloader result as the callback
-      if (autoHide) { cb.run(this, 'hidePreloader', null); }
-      if (launch) { cb.run(launch); }
+      if (autoHide) {
+        cb.run(this, 'hidePreloader', null);
+      }
+      if (launch) {
+        cb.run(launch);
+      }
     } else {
-      if (autoHide) { this.hidePreloader(); }
+      if (autoHide) {
+        this.hidePreloader();
+      }
       launch && launch();
     }
   };
@@ -245,6 +275,9 @@ if (exports.ClientAPI.prototype.isNative) {
   exports.ClientAPI.prototype.isDesktop = true;
   exports.ClientAPI.prototype.isFacebook = GLOBAL.CONFIG.isFacebookApp;
 }
+
+
+
 
 exports.ClientAPI.prototype.isKik = /Kik\/\d/.test(ua);
 
