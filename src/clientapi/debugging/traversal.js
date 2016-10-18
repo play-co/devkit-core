@@ -19,12 +19,12 @@
  *   GLOBAL._DEBUG = new exports();
  */
 /* globals GC, bind, logger */
-jsio('import ui.ImageView');
-jsio('import ui.ImageScaleView');
-jsio('import ui.View');
-jsio('import ui.resource.Image');
-jsio('import ui.TextView');
-jsio('import ui.ScrollView');
+import ImageView from 'ui/ImageView';
+import ImageScaleView from 'ui/ImageScaleView';
+import View from 'ui/View';
+import Image from 'ui/resource/Image';
+import TextView from 'ui/TextView';
+import ScrollView from 'ui/ScrollView';
 
 exports.traverse = function (f) {
   return GC.app && exports.traverseView(f, GC.app.view);
@@ -201,7 +201,7 @@ exports.getViewById = exports.getViewByID = function (uid) {
 exports.getImages = function (view) {
   var hash = {};
   exports.traverseView(function (view) {
-    if (view instanceof ui.ImageView || view instanceof ui.ImageScaleView) {
+    if (view instanceof ImageView || view instanceof ImageScaleView) {
       var img = view.getImage();
       if (img) {
         var url = img.getOriginalURL();
@@ -227,7 +227,7 @@ exports.packView = function (view) {
     var imageData;
     var sourceSlices;
     var destSlices;
-    if (view instanceof ui.ImageView || view instanceof ui.ImageScaleView) {
+    if (view instanceof ImageView || view instanceof ImageScaleView) {
       var img = view.getImage();
       if (img) {
         imageData = img.getOriginalURL() || img.getMap();
@@ -244,8 +244,10 @@ exports.packView = function (view) {
     }
 
 
+
+
     var text;
-    if (view instanceof ui.TextView) {
+    if (view instanceof TextView) {
       text = view.getText();
     }
 
@@ -282,7 +284,7 @@ exports.unpack = function (data) {
     opts.scale = opts.scale || 1;
     if (opts.image) {
       var img = opts.image;
-      view = new ui.ImageView({
+      view = new ImageView({
         x: opts.x,
         y: opts.y,
         width: opts.width,
@@ -292,7 +294,7 @@ exports.unpack = function (data) {
         scaleMethod: opts.scaleMethod,
         slices: opts.slices,
         superview: superview,
-        image: typeof img == 'string' ? img : new ui.resource.Image({
+        image: typeof img == 'string' ? img : new Image({
           url: img.url,
           sourceX: img.x,
           sourceY: img.y,
@@ -308,7 +310,7 @@ exports.unpack = function (data) {
         tag: opts.tag
       });
     } else {
-      view = new (opts.text ? ui.TextView : opts.clip ? ui.ScrollView : ui.View)({
+      view = new (opts.text ? TextView : opts.clip ? ScrollView : View)({
         x: opts.x,
         y: opts.y,
         clip: opts.clip,

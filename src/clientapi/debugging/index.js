@@ -1,17 +1,17 @@
-jsio('import lib.PubSub');
+import PubSub from 'lib/PubSub';
 
-jsio('import .traversal');
-jsio('from .screenshot import screenshot');
+import traversal from './traversal';
+import _screenshot from './screenshot';
+let screenshot = _screenshot.screenshot;
 
-jsio('import .Channel');
+import Channel from './Channel';
 
-jsio('import .BridgeTransport');
+import BridgeTransport from './BridgeTransport';
 
 var API = Class(function () {
   this.init = function () {
     this._channels = {};
-  }
-;
+  };
 
   this.getChannel = function (channelName) {
     var channel = this._channels[channelName];
@@ -25,16 +25,16 @@ var API = Class(function () {
     }
 
 
+
+
     return channel;
-  }
-;
+  };
 
   this.__onConnect = function (transport) {
     for (var channel in this._channels) {
       this._channels[channel].setTransport(transport);
     }
-  }
-;
+  };
 
   this.screenshot = screenshot;
 });

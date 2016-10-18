@@ -23,14 +23,12 @@ NATIVE.call = function (method, args) {
     logger.log(e);
   }
   return json;
-}
-;
+};
 
 NATIVE.events = {};
 NATIVE.events.registerHandler = function (name, handler) {
   handlers[name] = handler;
-}
-;
+};
 
 NATIVE.events.dispatchEvent = function (evt, id) {
   if (typeof evt == 'string') {
@@ -55,21 +53,20 @@ NATIVE.events.dispatchEvent = function (evt, id) {
   if (handler) {
     handler(evt, id);
   }
-}
-;
+};
 
-jsio('import .backButton');
-jsio('import .dialog');
-jsio('import .imageLoading');
-jsio('import .input');
-jsio('import .inputPrompt');
-jsio('import .log');
-jsio('import .offscreenBuffer');
-jsio('import .online');
-jsio('import .overlay');
-jsio('import .pauseResume');
-jsio('import .plugins');
-jsio('import .purchase');
-jsio('import .rotation');
-jsio('import .soundLoading');
-jsio('import .windowFocus');
+import backButton from './backButton';
+import dialog from './dialog';
+import imageLoading from './imageLoading';
+import input from './input';
+import inputPrompt from './inputPrompt';
+import log from './log';
+import offscreenBuffer from './offscreenBuffer';
+import online from './online';
+import overlay from './overlay';
+import pauseResume from './pauseResume';
+import plugins from './plugins';
+import purchase from './purchase';
+import rotation from './rotation';
+import soundLoading from './soundLoading';
+import windowFocus from './windowFocus';

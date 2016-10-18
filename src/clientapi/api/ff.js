@@ -259,8 +259,7 @@
       this.resultHandlers.push(cb);
     }
     return this.f;
-  }
-;
+  };
 
   /**
 	 * If and only if there was no error (this far in the chain), call cb
@@ -275,8 +274,7 @@
     return this.onComplete(function () {
       !this.isError && cb.apply(this, slice.call(arguments, 1));
     }.bind(this), true);
-  }
-;
+  };
 
   /**
 	 * If and only if there was an error, call cb with the
@@ -289,8 +287,7 @@
     return this.onComplete(function () {
       this.isError && cb.apply(this, arguments);
     }.bind(this));
-  }
-;
+  };
 
   // backwards compatibility
   SuperGroup.prototype.cb = SuperGroup.prototype.onComplete;
@@ -332,14 +329,12 @@
       }
     });
     return defer;
-  }
-;
+  };
 
   SuperGroup.prototype.next = function (cb) {
     this.steps.push(cb);
     return this.f;
-  }
-;
+  };
 
   SuperGroup.prototype.timeout = function (milliseconds) {
     if (!this.result) {
@@ -403,8 +398,7 @@
       if (group.left === 0)
         group.done();
     }
-  }
-;
+  };
 
   // run a single result handler
   SuperGroup.prototype._runResult = function (handler, args) {
@@ -415,8 +409,7 @@
     setTimeout(function () {
       handler && handler.apply(this.context || this, args);
     }.bind(this), 0);
-  }
-;
+  };
 
   // run all the registered result handlers
   SuperGroup.prototype._runResultHandlers = function (err) {

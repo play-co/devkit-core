@@ -1,4 +1,4 @@
-jsio('import device');
+import device from 'device';
 
 var _cacheWorker;
 
@@ -22,9 +22,11 @@ function init() {
 }
 
 
+
+
 exports.isEnabled = 'serviceWorker' in navigator && !device.isSimulator;
 
-jsio('import ui.resource.loader');
+import loader from 'ui/resource/loader';
 
 var _onInit;
 if (exports.isEnabled) {
@@ -33,7 +35,7 @@ if (exports.isEnabled) {
   // cache spritesheets after init
   Promise.resolve(_onInit).then(function () {
     // cache spritesheets
-    var map = ui.resource.loader.getMap();
+    var map = loader.getMap();
     var sheets = {};
     for (var uri in map) {
       if (map[uri].sheet) {
@@ -72,8 +74,7 @@ exports.addWhitelistDomain = function (domain) {
       domain: domain
     });
   });
-}
-;
+};
 
 // Accepts a url or array of urls to cache
 // Returns a promise that resolves after caching, with any urls that failed to

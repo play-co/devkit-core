@@ -1,5 +1,5 @@
-jsio('import lib.PubSub as EventEmitter');
-jsio('import nextTick');
+import EventEmitter from 'lib/PubSub';
+import nextTick from 'nextTick';
 
 
 var Transport = Class(EventEmitter, function (supr) {

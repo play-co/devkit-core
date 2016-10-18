@@ -26,8 +26,7 @@ if (!document.createElement) {
     if (type in handlers) {
       return handlers[type]();
     }
-  }
-;
+  };
 
   document.__registerCreateElementHandler = function (type, cb) {
     type = type.toUpperCase();

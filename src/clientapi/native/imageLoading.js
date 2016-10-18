@@ -13,9 +13,9 @@
  * You should have received a copy of the Mozilla Public License v. 2.0
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
-jsio('import lib.PubSub');
+import PubSub from 'lib/PubSub';
 
-merge(NATIVE.gl, lib.PubSub.prototype);
+merge(NATIVE.gl, PubSub.prototype);
 
 var loadingImages = {};
 var canvasImages = {};
@@ -50,8 +50,7 @@ NATIVE.gl.loadImage = function (image) {
     }
     loadingImages[image._src].push(image);
   }
-}
-;
+};
 
 NATIVE.events.registerHandler('imageLoaded', function (evt) {
   var logURL = evt.url;
@@ -96,14 +95,12 @@ NATIVE.gl.makeCanvas = function (width, height, unloadListener) {
   logger.log('{canvas-registry} Registering canvas:', url);
 
   return textureData;
-}
-;
+};
 
 NATIVE.gl.updateCanvasURL = function (oldUrl, newUrl) {
   canvasImages[newUrl] = canvasImages[oldUrl];
   delete canvasImages[oldUrl];
-}
-;
+};
 
 NATIVE.gl.forgetCanvas = function (url) {
   logger.log('{canvas-registry} Forgetting canvas:', url);
@@ -112,8 +109,7 @@ NATIVE.gl.forgetCanvas = function (url) {
   if (listener) {
     delete canvasImages[url];
   }
-}
-;
+};
 
 NATIVE.events.registerHandler('canvasFreed', function (evt) {
   var url = evt.url;

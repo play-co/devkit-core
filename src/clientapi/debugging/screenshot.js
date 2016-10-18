@@ -1,4 +1,4 @@
-jsio('import device');
+import device from 'device';
 
 exports.screenshot = function (cb) {
   var canvas = GC.app.engine.getElement();

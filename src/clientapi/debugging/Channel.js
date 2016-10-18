@@ -1,4 +1,4 @@
-jsio('import lib.PubSub');
+import PubSub from 'lib/PubSub';
 
 
 var Response = Class(function () {
@@ -35,7 +35,7 @@ var Response = Class(function () {
 var reqId = 0;
 
 
-exports = Class(lib.PubSub, function (supr) {
+exports = Class(PubSub, function (supr) {
   this.init = function (name) {
     this._name = name;
     this._requests = {};

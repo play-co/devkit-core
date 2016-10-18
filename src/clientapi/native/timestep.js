@@ -13,8 +13,8 @@
  * You should have received a copy of the Mozilla Public License v. 2.0
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
-jsio('import device');
-jsio('import lib.PubSub as PubSub');
+import device from 'device';
+import PubSub from 'lib/PubSub';
 
 var hasNativeViews = GLOBAL.NATIVE && NATIVE.timestep && NATIVE.timestep.View;
 
@@ -23,22 +23,22 @@ var VIEW_TYPES = {
   IMAGE_VIEW: 1
 };
 
-jsio('import .timestep.NativeView');
-jsio('import ui.View as View');
-jsio('import .timestep.NativeViewBacking');
-jsio('import .timestep.NativeImageView');
-jsio('import ui.ImageView as ImageView');
+import NativeView from './timestep/NativeView';
+import View from 'ui/View';
+import NativeViewBacking from './timestep/NativeViewBacking';
+import NativeImageView from './timestep/NativeImageView';
+import ImageView from 'ui/ImageView';
 
 function installNativeView() {
   // extend the timestep View class
-  timestep.NativeView.install();
+  NativeView.install();
 
   View.setDefaultViewBacking(NATIVE.timestep.View);
 
   // extend the timestep ViewBacking class
-  timestep.NativeViewBacking.install();
+  NativeViewBacking.install();
 
-  timestep.NativeImageView.install();
+  NativeImageView.install();
 
   var animate = device.importUI('animate');
   var ViewAnimator = animate.getViewAnimator();

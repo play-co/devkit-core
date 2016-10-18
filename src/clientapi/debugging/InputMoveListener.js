@@ -1,13 +1,13 @@
-jsio('import device');
-jsio('import event.Emitter');
-jsio('import event.input.dispatch as dispatch');
-jsio('import math.geom.Point as Point');
+import device from 'device';
+import Emitter from 'event/Emitter';
+import dispatch from 'event/input/dispatch';
+import Point from 'math/geom/Point';
 
 
 var _useDOMEvents = device.isSimulator && document.body.addEventListener;
 
 
-exports = Class(event.Emitter, function () {
+exports = Class(Emitter, function () {
   this.init = function (opts) {
     opts = opts || {};
 
@@ -15,8 +15,7 @@ exports = Class(event.Emitter, function () {
     this.onMouseMoveCapture = bind(this, this.onMouseMoveCapture);
     this._checkShift = bind(this, this._checkShift);
     this.onContextMenu = bind(this, this.onContextMenu);
-  }
-;
+  };
 
   this.connect = function () {
     if (_useDOMEvents) {
@@ -29,8 +28,7 @@ exports = Class(event.Emitter, function () {
     GC.app.view.subscribe('InputMoveCapture', this, 'onInputMoveCapture');
     GC.app.view.subscribe('InputStartCapture', this, '_cancelEvent');
     GC.app.view.subscribe('InputSelectCapture', this, 'onInputSelectCapture');
-  }
-;
+  };
 
   this.disconnect = function () {
     if (_useDOMEvents) {
@@ -43,13 +41,11 @@ exports = Class(event.Emitter, function () {
     GC.app.view.unsubscribe('InputMoveCapture', this, 'onInputMoveCapture');
     GC.app.view.unsubscribe('InputStartCapture', this, '_cancelEvent');
     GC.app.view.unsubscribe('InputSelectCapture', this, 'onInputSelectCapture');
-  }
-;
+  };
 
   this._cancelEvent = function (evt) {
     evt.cancel();
-  }
-;
+  };
 
   this._checkShift = function (e) {
     if (e.which === 3 || e.button === 2) {
@@ -76,8 +72,7 @@ exports = Class(event.Emitter, function () {
       e.stopPropagation();
       e.preventDefault();
     }
-  }
-;
+  };
 
   this.onContextMenu = function (e) {
     var fullTrace = this.getFullTrace(e.pageX, e.pageY);
@@ -96,8 +91,7 @@ exports = Class(event.Emitter, function () {
     e.stopPropagation();
     e.preventDefault();
     return false;
-  }
-;
+  };
 
   this.onInputMoveCapture = function (evt, pt, allEvt, allPt) {
     var fullTrace = this.getFullTrace(pt.x, pt.y);
@@ -113,8 +107,7 @@ exports = Class(event.Emitter, function () {
 
     // trace of all visible views
     this.emit('move', data);
-  }
-;
+  };
 
   this.onInputSelectCapture = function (evt, pt) {
     if (!this._requireShiftClick || this._shiftDown) {
@@ -122,8 +115,7 @@ exports = Class(event.Emitter, function () {
       var trace = this.getFullTrace(pt.x, pt.y);
       this.emit('select', trace);
     }
-  }
-;
+  };
 
   this.getFullTrace = function (x, y) {
     var fullTrace = {
@@ -133,8 +125,7 @@ exports = Class(event.Emitter, function () {
     };
     this._getFullTrace(GC.app.view, fullTrace, new Point(x, y), 0);
     return fullTrace;
-  }
-;
+  };
 
   this._getFullTrace = function (view, evt, pt, depth) {
     var localPt = view.style.localizePoint(new Point(pt));

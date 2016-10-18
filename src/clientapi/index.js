@@ -15,17 +15,17 @@
 // Import this before importing GC
 // _api.client.init sets up the GC object for the client apis
 /* globals CONFIG, Class, bind, logger, merge */
-jsio('import lib.PubSub');
-jsio('import lib.Callback');
-jsio('import ui.Engine');
-jsio('import ui.View');
-jsio('import ui.StackView');
+import PubSub from 'lib/PubSub';
+import Callback from 'lib/Callback';
+import Engine from 'ui/Engine';
+import View from 'ui/View';
+import StackView from 'ui/StackView';
 
-jsio('import device');
+import device from 'device';
 
-jsio('import .UI');
-jsio('import ui.resource.loader');
-jsio('import AudioManager');
+import UI from './UI';
+import loader from 'ui/resource/loader';
+import AudioManager from 'AudioManager';
 
 var FontRenderer = device.get('FontRenderer');
 
@@ -67,13 +67,11 @@ try {
 var PluginManager = Class(function () {
   this.init = function () {
     this._plugins = {};
-  }
-;
+  };
 
   this.register = function (name, plugin) {
     this._plugins[name] = plugin;
-  }
-;
+  };
 
   this.getPlugin = function (name) {
     return this._plugins[name];
@@ -81,7 +79,7 @@ var PluginManager = Class(function () {
 });
 
 
-exports.ClientAPI = Class(lib.PubSub, function () {
+exports.ClientAPI = Class(PubSub, function () {
   this.init = function (opts) {
     window.addEventListener('pageshow', bind(this, '_onShow'), false);
     window.addEventListener('pagehide', bind(this, '_onHide'), false);
@@ -132,7 +130,7 @@ exports.ClientAPI = Class(lib.PubSub, function () {
     }
   };
 
-  this.Application = ui.StackView;
+  this.Application = StackView;
 
   this.plugins = new PluginManager();
 
@@ -146,7 +144,7 @@ exports.ClientAPI = Class(lib.PubSub, function () {
   //  subcategory: "id",
   //  data: campaign
   // });
-  this.resources = ui.resource.loader;
+  this.resources = loader;
 
   this._onHide = function () {
     // signal to the app that the window is going away
@@ -190,7 +188,9 @@ exports.ClientAPI = Class(lib.PubSub, function () {
     }
 
 
-    if (!(view instanceof ui.View)) {
+
+
+    if (!(view instanceof View)) {
       throw 'src/Application.js must export a Class that inherits from ui.View';
     }
 
@@ -203,9 +203,11 @@ exports.ClientAPI = Class(lib.PubSub, function () {
     }
 
 
+
+
     view.view = view;
     // legacy, deprecated
-    view.engine = new ui.Engine(opts);
+    view.engine = new Engine(opts);
     view.engine.show();
     view.engine.startLoop();
 
@@ -217,7 +219,7 @@ exports.ClientAPI = Class(lib.PubSub, function () {
     var preload = settings.preload;
     var autoHide = CONFIG.splash && CONFIG.splash.autoHide !== false;
     if (preload && preload.length) {
-      var cb = new lib.Callback();
+      var cb = new Callback();
       for (var i = 0, group; group = preload[i]; ++i) {
         this.resources.preload(group, cb.chain());
       }

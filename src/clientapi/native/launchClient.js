@@ -25,16 +25,16 @@ GLOBAL.console = logging.get('console');
 window.self = window;
 
 // add bluebird promise implementation to global scope
-jsio('import Promise');
+import Promise from 'Promise';
 GLOBAL.Promise = Promise;
 
 // initialize native JS API wrappers
-jsio('import platforms.native.initialize');
+import initialize from 'platforms/native/initialize';
 
-jsio('import device');
+import device from 'device';
 device.init();
 
-jsio('import .common');
+import common from './common';
 common.install();
 
 startApp();
@@ -55,7 +55,9 @@ function analytics() {
 }
 
 
-jsio('import devkit');
+
+
+import devkit from 'devkit';
 
 function startApp() {
   GLOBAL.GC = new devkit.ClientAPI();

@@ -166,23 +166,19 @@ function merge() {
 exports.pick = function () {
   var list = merge.apply(this, arguments);
   return list[Math.random() * list.length | 0];
-}
-;
+};
 
 exports.gameName = function () {
   return exports.pick(adjectives) + ' ' + exports.pick(nouns);
-}
-;
+};
 
 exports.username = function () {
   return exports.pick(adjectives) + ' ' + exports.pick(creatures);
-}
-;
+};
 
 exports.name = function () {
   return exports.pick(nouns, creatures);
-}
-;
+};
 
 exports.tautogram = function () {
   while (true) {

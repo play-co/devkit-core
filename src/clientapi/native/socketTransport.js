@@ -13,8 +13,8 @@
  * You should have received a copy of the Mozilla Public License v. 2.0
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
-jsio('import net.interfaces');
-jsio('import .reader');
+import interfaces from 'net/interfaces';
+import reader from './reader';
 
 function onError(opts) {
   logger.log('SOCKET ERROR: ', JSON.stringify(opts));
@@ -54,11 +54,10 @@ NATIVE.events.registerHandler('socketRead', function (evt) {
 });
 
 
-exports.Transport = Class(net.interfaces.Transport, function () {
+exports.Transport = Class(interfaces.Transport, function () {
   this.init = function (socket) {
     this._socket = socket;
-  }
-;
+  };
 
   this.makeConnection = function (protocol) {
     this._socket.onRead = function (data) {
@@ -71,13 +70,11 @@ exports.Transport = Class(net.interfaces.Transport, function () {
 
     this._socket.onError = bind(protocol, 'onError');
     this._socket.onClose = bind(protocol, 'connectionLost');
-  }
-;
+  };
 
   this.write = function (data) {
     this._socket.send(data);
-  }
-;
+  };
 
   this.loseConnection = function () {
     this._socket.close();
@@ -91,12 +88,11 @@ exports.Socket = function (host, port) {
   socket.reader = new reader.Reader(bind(socket, 'onRead'));
   sockets[socket.__id] = socket;
   return socket;
-}
-;
+};
 
-exports.Connector = Class('ios.socket', net.interfaces.Connector, function () {
+exports.Connector = Class('ios.socket', interfaces.Connector, function () {
   this.connect = function () {
-    this._state = net.interfaces.STATE.CONNECTING;
+    this._state = interfaces.STATE.CONNECTING;
 
     var host = this._opts.host, port = this._opts.port, timeout = this._opts.connectTimeout, socket = new exports.Socket(host, port, timeout);
 
@@ -106,8 +102,7 @@ exports.Connector = Class('ios.socket', net.interfaces.Connector, function () {
       logger.error(err);
       this.onDisconnect();
     });
-  }
-;
+  };
 
   this.onSocketConnect = function (socket) {
     logger.log('connected!');

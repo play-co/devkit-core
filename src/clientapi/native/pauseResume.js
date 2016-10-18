@@ -15,7 +15,7 @@
  */
 NATIVE.events.registerHandler('pause', bind(window, '__fireEvent', 'pagehide'));
 
-jsio('import ui.resource.Image as Image');
+import Image from 'ui/resource/Image';
 
 NATIVE.events.registerHandler('resume', function () {
   // reset any cached loading events

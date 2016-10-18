@@ -262,9 +262,11 @@ function appendElement(hander, node) {
 }
 
 
+
+
 //appendChild and setAttributeNS are preformance key
-jsio('import .sax as saxImport');
-jsio('import .dom');
+import saxImport from './sax';
+import dom from './dom';
 var XMLReader = saxImport.XMLReader;
 var DOMImplementation = exports.DOMImplementation = dom.DOMImplementation;
 exports.XMLSerializer = dom.XMLSerializer;

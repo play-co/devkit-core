@@ -15,12 +15,12 @@
  */
 'use import';
 
-jsio('import lib.Callback');
+import Callback from 'lib/Callback';
 
 var TIMEOUT = 15000;
-var _load = new lib.Callback();
-var withSession = new lib.Callback();
-var withAppID = new lib.Callback();
+var _load = new Callback();
+var withSession = new Callback();
+var withAppID = new Callback();
 
 exports.state = 'initial';
 exports.onLoad = function () {
@@ -53,16 +53,14 @@ exports.load = function (cb) {
 
   exports.state = 'loading';
   doLoad();
-}
-;
+};
 
 exports.setAppID = function (appID) {
   if (withAppID.fired) {
     withAppID.reset();
   }
   withAppID.fire(appID);
-}
-;
+};
 
 function doLoad() {
   window.fbAsyncInit = function () {

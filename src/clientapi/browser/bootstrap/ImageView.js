@@ -13,7 +13,7 @@
  * You should have received a copy of the Mozilla Public License v. 2.0
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
-jsio('import .renderer');
+import renderer from './renderer';
 
 exports = Class(function (supr) {
   this.init = function (opts) {
@@ -62,10 +62,11 @@ exports = Class(function (supr) {
     }
 
 
+
+
     this.computePosition();
     renderer.add(this);
-  }
-;
+  };
 
   this.getImage = function () {
     return this._img;
@@ -82,8 +83,7 @@ exports = Class(function (supr) {
     } else {
       this._img = img;
     }
-  }
-;
+  };
 
   this.computePosition = function () {
     var w = this.width || renderer.width;
@@ -136,8 +136,7 @@ exports = Class(function (supr) {
         scale: scale
       };
     }
-  }
-;
+  };
 
   this.render = function (ctx) {
     if (!this._img || !this._img.complete) {

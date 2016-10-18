@@ -25,8 +25,7 @@ if (DEBUG) {
 
     conn.onError = function (err) {
       logger.log('log protocol error:', err);
-    }
-;
+    };
 
     conn.onConnect(function () {
       conn.sendEvent('HANDSHAKE', {

@@ -15,7 +15,7 @@
  */
 'use import';
 
-jsio('import lib.Callback');
+import Callback from 'lib/Callback';
 
 
 var REQUEST_ID = 0;

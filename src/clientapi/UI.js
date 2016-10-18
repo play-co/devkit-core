@@ -13,8 +13,8 @@
  * You should have received a copy of the Mozilla Public License v. 2.0
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
-jsio('import device');
-jsio('import ui.widget.Spinner as Spinner');
+import device from 'device';
+import Spinner from 'ui/widget/Spinner';
 
 var config = window.CONFIG;
 
@@ -52,18 +52,15 @@ exports = Class(function () {
     }
 
     logger.log('scale:', this._scale);
-  }
-;
+  };
 
   this.getScale = function () {
     return this._scale;
-  }
-;
+  };
 
   this.getIntValue = function (val) {
     return Math.round(val * this._scale) / this._scale;
-  }
-;
+  };
 
   this.showSpinner = function () {
     if (this._spinnerCounter) {
@@ -92,8 +89,7 @@ exports = Class(function () {
     } else {
       parent.addSubview(this._spinner);
     }
-  }
-;
+  };
 
   this.hideSpinner = function () {
     --this._spinnerCounter;

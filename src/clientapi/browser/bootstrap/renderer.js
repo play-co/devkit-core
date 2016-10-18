@@ -16,14 +16,12 @@
 var Renderer = Class(function () {
   this.init = function () {
     this._views = [];
-  }
-;
+  };
 
   this.add = function (view) {
     this._views.push(view);
     this.render();
-  }
-;
+  };
 
   this.setOpts = function (delegate, ctx, width, height) {
     this._delegate = delegate;
@@ -34,8 +32,7 @@ var Renderer = Class(function () {
     var canvas = ctx.canvas;
     canvas.width = this.width;
     canvas.height = this.height;
-  }
-;
+  };
 
   this.render = function () {
     // some android phones mock out html5 objects, but don't implement them

@@ -14,11 +14,11 @@
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
 /* globals logger, CONFIG, NATIVE */
-jsio('import lib.PubSub');
+import PubSub from 'lib/PubSub';
 
 var req = require.context('.', true, /^.*\.js$/);
 
-jsio('import device');
+import device from 'device';
 
 
 exports.install = function () {
@@ -54,7 +54,7 @@ exports.install = function () {
   timestep.install();
 
   // publisher for the overlay UIWebView
-  NATIVE.overlay.delegate = new lib.PubSub();
+  NATIVE.overlay.delegate = new PubSub();
   CONFIG.splash = CONFIG.splash || {};
   var oldHide = CONFIG.splash.hide || function () {
   };

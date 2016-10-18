@@ -17,7 +17,7 @@
  */
 'use import';
 
-jsio('import lib.PubSub');
+import PubSub from 'lib/PubSub';
 
 NATIVE.contacts.getContacts = function (cb) {
   NATIVE.contacts._cb = cb;

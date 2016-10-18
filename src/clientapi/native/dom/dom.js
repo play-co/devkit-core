@@ -134,8 +134,7 @@ function _updateLiveList(list) {
 LiveNodeList.prototype.item = function (i) {
   _updateLiveList(this);
   return this[i];
-}
-;
+};
 
 _extends(LiveNodeList, NodeList);
 /**

@@ -45,8 +45,7 @@ var Sound = Class(function (supr) {
   this.init = function (opts) {
     this.src = opts.src || null;
     this.complete = opts.complete || null;
-  }
-;
+  };
 
   this.onload = function () {
   };
@@ -60,8 +59,7 @@ NATIVE.sound.preloadSound = function (url) {
     complete: false
   });
   return sounds[url];
-}
-;
+};
 
 var songs = {};
 NATIVE.sound.registerMusic = function (url, sound) {

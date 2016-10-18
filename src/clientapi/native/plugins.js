@@ -13,10 +13,10 @@
  * You should have received a copy of the Mozilla Public License v. 2.0
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
-jsio('import lib.Callback');
-jsio('import lib.PubSub');
+import Callback from 'lib/Callback';
+import PubSub from 'lib/PubSub';
 
-var pluginsPubSub = new lib.PubSub();
+var pluginsPubSub = new PubSub();
 
 NATIVE.plugins.publish = bind(pluginsPubSub, 'publish');
 NATIVE.plugins.subscribe = bind(pluginsPubSub, 'subscribe');

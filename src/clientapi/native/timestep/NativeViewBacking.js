@@ -15,8 +15,8 @@
  */
 // ensure that the ViewBacking update and copy methods
 // are present on the native View prototype
-jsio('import device');
-jsio('import ui.backend.BaseBacking as BaseBacking');
+import device from 'device';
+import BaseBacking from 'ui/backend/BaseBacking';
 
 exports.install = function () {
   var ViewBacking = device.importUI('ViewBacking');

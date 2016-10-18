@@ -115,9 +115,10 @@ var Audio = exports = Class(function () {
     }
 
 
+
+
     NATIVE.sound.destroySound(this._src);
-  }
-;
+  };
 
 });
 

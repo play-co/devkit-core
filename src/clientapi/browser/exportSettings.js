@@ -14,11 +14,11 @@
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
 'use import';
-jsio('from util.underscore import _');
-jsio('import std.uri as URI');
+import underscore from 'util/underscore';
+let _ = underscore._;
+import URI from 'std/uri';
 
-var keysToIgnore = /^tr_pending|BOOKMARK_DISMISSED_COUNT/
-;
+var keysToIgnore = /^tr_pending|BOOKMARK_DISMISSED_COUNT/;
 
 var exportSettings = function () {
   var oldUrl = new URI(window.location);

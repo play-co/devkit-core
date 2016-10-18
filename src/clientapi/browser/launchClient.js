@@ -19,7 +19,7 @@ jsio.__env.fetch = function (filename) {
   return false;
 };
 
-jsio('import Promise');
+import Promise from 'Promise';
 GLOBAL.Promise = Promise;
 
 var isSimulator = GLOBAL.CONFIG && !!CONFIG.simulator;
@@ -39,8 +39,12 @@ if (isSimulator) {
 
 
 
+
+
+
+
 // shims
-jsio('import std.JSON as stdJSON');
+import stdJSON from 'std/JSON';
 
 if (!window.JSON) {
   stdJSON.createGlobal();
@@ -93,8 +97,10 @@ if (splash) {
 }
 
 
+
+
 // parsing options
-jsio('import std.uri as stdUri');
+import stdUri from 'std/uri';
 var uri = new stdUri(window.location);
 var mute = uri.hash('mute');
 CONFIG.isMuted = mute !== undefined && mute !== 'false' && mute !== '0' && mute !== 'no';
@@ -153,11 +159,15 @@ function queueStart() {
 
 
 
-/* jshint +W117 */
-jsio('import device');
-jsio('import platforms.browser.initialize');
 
-jsio('import devkit');
+
+
+
+/* jshint +W117 */
+import device from 'device';
+import initialize from 'platforms/browser/initialize';
+
+import devkit from 'devkit';
 
 function startApp() {
   // setup timestep device API

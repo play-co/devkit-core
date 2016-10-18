@@ -15,16 +15,15 @@
  */
 'use import';
 
-jsio('import lib.Callback');
-jsio('import .chromeFrame');
+import Callback from 'lib/Callback';
+import chromeFrame from './chromeFrame';
 
-var withFacebook = new lib.Callback();
+var withFacebook = new Callback();
 var _appID;
 
 exports.withFacebook = function () {
   withFacebook.forward(arguments);
-}
-;
+};
 
 exports.init = function (appID) {
   if (!chromeFrame.isChromeFrame()) {

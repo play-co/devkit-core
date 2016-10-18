@@ -13,7 +13,7 @@
  * You should have received a copy of the Mozilla Public License v. 2.0
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
-jsio('import ui.engineInstance as engineInstance');
+import engineInstance from 'ui/engineInstance';
 
 var OverlayAPI = exports = Class(function () {
   this.init = function (env) {
@@ -28,21 +28,18 @@ var OverlayAPI = exports = Class(function () {
       this.delegate = new IOSDelegate(this);
       break;
     }
-  }
-;
+  };
 
   this.setController = function (controller) {
     if (this.controller) {
       this.controller.onBeforeClose();
     }
     this.controller = controller;
-  }
-;
+  };
 
   this.send = function (data) {
     this.delegate.send(data);
-  }
-;
+  };
 
   this.show = function () {
     logger.log('showing overlay');
@@ -52,10 +49,11 @@ var OverlayAPI = exports = Class(function () {
     }
 
 
+
+
     this.controller.onShow();
     this.delegate.show();
-  }
-;
+  };
 
   this.hide = function () {
     logger.log('hiding overlay');
@@ -65,10 +63,11 @@ var OverlayAPI = exports = Class(function () {
     }
 
 
+
+
     this.controller.onHide();
     this.delegate.hide();
-  }
-;
+  };
 
   this.pushMenu = function (name) {
     this.delegate.send({
@@ -76,16 +75,14 @@ var OverlayAPI = exports = Class(function () {
       target: name,
       method: 'push'
     });
-  }
-;
+  };
 
   this.popMenu = function () {
     this.delegate.send({
       type: 'ui',
       method: 'pop'
     });
-  }
-;
+  };
 
   this.popToMenu = function (name) {
     this.delegate.send({
@@ -93,8 +90,7 @@ var OverlayAPI = exports = Class(function () {
       target: name,
       method: 'pop'
     });
-  }
-;
+  };
 
   this.showDialog = function (name) {
     this.delegate.send({
@@ -102,8 +98,7 @@ var OverlayAPI = exports = Class(function () {
       target: name,
       method: 'show'
     });
-  }
-;
+  };
 
   this.hideDialog = function (name) {
     this.delegate.send({
@@ -111,8 +106,7 @@ var OverlayAPI = exports = Class(function () {
       target: name,
       method: 'hide'
     });
-  }
-;
+  };
 
   this.load = function (name, opts) {
     if (!/^[a-zA-Z0-9]+$/.test(name)) {
@@ -132,8 +126,7 @@ var OverlayAPI = exports = Class(function () {
 exports.prototype.BaseOverlay = Class(function () {
   this.pauseTimestep = function () {
     return true;
-  }
-;
+  };
 
   this.onEvent = function () {
   };
@@ -145,26 +138,25 @@ exports.prototype.BaseOverlay = Class(function () {
   };
 });
 
-jsio('from util.browser import $');
-jsio('import device');
+import browser from 'util/browser';
+let $ = browser.$;
+import device from 'device';
 
-jsio('import .doc');
-jsio('import std.uri');
+import doc from './doc';
+import uri from 'std/uri';
 
 var BrowserDelegate = Class(function () {
   this.init = function (api) {
     this._api = api;
     this._removeListener = $.onEvent(window, 'message', this, '_onMessage');
-  }
-;
+  };
 
   this.destroy = function () {
     if (this._removeListener) {
       this._removeListener();
       this._removeListener = null;
     }
-  }
-;
+  };
 
   this.load = function (name) {
     if (!this._el) {
@@ -191,7 +183,9 @@ var BrowserDelegate = Class(function () {
     }
 
 
-    var src = new std.uri('overlay/' + name + '.html');
+
+
+    var src = new uri('overlay/' + name + '.html');
     if (device.simulating) {
       src.addHash({ simulate: encodeURIComponent(device.simulating) });
     }
@@ -207,9 +201,10 @@ var BrowserDelegate = Class(function () {
     }
 
 
+
+
     this._el.src = src;
-  }
-;
+  };
 
   this._onMessage = function (e) {
     var data = e.data;
@@ -225,21 +220,18 @@ var BrowserDelegate = Class(function () {
         this._api.controller.onEvent(evt);
       }
     }
-  }
-;
+  };
 
   this.send = function (data) {
     var win = this._el.contentWindow;
     win.postMessage('OVERLAY:' + JSON.stringify(data), '*');
-  }
-;
+  };
 
   this.show = function () {
     this.send({ type: 'show' });
     $.show(this._el);
     device.hideAddressBar();
-  }
-;
+  };
 
   this.hide = function (data) {
     this.send({ type: 'hide' });
@@ -251,8 +243,7 @@ var BrowserDelegate = Class(function () {
 var IOSDelegate = Class(function () {
   this.init = function (api) {
     this._api = api;
-  }
-;
+  };
 
   this.load = function (name) {
     logger.log('loading', name);
@@ -262,24 +253,20 @@ var IOSDelegate = Class(function () {
       NATIVE.overlay.delegate.subscribe('message', this, '_onMessage');
       this._subscribed = true;
     }
-  }
-;
+  };
 
   this._onMessage = function (data) {
     logger.log('got a message', data);
     this._api.controller.onEvent(data);
-  }
-;
+  };
 
   this.show = function () {
     NATIVE.overlay.show();
-  }
-;
+  };
 
   this.hide = function () {
     NATIVE.overlay.hide();
-  }
-;
+  };
 
   this.send = function (data) {
     logger.log('doing native.overlay.send');

@@ -1,12 +1,12 @@
 /* global NATIVE, Class, logger */
-jsio('import device');
-jsio('import lib.PubSub');
+import device from 'device';
+import PubSub from 'lib/PubSub';
 
 
 var _pendingPhoto;
 
 
-var PhotosAPI = Class(lib.PubSub, function () {
+var PhotosAPI = Class(PubSub, function () {
   this._onUploadFile = function (evt) {
     if (!evt || !evt.target || !evt.target.files) {
       return;

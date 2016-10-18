@@ -14,8 +14,9 @@
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
 // monkey patch the View prototype (object composition)
-jsio('from ui.filter import Filter');
-jsio('import ui.View as View');
+import filter from 'ui/filter';
+let Filter = filter.Filter;
+import View from 'ui/View';
 
 exports.install = function () {
   var proto = View.prototype;

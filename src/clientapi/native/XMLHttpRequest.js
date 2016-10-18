@@ -27,8 +27,7 @@ var XMLHttpRequest = Class(function () {
     this.responseText = null;
     this._requestHeaders = {};
     this.__id = id;
-  }
-;
+  };
 
   this.open = function (method, url, async) {
     this._method = method;
@@ -40,13 +39,11 @@ var XMLHttpRequest = Class(function () {
     if (!this._async) {
       logger.warn('synchronous xhrs not supported');
     }
-  }
-;
+  };
 
   this.getResponseHeader = function (name) {
     return this._responseHeadersLowerCase[name.toLowerCase()];
-  }
-;
+  };
 
   this.getAllResponseHeaders = function () {
     var lines = [];
@@ -58,27 +55,23 @@ var XMLHttpRequest = Class(function () {
       lines.push(key + ': ' + headers[key]);
     }
     return lines.join('\r\n');
-  }
-;
+  };
 
   this.setRequestHeader = function (name, value) {
     this._requestHeaders[name] = value;
-  }
-;
+  };
 
   this.send = function (data) {
     this._data = data || '';
     xhrs[id++] = this;
     NATIVE.xhr.send(this._method, this._url, this._async, this._data, 0, this.__id, this._requestHeaders);
-  }
-;
+  };
 
   this.uploadFile = function (filename) {
     this._filename = filename;
     xhrs[id++] = this;
     NATIVE.xhr.uploadFile(this.__id, this._filename, this._url, this._async, this._requestHeaders);
-  }
-;
+  };
 
   this._onreadystatechange = function (state, status, response) {
     this.readyState = state;
@@ -88,8 +81,7 @@ var XMLHttpRequest = Class(function () {
     if (typeof this.onreadystatechange === 'function') {
       this.onreadystatechange();
     }
-  }
-;
+  };
 
   this.onreadystatechange = function () {
   };

@@ -13,11 +13,11 @@
  * You should have received a copy of the Mozilla Public License v. 2.0
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
-jsio('import lib.PubSub');
-jsio('import lib.Callback');
+import PubSub from 'lib/PubSub';
+import Callback from 'lib/Callback';
 
 exports.isShim = true;
-exports.backButton = new lib.PubSub();
+exports.backButton = new PubSub();
 exports.dialogs = {
   showDialog: function () {
     logger.log('Showing a dialog!');
@@ -27,10 +27,10 @@ exports.dialogs = {
   }
 };
 
-var _withContacts = new lib.Callback();
+var _withContacts = new Callback();
 _withContacts.fire();
 
-exports.contacts = merge(new lib.PubSub(), {
+exports.contacts = merge(new PubSub(), {
   getContactList: function () {
     return [];
   },
@@ -57,10 +57,10 @@ exports.contacts = merge(new lib.PubSub(), {
 
 });
 
-var _withPhoneNumber = new lib.Callback();
+var _withPhoneNumber = new Callback();
 _withPhoneNumber.fire(null);
 
-var _withPhoneNumber = new lib.Callback();
+var _withPhoneNumber = new Callback();
 _withPhoneNumber.fire(null);
 
 exports.profile = {
@@ -117,7 +117,7 @@ exports.plugins = {
   }
 };
 
-exports.alerts = new lib.PubSub();
+exports.alerts = new PubSub();
 merge(exports.alerts, {
   onNotificationLoad: function () {
   },
@@ -130,9 +130,9 @@ merge(exports.alerts, {
   }
 });
 
-exports.social = new lib.PubSub();
+exports.social = new PubSub();
 
-jsio('import device');
+import device from 'device';
 exports.isSimulator = function () {
   return device.isNativeSimulator;
 };

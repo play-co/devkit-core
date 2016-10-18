@@ -13,7 +13,7 @@
  * You should have received a copy of the Mozilla Public License v. 2.0
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
-jsio('import base');
+import base from 'base';
 
 // this whole file should not get included in release
 if (DEBUG) {
@@ -96,10 +96,11 @@ if (DEBUG) {
       }
 
 
+
+
       return oldLog.apply(this, arguments);
     };
-  }
-;
+  };
 
   exports.flushBuffer = function () {
     // we timed out, so bail
