@@ -1,3 +1,5 @@
+let exports = {};
+
 /**
  * @license
  * This file is part of the Game Closure SDK.
@@ -146,3 +148,5 @@ exports.isSimulator = function () {
 if (!GLOBAL.NATIVE) {
   GLOBAL.NATIVE = exports;
 }
+
+export default exports;

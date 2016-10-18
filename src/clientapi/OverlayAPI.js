@@ -1,3 +1,5 @@
+let exports = {};
+
 /**
  * @license
  * This file is part of the Game Closure SDK.
@@ -280,3 +282,5 @@ var IOSDelegate = Class(function () {
     NATIVE.overlay.send(JSON.stringify(data));
   };
 });
+
+export default exports;

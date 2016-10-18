@@ -1,3 +1,5 @@
+let exports = {};
+
 import {
   NATIVE,
   bind,
@@ -176,3 +178,5 @@ Audio.prototype.__defineSetter__('currentTime', function (t) {
 exports.install = function () {
   GLOBAL.Audio = Audio;
 };
+
+export default exports;

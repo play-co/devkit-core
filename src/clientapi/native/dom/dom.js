@@ -1,3 +1,5 @@
+let exports = {};
+
 /*
  * DOM Level 2
  * Object DOMException
@@ -1171,3 +1173,5 @@ if (typeof require == 'function') {
   exports.DOMImplementation = DOMImplementation;
   exports.XMLSerializer = XMLSerializer;
 }
+
+export default exports;

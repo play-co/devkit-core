@@ -1,3 +1,5 @@
+let exports = {};
+
 /**
  * @license
  * This file is part of the Game Closure SDK.
@@ -72,6 +74,43 @@ exports = new Renderer();  // // Display name
                            // 	var r = preload.photo;
                            // 	ctx.drawImage(photoImg, r.x, r.y, r.w, r.h);
                            // }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+export default exports;
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

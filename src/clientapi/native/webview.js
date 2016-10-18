@@ -1,3 +1,5 @@
+let exports = {};
+
 import {
   GLOBAL,
   NATIVE
@@ -28,3 +30,5 @@ exports.install = function () {
     return _NATIVE.getDeviceID();
   });
 };
+
+export default exports;

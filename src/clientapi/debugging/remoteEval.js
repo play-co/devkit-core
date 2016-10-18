@@ -1,3 +1,5 @@
+let exports = {};
+
 import {
   logger,
   CONFIG,
@@ -69,3 +71,5 @@ if (DEBUG) {
     });
   };
 }
+
+export default exports;

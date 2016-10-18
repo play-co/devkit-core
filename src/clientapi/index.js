@@ -1,3 +1,5 @@
+let exports = {};
+
 /** @license
  * This file is part of the Game Closure SDK.
  *
@@ -297,3 +299,5 @@ exports.ClientAPI.prototype.hideSplash = exports.ClientAPI.prototype.hidePreload
 exports.ClientAPI.prototype.resources.addSheets(spritesheets);
 exports.ClientAPI.prototype.resources.addAudioMap(soundMap);
 
+
+export default exports;

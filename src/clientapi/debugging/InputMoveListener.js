@@ -1,3 +1,5 @@
+let exports = {};
+
 import { bind } from 'base';
 
 import device from 'device';
@@ -170,3 +172,5 @@ exports = Class(Emitter, function () {
     }
   };
 });
+
+export default exports;

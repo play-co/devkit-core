@@ -1,3 +1,5 @@
+let exports = {};
+
 /**
  * @license
  * This file is part of the Game Closure SDK.
@@ -100,3 +102,5 @@ exports.Reader = Class(function () {
     }
   };
 });
+
+export default exports;

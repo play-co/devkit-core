@@ -1,3 +1,5 @@
+let exports = {};
+
 import device from 'device';
 
 var _cacheWorker;
@@ -127,3 +129,5 @@ function sendMessage(message) {
     _cacheWorker.postMessage(message, [messageChannel.port2]);
   });
 }
+
+export default exports;

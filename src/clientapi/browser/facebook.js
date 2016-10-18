@@ -1,3 +1,5 @@
+let exports = {};
+
 import { bind } from 'base';
 
 /**
@@ -146,3 +148,5 @@ function getSession(err) {
     });
   });
 }
+
+export default exports;

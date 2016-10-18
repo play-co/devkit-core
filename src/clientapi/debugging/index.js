@@ -1,3 +1,5 @@
+let exports = {};
+
 import {
   merge,
   bind,
@@ -93,3 +95,5 @@ var tryToConnect = function () {
 };
 
 tryToConnect();
+
+export default exports;

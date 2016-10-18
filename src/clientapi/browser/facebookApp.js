@@ -1,3 +1,5 @@
+let exports = {};
+
 import {
   logger,
   bind
@@ -200,3 +202,5 @@ exports.receiveChromeFrameMessage = function (data, cb) {
     logger.log('Unrecognized method specified in data from chrome frame from Facebook send');
   }
 };
+
+export default exports;

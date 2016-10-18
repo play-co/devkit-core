@@ -1,3 +1,5 @@
+let exports = {};
+
 import { logger } from 'base';
 
 import PubSub from 'lib/PubSub';
@@ -194,3 +196,5 @@ exports = Class(PubSub, function (supr) {
 
 exports.prototype.disconnect = exports.prototype.close;
 
+
+export default exports;

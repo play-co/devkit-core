@@ -1,3 +1,5 @@
+let exports = {};
+
 import { merge } from 'base';
 
 /**
@@ -194,3 +196,5 @@ exports.tautogram = function () {
     }
   }
 };
+
+export default exports;

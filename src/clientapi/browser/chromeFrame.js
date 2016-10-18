@@ -1,3 +1,5 @@
+let exports = {};
+
 import {
   bind,
   logger
@@ -80,3 +82,5 @@ var chromeFrameClass = Class(function () {
 	*/
 // only export our chrome frame object if chrome frame exists in current context
 exports = new chromeFrameClass();
+
+export default exports;

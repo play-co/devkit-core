@@ -1,3 +1,5 @@
+let exports = {};
+
 import device from 'device';
 
 exports.screenshot = function (cb) {
@@ -77,3 +79,5 @@ exports.screenshot = function (cb) {
     cb({ NOT_SUPPORTED: true });
   }
 };
+
+export default exports;

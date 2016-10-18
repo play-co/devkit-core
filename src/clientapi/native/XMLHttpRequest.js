@@ -1,3 +1,5 @@
+let exports = {};
+
 import {
   logger,
   NATIVE,
@@ -114,3 +116,5 @@ exports.install = function () {
   });
 
 };
+
+export default exports;

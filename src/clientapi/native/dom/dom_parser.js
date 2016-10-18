@@ -1,3 +1,5 @@
+let exports = {};
+
 function DOMParser(options) {
   this.options = options || { locator: {} };
 
@@ -272,3 +274,5 @@ exports.DOMImplementation = dom.DOMImplementation;
 var DOMImplementation = exports.DOMImplementation;
 exports.XMLSerializer = dom.XMLSerializer;
 exports.DOMParser = DOMParser;
+
+export default exports;

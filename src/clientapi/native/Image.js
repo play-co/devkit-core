@@ -1,3 +1,5 @@
+let exports = {};
+
 /**
  * @license
  * This file is part of the Game Closure SDK.
@@ -104,3 +106,5 @@ setProperty(Image.prototype, 'src', {
 exports.install = function () {
   GLOBAL.Image = Image;
 };
+
+export default exports;

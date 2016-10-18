@@ -1,3 +1,5 @@
+let exports = {};
+
 /**
  * @license
  * This file is part of the Game Closure SDK.
@@ -116,3 +118,5 @@ exports.Connector = Class('ios.socket', interfaces.Connector, function () {
   };
 });
 
+
+export default exports;

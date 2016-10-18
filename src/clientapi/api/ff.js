@@ -1,3 +1,5 @@
+let exports = {};
+
 /*
  Copyright (c) 2011 Tim Caswell <tim@creationix.com>
  Copyright (c) 2012 Marcus Cavanaugh <m@mcav.com>
@@ -510,3 +512,5 @@
       this.ff = ff;
     }
 }());
+
+export default exports;

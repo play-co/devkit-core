@@ -1,3 +1,5 @@
+let exports = {};
+
 /**
  * @license
  * This file is part of the Game Closure SDK.
@@ -404,5 +406,9 @@ exports.showViewRange = function (a, b) {
   }
 
 
+
+
   exports.showViews.apply(this, range);
 };
+
+export default exports;
