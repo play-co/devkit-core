@@ -93,6 +93,8 @@ import {
         }
 
 
+
+
         Async.prototype.haveItemsQueued = function () {
           return this._normalQueue.length() > 0;
         };
@@ -456,6 +458,8 @@ import {
           }
 
 
+
+
           function removeDuplicateOrEmptyJumps(stacks) {
             for (var i = 0; i < stacks.length; ++i) {
               if (stacks[i].length === 0 || i + 1 < stacks.length && stacks[i][0] === stacks[i + 1][0]) {
@@ -464,6 +468,8 @@ import {
               }
             }
           }
+
+
 
 
           function removeCommonRoots(stacks) {
@@ -482,6 +488,8 @@ import {
               }
 
 
+
+
               for (var j = commonRootMeetPoint; j >= 0; --j) {
                 var line = prev[j];
                 if (current[currentLastIndex] === line) {
@@ -494,6 +502,8 @@ import {
               current = prev;
             }
           }
+
+
 
 
           function cleanStack(stack) {
@@ -513,6 +523,8 @@ import {
           }
 
 
+
+
           function stackFramesAsArray(error) {
             var stack = error.stack.replace(/\s+$/g, '').split('\n');
             for (var i = 0; i < stack.length; ++i) {
@@ -526,6 +538,8 @@ import {
             }
             return stack;
           }
+
+
 
 
           CapturedTrace.parseStackAndMessage = function (error) {
@@ -580,6 +594,12 @@ import {
 
 
 
+
+
+
+
+
+
             var globalEventFired = false;
             try {
               globalEventFired = fireGlobalEvent(name, reason, promise);
@@ -587,6 +607,12 @@ import {
               globalEventFired = true;
               async.throwLater(e);
             }
+
+
+
+
+
+
 
 
 
@@ -602,6 +628,8 @@ import {
                 async.throwLater(e);
               }
             }
+
+
 
 
             if (!globalEventFired && !localEventFired && !domEventFired && name === 'unhandledRejection') {
@@ -631,6 +659,8 @@ import {
           }
 
 
+
+
           function snip(str) {
             var maxChars = 41;
             if (str.length < maxChars) {
@@ -638,6 +668,8 @@ import {
             }
             return str.substr(0, maxChars - 3) + '...';
           }
+
+
 
 
           var shouldIgnore = function () {
@@ -683,6 +715,8 @@ import {
             }
 
 
+
+
             shouldIgnore = function (line) {
               if (bluebirdFramePattern.test(line))
                 return true;
@@ -701,6 +735,8 @@ import {
             var v8stackFormatter = function (stack, error) {
               if (typeof stack === 'string')
                 return stack;
+
+
 
 
               if (error.name !== undefined && error.message !== undefined) {
@@ -736,6 +772,8 @@ import {
             }
 
 
+
+
             var hasStackAfterThrow;
             try {
               throw new Error();
@@ -757,9 +795,13 @@ import {
             }
 
 
+
+
             formatStack = function (stack, error) {
               if (typeof stack === 'string')
                 return stack;
+
+
 
 
               if ((typeof error === 'object' || typeof error === 'function') && error.name !== undefined && error.message !== undefined) {
@@ -815,9 +857,17 @@ import {
 
 
 
+
+
+
+
+
+
                   return event ? !self.dispatchEvent(event) : false;
                 };
               }
+
+
 
 
               var toWindowMethodNameMap = {};
@@ -866,12 +916,16 @@ import {
           }
 
 
+
+
           function safePredicate(predicate, e) {
             var safeObject = {};
             var retfilter = tryCatch(predicate).call(safeObject, e);
 
             if (retfilter === errorObj)
               return retfilter;
+
+
 
 
             var safeKeys = keys(safeObject);
@@ -881,6 +935,8 @@ import {
             }
             return retfilter;
           }
+
+
 
 
           CatchFilter.prototype.doFilter = function (e) {
@@ -957,6 +1013,8 @@ import {
           }
 
 
+
+
           function peekContext() {
             var lastIndex = contextStack.length - 1;
             if (lastIndex >= 0) {
@@ -964,6 +1022,8 @@ import {
             }
             return undefined;
           }
+
+
 
 
           Promise.prototype._peekContext = peekContext;
@@ -1108,6 +1168,8 @@ import {
           }
 
 
+
+
           return function () {
             return debugging;
           };
@@ -1209,6 +1271,8 @@ import {
         }
 
 
+
+
         var _TypeError, _RangeError;
         var Warning = subError('Warning', 'warning');
         var CancellationError = subError('CancellationError', 'cancellation error');
@@ -1224,6 +1288,12 @@ import {
 
 
 
+
+
+
+
+
+
         var methods = ('join pop push shift unshift slice filter forEach some ' + 'every map indexOf lastIndexOf reduce reduceRight sort reverse').split(' ');
 
         for (var i = 0; i < methods.length; ++i) {
@@ -1231,6 +1301,8 @@ import {
             AggregateError.prototype[methods[i]] = Array.prototype[methods[i]];
           }
         }
+
+
 
 
         AggregateError.prototype.length = 0;
@@ -1271,6 +1343,12 @@ import {
 
 
 
+
+
+
+
+
+
         }
         inherits(OperationalError, Error);
 
@@ -1285,6 +1363,8 @@ import {
           });
           notEnumerableProp(Error, '__BluebirdErrorTypes__', errorTypes);
         }
+
+
 
 
         module.exports = {
@@ -1378,6 +1458,8 @@ import {
         }
 
 
+
+
       },
       {}
     ],
@@ -1435,6 +1517,8 @@ import {
           }
 
 
+
+
           function finallyHandler(reasonOrValue) {
             var promise = this.promise;
             var handler = this.handler;
@@ -1450,6 +1534,8 @@ import {
             }
 
 
+
+
             if (promise.isRejected()) {
               NEXT_FILTER.e = reasonOrValue;
               return NEXT_FILTER;
@@ -1457,6 +1543,8 @@ import {
               return reasonOrValue;
             }
           }
+
+
 
 
           function tapHandler(value) {
@@ -1476,9 +1564,13 @@ import {
           }
 
 
+
+
           Promise.prototype._passThroughHandler = function (handler, isFinally) {
             if (typeof handler !== 'function')
               return this.then();
+
+
 
 
             var promiseAndHandler = {
@@ -1531,6 +1623,8 @@ import {
               }
 
 
+
+
               var Holder = function (total, fn) {
                 this.p1 = this.p2 = this.p3 = this.p4 = this.p5 = null;
                 this.fn = fn;
@@ -1563,6 +1657,8 @@ import {
               };
             }
           }
+
+
 
 
           Promise.join = function () {
@@ -1660,6 +1756,8 @@ import {
                 preservedValues[index] = value;
 
 
+
+
               var callback = this._callback;
               var receiver = this._promise._boundTo;
               this._promise._pushContext();
@@ -1667,6 +1765,8 @@ import {
               this._promise._popContext();
               if (ret === errorObj)
                 return this._reject(ret.e);
+
+
 
 
               var maybePromise = tryConvertToPromise(ret, this._promise);
@@ -1692,6 +1792,8 @@ import {
               } else {
                 this._resolve(values);
               }
+
+
 
 
             }
@@ -1732,9 +1834,13 @@ import {
           }
 
 
+
+
           Promise.prototype.map = function (fn, options) {
             if (typeof fn !== 'function')
               return apiRejection('fn must be a function\n\n    See http://goo.gl/916lJJ\n');
+
+
 
 
             return map(this, fn, options, null).promise();
@@ -1819,6 +1925,8 @@ import {
           }
 
 
+
+
           function successAdapter(val, nodeback) {
             var promise = this;
             var receiver = promise._boundTo;
@@ -1840,6 +1948,8 @@ import {
               async.throwLater(ret.e);
             }
           }
+
+
 
 
           Promise.prototype.nodeify = function (nodeback, options) {
@@ -1922,6 +2032,8 @@ import {
               }
 
 
+
+
               if (typeof handler === 'function') {
                 async.invoke(this._doProgressWith, this, {
                   handler: handler,
@@ -1998,6 +2110,8 @@ import {
             if (resolver !== INTERNAL)
               this._resolveFromResolver(resolver);
           }
+
+
 
 
           Promise.prototype.toString = function () {
@@ -2142,6 +2256,8 @@ import {
             }
 
 
+
+
             var target = this._target();
             if (target !== this) {
               if (!haveInternalData) {
@@ -2154,11 +2270,15 @@ import {
             }
 
 
+
+
             var callbackIndex = target._addCallbacks(didFulfill, didReject, didProgress, ret, receiver);
 
             if (target._isResolved() && !target._isSettlePromisesQueued()) {
               async.invoke(target._settlePromiseAtPostResolution, target, callbackIndex);
             }
+
+
 
 
             return ret;
@@ -2283,6 +2403,8 @@ import {
             }
 
 
+
+
             if (index === 0) {
               this._promise0 = promise;
               if (receiver !== undefined)
@@ -2338,6 +2460,8 @@ import {
             var maybePromise = tryConvertToPromise(value, this);
             if (!(maybePromise instanceof Promise))
               return this._fulfill(value);
+
+
 
 
             var propagationFlags = 1 | (shouldBind ? 4 : 0);
@@ -2475,6 +2599,8 @@ import {
             }
 
 
+
+
             this._clearCallbackDataAtIndex(index);
 
             if (typeof handler === 'function') {
@@ -2498,6 +2624,18 @@ import {
                 promise._reject(value, carriedStackTrace);
               }
             }
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -2576,9 +2714,13 @@ import {
             }
 
 
+
+
             if (trace !== undefined && trace !== reason) {
               this._setCarriedStackTrace(trace);
             }
+
+
 
 
             if (this._length() > 0) {
@@ -2669,6 +2811,8 @@ import {
           }
 
 
+
+
           function PromiseArray(values) {
             var promise = this._promise = new Promise(INTERNAL);
             var parent;
@@ -2713,6 +2857,12 @@ import {
               this._promise._reject(apiRejection('expecting an array, a promise or a thenable\n\n    See http://goo.gl/s8MMhc\n')._reason());
               return;
             }
+
+
+
+
+
+
 
 
 
@@ -2813,6 +2963,8 @@ import {
         }
 
 
+
+
         var rErrorKey = /^(?:name|message|stack|cause)$/;
         function wrapAsOperationalError(obj) {
           var ret;
@@ -2835,10 +2987,14 @@ import {
         }
 
 
+
+
         function nodebackForPromise(promise) {
           return function (err, value) {
             if (promise === null)
               return;
+
+
 
 
             if (err) {
@@ -2858,9 +3014,19 @@ import {
 
 
 
+
+
+
+
+
+
             promise = null;
           };
         }
+
+
+
+
 
 
 
@@ -2886,6 +3052,8 @@ import {
           es5.defineProperty(PromiseResolver.prototype, 'asCallback', prop);
           es5.defineProperty(PromiseResolver.prototype, 'callback', prop);
         }
+
+
 
 
         PromiseResolver._nodebackForPromise = nodebackForPromise;
@@ -2966,6 +3134,8 @@ import {
           }
 
 
+
+
           function hasPromisified(obj, key, suffix) {
             var val = util.getDataPropertyOrDefault(obj, key + suffix, defaultPromisified);
             return val ? isPromisified(val) : false;
@@ -2985,6 +3155,8 @@ import {
           }
 
 
+
+
           function promisifiableMethods(obj, suffix, suffixRegexp, filter) {
             var keys = util.inheritedDataKeys(obj);
             var ret = [];
@@ -2999,6 +3171,8 @@ import {
             checkValid(ret, suffix, suffixRegexp);
             return ret;
           }
+
+
 
 
           var escapeIdentRegex = function (str) {
@@ -3063,6 +3237,8 @@ import {
               }
 
 
+
+
               function generateArgumentSwitchCase() {
                 var ret = '';
                 for (var i = 0; i < argumentOrder.length; ++i) {
@@ -3079,14 +3255,24 @@ import {
 
 
 
+
+
+
+
+
+
                 ret += '                                                             \n        default:                                                             \n            var args = new Array(len + 1);                                   \n            var i = 0;                                                       \n            for (var i = 0; i < len; ++i) {                                  \n               args[i] = arguments[i];                                       \n            }                                                                \n            args[i] = fn;                                                    \n            [CodeForCall]                                                    \n            break;                                                           \n        '.replace('[CodeForCall]', codeForCall);
                 return ret;
               }
 
 
+
+
               return new Function('Promise', 'callback', 'receiver', 'withAppended', 'maybeWrapAsError', 'nodebackForPromise', 'INTERNAL', '                                         \n        var ret = function (Parameters) {                        \n            \'use strict\';                                                    \n            var len = arguments.length;                                      \n            var promise = new Promise(INTERNAL);                             \n            promise._captureStackTrace();                                    \n            promise._setIsSpreadable();                                      \n            var fn = nodebackForPromise(promise);                            \n            try {                                                            \n                switch(len) {                                                \n                    [CodeForSwitchCase]                                      \n                }                                                            \n            } catch (e) {                                                    \n                var wrapped = maybeWrapAsError(e);                           \n                promise._attachExtraTrace(wrapped);                          \n                promise._reject(wrapped);                                    \n            }                                                                \n            return promise;                                                  \n        };                                                                   \n        ret.__isPromisified__ = true;                                        \n        return ret;                                                          \n        '.replace('FunctionName', callbackName).replace('Parameters', parameterDeclaration(newParameterCount)).replace('[CodeForSwitchCase]', generateArgumentSwitchCase()))(Promise, callback, receiver, withAppended, maybeWrapAsError, nodebackForPromise, INTERNAL);
             };
           }
+
+
 
 
           function makeNodePromisifiedClosure(callback, receiver) {
@@ -3115,6 +3301,8 @@ import {
           }
 
 
+
+
           var makeNodePromisified = canEvaluate ? makeNodePromisifiedEval : makeNodePromisifiedClosure;
 
           function promisifyAll(obj, suffix, filter, promisifier) {
@@ -3134,9 +3322,13 @@ import {
           }
 
 
+
+
           function promisify(callback, receiver) {
             return makeNodePromisified(callback, receiver, undefined, callback);
           }
+
+
 
 
           Promise.promisify = function (fn, receiver) {
@@ -3165,9 +3357,13 @@ import {
               promisifier = makeNodePromisified;
 
 
+
+
             if (!util.isIdentifier(suffix)) {
               throw new RangeError('suffix must be a valid identifier\n\n    See http://goo.gl/8FZo5V\n');
             }
+
+
 
 
             var keys = util.inheritedDataKeys(target, { includeHidden: true });
@@ -3178,6 +3374,8 @@ import {
                 promisifyAll(value, suffix, filter, promisifier);
               }
             }
+
+
 
 
             return promisifyAll(target, suffix, filter, promisifier);
@@ -3203,11 +3401,15 @@ import {
         }
 
 
+
+
         function Queue(capacity) {
           this._capacity = capacity;
           this._length = 0;
           this._front = 0;
         }
+
+
 
 
         Queue.prototype._willBeOverCapacity = function (size) {
@@ -3372,6 +3574,8 @@ import {
               return;
 
 
+
+
             var callback = this._callback;
             var receiver = this._promise._boundTo;
             var ret;
@@ -3398,6 +3602,8 @@ import {
                 return this._reject(ret.e);
 
 
+
+
               var maybePromise = tryConvertToPromise(ret, this._promise);
               if (maybePromise instanceof Promise) {
                 maybePromise = maybePromise._target();
@@ -3412,9 +3618,13 @@ import {
               }
 
 
+
+
               this._reducingIndex = i + 1;
               this._accum = ret;
             }
+
+
 
 
             this._resolve(isEach ? preservedValues : this._accum);
@@ -3426,6 +3636,8 @@ import {
             var array = new ReductionPromiseArray(promises, fn, initialValue, _each);
             return array.promise();
           }
+
+
 
 
           Promise.prototype.reduce = function (fn, initialValue) {
@@ -3485,6 +3697,8 @@ import {
               this._settledValue = undefined;
             }
           }
+
+
 
 
           PromiseInspection.prototype.value = function () {
@@ -3599,15 +3813,21 @@ import {
           }
 
 
+
+
           function getThen(obj) {
             return obj.then;
           }
+
+
 
 
           var hasProp = {}.hasOwnProperty;
           function isAnyBluebirdPromise(obj) {
             return hasProp.call(obj, '_promise0');
           }
+
+
 
 
           function doThenable(x, then, context) {
@@ -3627,6 +3847,8 @@ import {
             }
 
 
+
+
             function resolveFromThenable(value) {
               if (!promise)
                 return;
@@ -3639,12 +3861,16 @@ import {
             }
 
 
+
+
             function rejectFromThenable(reason) {
               if (!promise)
                 return;
               promise._rejectCallback(reason, synchronous, true);
               promise = null;
             }
+
+
 
 
             function progressFromThenable(value) {
@@ -3656,6 +3882,8 @@ import {
             }
             return ret;
           }
+
+
 
 
           return tryConvertToPromise;
@@ -3713,6 +3941,8 @@ import {
           }
 
 
+
+
           function failureClear(reason) {
             var handle = this;
             if (handle instanceof Number)
@@ -3720,6 +3950,8 @@ import {
             clearTimeout(handle);
             throw reason;
           }
+
+
 
 
           Promise.prototype.timeout = function (ms, message) {
@@ -3757,6 +3989,12 @@ import {
 
 
 
+
+
+
+
+
+
         }();
 
         var errorObj = { e: {} };
@@ -3773,6 +4011,8 @@ import {
           tryCatchTarget = fn;
           return tryCatcher;
         }
+
+
 
 
         var inherits = function (Child, Parent) {
@@ -3797,10 +4037,14 @@ import {
         }
 
 
+
+
         function isPrimitive(val) {
           return val == null || val === true || val === false || typeof val === 'string' || typeof val === 'number';
 
         }
+
+
 
 
         function isObject(value) {
@@ -3808,13 +4052,19 @@ import {
         }
 
 
+
+
         function maybeWrapAsError(maybeError) {
           if (!isPrimitive(maybeError))
             return maybeError;
 
 
+
+
           return new Error(asString(maybeError));
         }
+
+
 
 
         function withAppended(target, appendee) {
@@ -3829,6 +4079,8 @@ import {
         }
 
 
+
+
         function getDataPropertyOrDefault(obj, key, defaultValue) {
           if (es5.isES5) {
             var desc = Object.getOwnPropertyDescriptor(obj, key);
@@ -3839,6 +4091,8 @@ import {
             return {}.hasOwnProperty.call(obj, key) ? obj[key] : undefined;
           }
         }
+
+
 
 
         function notEnumerableProp(obj, name, value) {
@@ -3857,6 +4111,10 @@ import {
 
 
 
+
+
+
+
         var wrapsPrimitiveReceiver = function () {
           return this !== 'string';
         }.call('string');
@@ -3864,6 +4122,8 @@ import {
         function thrower(r) {
           throw r;
         }
+
+
 
 
         var inheritedDataKeys = function () {
@@ -3905,6 +4165,8 @@ import {
           }
 
 
+
+
         }();
 
         function isClass(fn) {
@@ -3920,6 +4182,8 @@ import {
         }
 
 
+
+
         function toFastProperties(obj) {
           /*jshint -W027*/
           function f() {
@@ -3930,10 +4194,14 @@ import {
         }
 
 
+
+
         var rident = /^[a-z$_][a-z$_0-9]*$/i;
         function isIdentifier(str) {
           return rident.test(str);
         }
+
+
 
 
         function filledRange(count, prefix, suffix) {
@@ -3945,6 +4213,8 @@ import {
         }
 
 
+
+
         function safeToString(obj) {
           try {
             return obj + '';
@@ -3952,6 +4222,8 @@ import {
             return '[no string representation]';
           }
         }
+
+
 
 
         function markAsOriginatingFromRejection(e) {
@@ -3962,6 +4234,8 @@ import {
         }
 
 
+
+
         function originatesFromRejection(e) {
           if (e == null)
             return false;
@@ -3969,9 +4243,13 @@ import {
         }
 
 
+
+
         function canAttachTrace(obj) {
           return obj instanceof Error && es5.propertyIsWritable(obj, 'stack');
         }
+
+
 
 
         var ensureErrorObject = function () {
@@ -3997,6 +4275,8 @@ import {
         function classString(obj) {
           return {}.toString.call(obj);
         }
+
+
 
 
         var ret = {

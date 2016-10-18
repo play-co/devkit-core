@@ -58,6 +58,8 @@ NATIVE.plugins.sendRequest = function (pluginName, name, data, cb) {
   }
 
 
+
+
   var id = ++_requestId;
   _requestCbs[id] = cb;
 
@@ -69,6 +71,8 @@ NATIVE.plugins.sendRequest = function (pluginName, name, data, cb) {
       logger.error(e);
     }
   }
+
+
 
 
   NATIVE.plugins._sendRequest.call(this, pluginName, name, dataStr || '{}', id);

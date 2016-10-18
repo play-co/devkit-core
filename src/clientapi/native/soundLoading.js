@@ -46,17 +46,16 @@ NATIVE.events.registerHandler('soundDuration', function (evt) {
 });
 
 var sounds = {};
-var Sound = Class(function (supr) {
-  this.init = function (opts) {
+class Sound {
+  constructor(opts) {
     this.src = opts.src || null;
     this.complete = opts.complete || null;
-  };
-
-  this.onload = function () {
-  };
-  this.onerror = function () {
-  };
-});
+  }
+  onload() {
+  }
+  onerror() {
+  }
+}
 NATIVE.sound.preloadSound = function (url) {
   NATIVE.sound.loadSound(url);
   sounds[url] = new Sound({

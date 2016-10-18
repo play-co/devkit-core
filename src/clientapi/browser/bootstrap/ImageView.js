@@ -19,11 +19,13 @@ import { bind } from 'base';
 
 import renderer from './renderer';
 
-exports = Class(function (supr) {
-  this.init = function (opts) {
+exports = class {
+  constructor(opts) {
     if (!opts) {
       opts = {};
     }
+
+
 
 
     this.x = opts.x || 0;
@@ -68,14 +70,17 @@ exports = Class(function (supr) {
 
 
 
+
+
+
+
     this.computePosition();
     renderer.add(this);
-  };
-
-  this.getImage = function () {
+  }
+  getImage() {
     return this._img;
-  };
-  this.setImage = function (img) {
+  }
+  setImage(img) {
     if (typeof img == 'string') {
       this._img = new Image();
       this._img.onload = bind(this, function () {
@@ -87,9 +92,8 @@ exports = Class(function (supr) {
     } else {
       this._img = img;
     }
-  };
-
-  this.computePosition = function () {
+  }
+  computePosition() {
     var w = this.width || renderer.width;
     var h = this.height || renderer.height;
 
@@ -99,6 +103,8 @@ exports = Class(function (supr) {
     if (!this._img.complete) {
       return false;
     }
+
+
 
 
     switch (this._scaleMethod) {
@@ -140,12 +146,13 @@ exports = Class(function (supr) {
         scale: scale
       };
     }
-  };
-
-  this.render = function (ctx) {
+  }
+  render(ctx) {
     if (!this._img || !this._img.complete) {
       return;
     }
+
+
 
 
     ctx.save();
@@ -192,6 +199,8 @@ exports = Class(function (supr) {
         }
 
 
+
+
         destSlicesHor[0] = this._destSlicesHor[0] * scale | 0;
         destSlicesHor[2] = this._destSlicesHor[2] * scale | 0;
         destSlicesHor[1] = width - destSlicesHor[0] - destSlicesHor[2];
@@ -219,12 +228,16 @@ exports = Class(function (supr) {
             }
 
 
+
+
             sx += sw;
             dx += dw;
           }
           sy += sh;
           dy += dh;
         }
+
+
 
 
       } else {
@@ -241,7 +254,11 @@ exports = Class(function (supr) {
 
 
 
-  };
-});
+
+
+
+
+  }
+};
 
 export default exports;

@@ -13,11 +13,13 @@ import PubSub from 'lib/PubSub';
 var _pendingPhoto;
 
 
-var PhotosAPI = Class(PubSub, function () {
-  this._onUploadFile = function (evt) {
+class PhotosAPI extends PubSub {
+  _onUploadFile(evt) {
     if (!evt || !evt.target || !evt.target.files) {
       return;
     }
+
+
 
 
     var file = evt.target.files[0];
@@ -42,13 +44,14 @@ var PhotosAPI = Class(PubSub, function () {
 
       reader.readAsDataURL(file);
     }
-  };
-
-  this.getPhoto = function (opts) {
+  }
+  getPhoto(opts) {
     if (_pendingPhoto) {
       logger.warn('can only request one photo at a time, cancelling other request');
       _pendingPhoto.reject(new Error('another photo request interrupted this one'));
     }
+
+
 
 
     var preferGallery = opts && opts.source == 'gallery';
@@ -65,6 +68,8 @@ var PhotosAPI = Class(PubSub, function () {
         }
 
 
+
+
         var api = NATIVE[nativeSource];
         api.getPhoto.apply(api, args);
       } else if (this.hasFileUpload) {
@@ -74,13 +79,19 @@ var PhotosAPI = Class(PubSub, function () {
 
 
 
+
+
+
+
+
+
       _pendingPhoto = {
         resolve: resolve,
         reject: reject
       };
     }.bind(this));
-  };
-});
+  }
+}
 
 
 PhotosAPI.prototype.hasNativeCamera = NATIVE && NATIVE.camera;
@@ -107,6 +118,8 @@ if (PhotosAPI.prototype.hasNativeCamera || PhotosAPI.prototype.hasNativeGallery)
 }
 
 
+
+
 if (PhotosAPI.prototype.hasFileUpload) {
   PhotosAPI.prototype._input.camera.type = 'file';
   PhotosAPI.prototype._input.camera.setAttribute('accept', 'image/*;capture=camera');
@@ -126,6 +139,10 @@ if (PhotosAPI.prototype.hasFileUpload) {
     PhotosAPI.prototype._input.gallery.addEventListener('change', bind(PhotosAPI.prototype, '_onUploadFile'));
   }
 }
+
+
+
+
 
 
 

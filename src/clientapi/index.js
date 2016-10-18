@@ -49,6 +49,10 @@ if (!GLOBAL.DEBUG) {
 
 
 
+
+
+
+
 var spritesheets;
 try {
   if (GLOBAL.CACHE) {
@@ -57,6 +61,12 @@ try {
 } catch (e) {
   logger.warn('spritesheet map failed to parse', e);
 }
+
+
+
+
+
+
 
 
 
@@ -74,23 +84,35 @@ try {
 
 
 
-var PluginManager = Class(function () {
-  this.init = function () {
+
+
+
+
+
+
+
+
+
+
+
+
+class PluginManager {
+  constructor() {
     this._plugins = {};
-  };
-
-  this.register = function (name, plugin) {
+  }
+  register(name, plugin) {
     this._plugins[name] = plugin;
-  };
-
-  this.getPlugin = function (name) {
+  }
+  getPlugin(name) {
     return this._plugins[name];
-  };
-});
+  }
+}
 
 
-exports.ClientAPI = Class(PubSub, function () {
-  this.init = function (opts) {
+exports.ClientAPI = class extends PubSub {
+  constructor(opts) {
+    super();
+
     window.addEventListener('pageshow', bind(this, '_onShow'), false);
     window.addEventListener('pagehide', bind(this, '_onHide'), false);
 
@@ -98,6 +120,8 @@ exports.ClientAPI = Class(PubSub, function () {
       cards.browser.on('foreground', bind(this, '_onShow'));
       cards.browser.on('background', bind(this, '_onHide'));
     }
+
+
 
 
     this.isOnline = navigator.onLine;
@@ -135,28 +159,13 @@ exports.ClientAPI = Class(PubSub, function () {
     }
 
 
+
+
     if (CONFIG.version) {
       logger.log('Version', CONFIG.version);
     }
-  };
-
-  this.Application = StackView;
-
-  this.plugins = new PluginManager();
-
-  this.ui = new UI();
-
-
-
-  // this.track({
-  //  name: "campaignID",
-  //  category: "campaign",
-  //  subcategory: "id",
-  //  data: campaign
-  // });
-  this.resources = loader;
-
-  this._onHide = function () {
+  }
+  _onHide() {
     // signal to the app that the window is going away
     this.app && this.app.onPause && this.app.onPause();
 
@@ -166,30 +175,29 @@ exports.ClientAPI = Class(PubSub, function () {
     if (this.tracker) {
       this.tracker.endSession();
     }
-  };
-
-  this._onShow = function () {
+  }
+  _onShow() {
     this.app && this.app.onResume && this.app.onResume();
 
     this.publish('Show');
     this.publish('AfterShow');
-  };
-
-  this.buildApp = function (entry, ApplicationCtor) {
+  }
+  buildApp(entry, ApplicationCtor) {
     ApplicationCtor.prototype.__root = true;
     this.app = new ApplicationCtor();
     this.buildEngine(merge({ view: this.app }, this.app._settings));
 
     this.emit('app', this.app);
-  };
-
-  this.buildEngine = function (opts) {
+  }
+  buildEngine(opts) {
     if (!opts) {
       opts = {};
     }
     if (!opts.entry) {
       opts.entry = 'launchUI';
     }
+
+
 
 
     var view = opts.view;
@@ -200,9 +208,15 @@ exports.ClientAPI = Class(PubSub, function () {
 
 
 
+
+
+
+
     if (!(view instanceof View)) {
       throw 'src/Application.js must export a Class that inherits from ui.View';
     }
+
+
 
 
     view.subscribe('onLoadError', this, '_onAppLoadError');
@@ -211,6 +225,10 @@ exports.ClientAPI = Class(PubSub, function () {
     if (typeof view[opts.entry] == 'function') {
       launch = bind(view, opts.entry);
     }
+
+
+
+
 
 
 
@@ -235,6 +253,8 @@ exports.ClientAPI = Class(PubSub, function () {
       }
 
 
+
+
       // note that hidePreloader takes a null cb argument to avoid
       // forwarding the preloader result as the callback
       if (autoHide) {
@@ -249,17 +269,15 @@ exports.ClientAPI = Class(PubSub, function () {
       }
       launch && launch();
     }
-  };
-
-  this._onAppLoadError = function (error) {
+  }
+  _onAppLoadError(error) {
     logger.error('encountered error when creating src Application: ', JSON.stringify(error));
     var splash = CONFIG.splash;
     if (splash && splash.onAppLoadError) {
       splash.onAppLoadError(error);
     }
-  };
-
-  this.hidePreloader = function (cb) {
+  }
+  hidePreloader(cb) {
     var splash = CONFIG.splash;
     if (splash && splash.hide && !splash.hidden) {
       splash.hide(cb);
@@ -267,10 +285,14 @@ exports.ClientAPI = Class(PubSub, function () {
     } else {
       cb && cb();
     }
-  };
-});
+  }
+};
 
 
+exports.ClientAPI.prototype.Application = StackView;
+exports.ClientAPI.prototype.plugins = new PluginManager();
+exports.ClientAPI.prototype.ui = new UI();
+exports.ClientAPI.prototype.resources = loader;
 var ua = navigator.userAgent;
 exports.ClientAPI.prototype.isNative = /TeaLeaf/.test(ua);
 if (exports.ClientAPI.prototype.isNative) {
@@ -287,6 +309,18 @@ if (exports.ClientAPI.prototype.isNative) {
   exports.ClientAPI.prototype.isDesktop = true;
   exports.ClientAPI.prototype.isFacebook = GLOBAL.CONFIG.isFacebookApp;
 }
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

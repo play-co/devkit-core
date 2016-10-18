@@ -22,6 +22,8 @@ if (NATIVE.events.setResponder) {
 }
 
 
+
+
 NATIVE.input.getTouchEvents = function () {
   return inputQueue.splice(0, inputQueue.length);
 };

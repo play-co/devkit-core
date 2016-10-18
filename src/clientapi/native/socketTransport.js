@@ -29,6 +29,8 @@ function onError(opts) {
 }
 
 
+
+
 var sockets = {};
 
 NATIVE.events.registerHandler('socketOpened', function (evt) {
@@ -36,6 +38,8 @@ NATIVE.events.registerHandler('socketOpened', function (evt) {
   if (socket) {
     socket.onConnect();
   }
+
+
 
 
 });
@@ -62,12 +66,13 @@ NATIVE.events.registerHandler('socketRead', function (evt) {
 });
 
 
-exports.Transport = Class(interfaces.Transport, function () {
-  this.init = function (socket) {
-    this._socket = socket;
-  };
+exports.Transport = class extends interfaces.Transport {
+  constructor(socket) {
+    super();
 
-  this.makeConnection = function (protocol) {
+    this._socket = socket;
+  }
+  makeConnection(protocol) {
     this._socket.onRead = function (data) {
       try {
         protocol.dataReceived.apply(protocol, arguments);
@@ -78,16 +83,14 @@ exports.Transport = Class(interfaces.Transport, function () {
 
     this._socket.onError = bind(protocol, 'onError');
     this._socket.onClose = bind(protocol, 'connectionLost');
-  };
-
-  this.write = function (data) {
+  }
+  write(data) {
     this._socket.send(data);
-  };
-
-  this.loseConnection = function () {
+  }
+  loseConnection() {
     this._socket.close();
-  };
-});
+  }
+};
 
 
 //TODO add timeout
@@ -98,8 +101,8 @@ exports.Socket = function (host, port) {
   return socket;
 };
 
-exports.Connector = Class('ios.socket', interfaces.Connector, function () {
-  this.connect = function () {
+exports.Connector = class extends interfaces.Connector {
+  connect() {
     this._state = interfaces.STATE.CONNECTING;
 
     var host = this._opts.host, port = this._opts.port, timeout = this._opts.connectTimeout, socket = new exports.Socket(host, port, timeout);
@@ -110,13 +113,12 @@ exports.Connector = Class('ios.socket', interfaces.Connector, function () {
       logger.error(err);
       this.onDisconnect();
     });
-  };
-
-  this.onSocketConnect = function (socket) {
+  }
+  onSocketConnect(socket) {
     logger.log('connected!');
     this.onConnect(new exports.Transport(socket));
-  };
-});
+  }
+};
 
 
 export default exports;

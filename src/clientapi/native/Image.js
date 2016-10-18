@@ -24,8 +24,10 @@ import {
 import PubSub from 'lib/PubSub';
 import setProperty from 'util/setProperty';
 
-exports = Class(PubSub, function (supr) {
-  this.init = function (src, width, height, glname) {
+exports = class extends PubSub {
+  constructor(src, width, height, glname) {
+    super();
+
     this._src = src || '';
     this.width = width || undefined;
     this.height = height || undefined;
@@ -33,9 +35,8 @@ exports = Class(PubSub, function (supr) {
     this.complete = false;
     this._firedLoad = false;
     this._fireReload = false;
-  };
-
-  this._onload = function (width, height, gl_name) {
+  }
+  _onload(width, height, gl_name) {
     logger.log('onload called with', width, height, gl_name);
     this.complete = true;
     this.width = this.originalWidth = width;
@@ -48,44 +49,41 @@ exports = Class(PubSub, function (supr) {
     }
 
 
+
+
     if (this._fireReload) {
       this.onreload && this.onreload();
       this.publish('reload', { type: 'reload' });
     } else {
       this._fireReload = true;
     }
-  };
-
-  this._onerror = function () {
+  }
+  _onerror() {
     this.onerror();
     this.publish('error', { type: 'error' });
-  };
-
-  this.reload = function () {
+  }
+  reload() {
     this._fireReload = true;
     NATIVE.gl.loadImage(this);
-  };
-
-  this.destroy = function () {
+  }
+  destroy() {
     if (this._src) {
       NATIVE.gl.deleteTexture(this._src);
     }
-  };
-
-  this.addEventListener = function (type, callback, useCapture) {
+  }
+  addEventListener(type, callback, useCapture) {
     this.subscribe(type, this, callback);
-  };
-  this.removeEventListener = function (type, callback, useCapture) {
+  }
+  removeEventListener(type, callback, useCapture) {
     this.unsubscribe(type, this, callback);
-  };
-
-  this.onload = function () {
-  };
-  this.onerror = function () {
-  };
-  this.onreload = function () {
-  };
-});
+  }
+  onload() {
+  }
+  onerror() {
+  }
+  onreload() {
+  }
+};
 var Image = exports;
 
 setProperty(Image.prototype, 'src', {
@@ -95,6 +93,8 @@ setProperty(Image.prototype, 'src', {
       this._onerror();
       return;
     }
+
+
 
 
     this._src = value;

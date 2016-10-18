@@ -68,6 +68,12 @@ exports.screenshot = function (cb) {
 
 
 
+
+
+
+
+
+
     if (base64Image) {
       cb(null, {
         width: _debugCanvas.width,

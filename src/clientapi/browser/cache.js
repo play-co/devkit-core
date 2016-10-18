@@ -26,6 +26,10 @@ function init() {
 
 
 
+
+
+
+
 exports.isEnabled = 'serviceWorker' in navigator && !device.isSimulator;
 
 import loader from 'ui/resource/loader';
@@ -46,6 +50,8 @@ if (exports.isEnabled) {
     }
 
 
+
+
     var urls = Object.keys(sheets);
 
     // cache the current URL (index.html is cached, but we might be loading /
@@ -63,10 +69,14 @@ if (exports.isEnabled) {
 }
 
 
+
+
 exports.addWhitelistDomain = function (domain) {
   if (!_onInit) {
     return Promise.reject(new Error('cache not available'));
   }
+
+
 
 
   // block on init
@@ -87,9 +97,13 @@ exports.addToCache = function (urls) {
   }
 
 
+
+
   if (!_onInit) {
     return Promise.reject(new Error('cache not available'));
   }
+
+
 
 
   // block on init
@@ -122,6 +136,8 @@ function sendMessage(message) {
     }
 
 
+
+
     // This sends the message data as well as transferring messageChannel.port2 to the service worker.
     // The service worker can then use the transferred port to reply via postMessage(), which
     // will in turn trigger the onmessage handler on messageChannel.port1.
@@ -129,5 +145,6 @@ function sendMessage(message) {
     _cacheWorker.postMessage(message, [messageChannel.port2]);
   });
 }
+
 
 export default exports;

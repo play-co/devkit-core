@@ -28,8 +28,8 @@ import Callback from 'lib/Callback';
 var REQUEST_ID = 0;
 
 
-var chromeFrameClass = Class(function () {
-  this.init = function () {
+class chromeFrameClass {
+  constructor() {
     this._callBacks = {};
     this._isChromeFrame = !!window.externalHost;
     if (this._isChromeFrame) {
@@ -43,9 +43,8 @@ var chromeFrameClass = Class(function () {
         }
       });
     }
-  };
-
-  this.send = function (destination, data, cb) {
+  }
+  send(destination, data, cb) {
     var id = ++REQUEST_ID;
 
     if (typeof cb == 'function') {
@@ -53,26 +52,25 @@ var chromeFrameClass = Class(function () {
     }
 
 
+
+
     window.externalHost.postMessage(JSON.stringify({
       destination: destination,
       data: data,
       requestID: id
     }), '*');
-  };
-
-  this.isChromeFrame = function () {
+  }
+  isChromeFrame() {
     return this._isChromeFrame;
-  };
-
-  this._postMessage = function () {
+  }
+  _postMessage() {
     if (!this._isChromeFrame) {
       logger.log('Cannot post message to chrome frame, ');
       return;
     }
     return !!window.externalHost;
-  };
-
-});
+  }
+}
 
 /*
 	this._receiveMessage = function (event) {

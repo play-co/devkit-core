@@ -63,6 +63,10 @@ function analytics() {
 
 
 
+
+
+
+
 import devkit from 'devkit';
 
 function startApp() {
@@ -71,5 +75,8 @@ function startApp() {
   analytics();
   GLOBAL.GC.buildApp('launchUI');
 }
+
+
+
 
 

@@ -64,6 +64,8 @@ if (DEBUG) {
         }
 
 
+
+
         req.respond(stringify(value));
       } catch (e) {
         req.error(e.name + ': ' + e.message);
@@ -71,5 +73,6 @@ if (DEBUG) {
     });
   };
 }
+
 
 export default exports;

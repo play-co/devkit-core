@@ -24,8 +24,8 @@ import {
  */
 var lastbg;
 
-exports = Class(function () {
-  this.init = function (url) {
+exports = class {
+  constructor(url) {
     this._startedLoad = false;
     this._src = '';
     this.autoplay = false;
@@ -38,9 +38,8 @@ exports = Class(function () {
     if (url) {
       this.src = url;
     }
-  };
-
-  this._updateElapsed = function () {
+  }
+  _updateElapsed() {
     if (this._startTime > 0) {
       var now = Date.now();
       this._et += now - this._startTime;
@@ -50,13 +49,11 @@ exports = Class(function () {
       }
       this._startTime = now;
     }
-  };
-
-  this.canPlayType = function (type) {
+  }
+  canPlayType(type) {
     return true;
-  };
-
-  this.load = function (thenPlay) {
+  }
+  load(thenPlay) {
     if (this.isBackgroundMusic) {
       // Background music should not be preloaded like normal sounds
       return;
@@ -66,14 +63,12 @@ exports = Class(function () {
       s.onload = bind(this, '_play');
     }
     this._startedLoad = true;
-  };
-
-  this._play = function () {
+  }
+  _play() {
     NATIVE.sound.playSound(this._src, this._volume, this.loop === 'loop' || this.loop === true);
     this._startTime = Date.now();
-  };
-
-  this.play = function () {
+  }
+  play() {
     this.paused = false;
     if (this.isBackgroundMusic) {
       lastbg = this;
@@ -85,9 +80,8 @@ exports = Class(function () {
     } else {
       this._play();
     }
-  };
-
-  this.pause = function () {
+  }
+  pause() {
     if (this.paused) {
       return;
     }
@@ -100,9 +94,8 @@ exports = Class(function () {
       this._updateElapsed();
       this._startTime = 0;
     }
-  };
-
-  this.stop = function () {
+  }
+  stop() {
     if (this._startedLoad) {
       if (!this.isBackgroundMusic || this == lastbg) {
         NATIVE.sound.stopSound(this._src);
@@ -110,15 +103,15 @@ exports = Class(function () {
     }
 
 
-    this.reset();
-  };
 
-  this.reset = function () {
+
+    this.reset();
+  }
+  reset() {
     this._et = 0;
     this._startTime = 0;
-  };
-
-  this.destroy = function () {
+  }
+  destroy() {
     if (this == lastbg) {
       lastbg = undefined;
     }
@@ -126,10 +119,13 @@ exports = Class(function () {
 
 
 
-    NATIVE.sound.destroySound(this._src);
-  };
 
-});
+
+
+
+    NATIVE.sound.destroySound(this._src);
+  }
+};
 var Audio = exports;
 
 
@@ -142,6 +138,8 @@ Audio.prototype.__defineSetter__('src', function (url) {
     if ((this.autoplay || this.preload == 'auto') && !this.isBackgroundMusic) {
       this.load();
     }
+
+
 
 
     if (this.autoplay) {

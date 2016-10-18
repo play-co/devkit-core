@@ -58,6 +58,8 @@ exports.install = function () {
   }
 
 
+
+
   req('./timestep');
   timestep.install();
 
@@ -72,9 +74,13 @@ exports.install = function () {
     }
 
 
+
+
     if (oldHide instanceof Function) {
       oldHide();
     }
+
+
 
 
     cb && cb();

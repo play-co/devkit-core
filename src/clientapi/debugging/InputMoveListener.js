@@ -11,17 +11,18 @@ import Point from 'math/geom/Point';
 var _useDOMEvents = device.isSimulator && document.body.addEventListener;
 
 
-exports = Class(Emitter, function () {
-  this.init = function (opts) {
+exports = class extends Emitter {
+  constructor(opts) {
+    super();
+
     opts = opts || {};
 
     this._requireShiftClick = !!opts.requireShiftClick;
     this.onMouseMoveCapture = bind(this, this.onMouseMoveCapture);
     this._checkShift = bind(this, this._checkShift);
     this.onContextMenu = bind(this, this.onContextMenu);
-  };
-
-  this.connect = function () {
+  }
+  connect() {
     if (_useDOMEvents) {
       window.addEventListener('mousemove', this.onMouseMoveCapture, true);
       window.addEventListener('contextmenu', this.onContextMenu, true);
@@ -29,12 +30,13 @@ exports = Class(Emitter, function () {
     }
 
 
+
+
     GC.app.view.subscribe('InputMoveCapture', this, 'onInputMoveCapture');
     GC.app.view.subscribe('InputStartCapture', this, '_cancelEvent');
     GC.app.view.subscribe('InputSelectCapture', this, 'onInputSelectCapture');
-  };
-
-  this.disconnect = function () {
+  }
+  disconnect() {
     if (_useDOMEvents) {
       window.removeEventListener('mousedown', this._checkShift, true);
       window.removeEventListener('mousemove', this.onMouseMoveCapture, true);
@@ -42,21 +44,23 @@ exports = Class(Emitter, function () {
     }
 
 
+
+
     GC.app.view.unsubscribe('InputMoveCapture', this, 'onInputMoveCapture');
     GC.app.view.unsubscribe('InputStartCapture', this, '_cancelEvent');
     GC.app.view.unsubscribe('InputSelectCapture', this, 'onInputSelectCapture');
-  };
-
-  this._cancelEvent = function (evt) {
+  }
+  _cancelEvent(evt) {
     evt.cancel();
-  };
-
-  this._checkShift = function (e) {
+  }
+  _checkShift(e) {
     if (e.which === 3 || e.button === 2) {
       e.stopPropagation();
       e.preventDefault();
       return false;
     }
+
+
 
 
     this._shiftDown = !!e.shiftKey;
@@ -76,13 +80,14 @@ exports = Class(Emitter, function () {
       e.stopPropagation();
       e.preventDefault();
     }
-  };
-
-  this.onContextMenu = function (e) {
+  }
+  onContextMenu(e) {
     var fullTrace = this.getFullTrace(e.pageX, e.pageY);
     if (!fullTrace.trace.length) {
       return;
     }
+
+
 
 
     this.emit('trace', {
@@ -95,9 +100,8 @@ exports = Class(Emitter, function () {
     e.stopPropagation();
     e.preventDefault();
     return false;
-  };
-
-  this.onInputMoveCapture = function (evt, pt, allEvt, allPt) {
+  }
+  onInputMoveCapture(evt, pt, allEvt, allPt) {
     var fullTrace = this.getFullTrace(pt.x, pt.y);
 
     var data = {
@@ -111,17 +115,15 @@ exports = Class(Emitter, function () {
 
     // trace of all visible views
     this.emit('move', data);
-  };
-
-  this.onInputSelectCapture = function (evt, pt) {
+  }
+  onInputSelectCapture(evt, pt) {
     if (!this._requireShiftClick || this._shiftDown) {
       evt.cancel();
       var trace = this.getFullTrace(pt.x, pt.y);
       this.emit('select', trace);
     }
-  };
-
-  this.getFullTrace = function (x, y) {
+  }
+  getFullTrace(x, y) {
     var fullTrace = {
       pt: [],
       trace: [],
@@ -129,9 +131,8 @@ exports = Class(Emitter, function () {
     };
     this._getFullTrace(GC.app.view, fullTrace, new Point(x, y), 0);
     return fullTrace;
-  };
-
-  this._getFullTrace = function (view, evt, pt, depth) {
+  }
+  _getFullTrace(view, evt, pt, depth) {
     var localPt = view.style.localizePoint(new Point(pt));
 
     //if the point is contained add it to the trace
@@ -148,6 +149,8 @@ exports = Class(Emitter, function () {
     }
 
 
+
+
     var subviews = view.getSubviews();
     var n = subviews.length;
     for (var i = 0; i < n; ++i) {
@@ -155,9 +158,8 @@ exports = Class(Emitter, function () {
         this._getFullTrace(subviews[i], evt, localPt, depth + 1);
       }
     }
-  };
-
-  this.onMouseMoveCapture = function (e) {
+  }
+  onMouseMoveCapture(e) {
     if (!GC.app.engine.isRunning()) {
       // get the event to the active target
       var mockEvt = {
@@ -170,7 +172,7 @@ exports = Class(Emitter, function () {
 
       this.onInputMoveCapture(mockEvt, mockPt);
     }
-  };
-});
+  }
+};
 
 export default exports;

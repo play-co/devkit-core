@@ -24,6 +24,8 @@ DOMParser.prototype.parseFromString = function (source, mimeType) {
   }
 
 
+
+
   sax.errorHandler = buildErrorHandler(errorHandler, domBuilder, locator);
   sax.domBuilder = options.domBuilder || domBuilder;
   if (/\/x?html?$/.test(mimeType)) {
@@ -217,6 +219,8 @@ function _toString(chars, start, length) {
 }
 
 
+
+
 /*
  * @link http://www.saxproject.org/apidoc/org/xml/sax/ext/LexicalHandler.html
  * used method of org.xml.sax.ext.LexicalHandler:
@@ -262,6 +266,10 @@ function appendElement(hander, node) {
     hander.currentElement.appendChild(node);
   }
 }
+
+
+
+
 
 
 

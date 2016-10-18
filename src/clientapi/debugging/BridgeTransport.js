@@ -2,11 +2,11 @@ import EventEmitter from 'lib/PubSub';
 import nextTick from 'nextTick';
 
 
-var Transport = Class(EventEmitter, function (supr) {
-  this.emit = function (name, data) {
+class Transport extends EventEmitter {
+  emit(name, data) {
     nextTick(EventEmitter.prototype.emit.bind(this.target, name, data));
-  };
-});
+  }
+}
 
 
 /**
@@ -17,11 +17,11 @@ var Transport = Class(EventEmitter, function (supr) {
  * All events fire in the next tick to simulate a true connection and prevent
  * unexpected race conditions.
  */
-module.exports = Class(function () {
-  this.init = function () {
+module.exports = class {
+  constructor() {
     this.a = new Transport();
     this.b = new Transport();
     this.a.target = this.b;
     this.b.target = this.a;
-  };
-});
+  }
+};

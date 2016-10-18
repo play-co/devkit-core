@@ -43,6 +43,8 @@ if (DEBUG) {
   }
 
 
+
+
   var _logBuffer = [];
   var _isInstalled = false;
   var _isEnabled = true;
@@ -79,6 +81,8 @@ if (DEBUG) {
         }
 
 
+
+
         // buffer log lines
         if (!conn || !conn.isConnected()) {
           _logBuffer.push(args);
@@ -92,13 +96,21 @@ if (DEBUG) {
           }
 
 
+
+
           // send log
           conn.sendEvent('LOG', args);
         }
 
 
+
+
         isLocked = false;
       }
+
+
+
+
 
 
 
@@ -114,6 +126,8 @@ if (DEBUG) {
     }
 
 
+
+
     // if we buffered log messages, send them
     var n = _logBuffer.length;
     for (var i = 0; i < n; ++i) {
@@ -121,8 +135,11 @@ if (DEBUG) {
     }
 
 
+
+
     _logBuffer = [];
   };
 }
+
 
 export default exports;

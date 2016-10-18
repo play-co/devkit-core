@@ -25,41 +25,36 @@ var allowed_modes = [
   'json',
   'delimiter'
 ];
-exports.Reader = Class(function () {
-  this.init = function (cb, rmode, delim) {
+exports.Reader = class {
+  constructor(cb, rmode, delim) {
     this._buff = '';
     this._unclosed = [];
     this._checked = 0;
     this._name = null;
     this.setCb(cb);
     this.setMode(rmode || 'stream', delim);
-  };
-
-  this.setCb = function (func) {
+  }
+  setCb(func) {
     this._cb = func;
-  };
-
-  this.setMode = function (mode, delim) {
+  }
+  setMode(mode, delim) {
     if (allowed_modes.indexOf(mode) == -1) {
       throw new Error('illegal read mode:', mode);
     }
     this._mode = mode;
     this._delim = mode == 'delimiter' ? delim : null;
-  };
-
-  this.read = function (data) {
+  }
+  read(data) {
     this._buff += data;
     this._separate_events();
-  };
-
-  this._escaped = function (i) {
+  }
+  _escaped(i) {
     if (i == 0 || this._buff.charAt(i - 1) != '\\') {
       return false;
     }
     return !this._escaped(i - 1);
-  };
-
-  this._separate_events = function () {
+  }
+  _separate_events() {
     var frame;
     switch (this._mode) {
     case 'json':
@@ -100,7 +95,7 @@ exports.Reader = Class(function () {
       this._cb(frame);
       this._separate_events();
     }
-  };
-});
+  }
+};
 
 export default exports;

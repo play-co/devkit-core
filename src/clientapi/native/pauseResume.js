@@ -29,5 +29,7 @@ NATIVE.events.registerHandler('resume', function () {
   }
 
 
+
+
   window.__fireEvent('pageshow');
 });

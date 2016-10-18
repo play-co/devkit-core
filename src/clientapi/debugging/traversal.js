@@ -62,6 +62,8 @@ exports.findView = function (f, view) {
   }
 
 
+
+
   return false;
 };
 
@@ -81,6 +83,8 @@ var _renderHighlights = function () {
     }
 
 
+
+
     prev = now;
 
     if (fadeIn) {
@@ -96,6 +100,8 @@ var _renderHighlights = function () {
         highlight = 0;
       }
     }
+
+
 
 
     var gray = Math.round(255 * highlight / FADE_IN_TIME);
@@ -159,8 +165,12 @@ function getHighlightIndex(view) {
   }
 
 
+
+
   return -1;
 }
+
+
 
 
 function enableHighlighting() {
@@ -171,10 +181,14 @@ function enableHighlighting() {
 }
 
 
+
+
 function disableHighlighting() {
   _isHighlighting = false;
   GC.app.engine.removeListener('Render', _renderHighlights);
 }
+
+
 
 
 exports.highlightView = function (view, opts) {
@@ -192,6 +206,8 @@ exports.unhighlightView = function (view) {
   if (i !== -1) {
     _highlightViews.splice(i, 1);
   }
+
+
 
 
   if (!_highlightViews.length) {
@@ -218,6 +234,8 @@ exports.getImages = function (view) {
     }
 
 
+
+
   }, view || GC.app);
 
   var images = Object.keys(hash);
@@ -242,6 +260,8 @@ exports.packView = function (view) {
       }
 
 
+
+
       if (view.getScaleMethod) {
         var scaleMethod = view.getScaleMethod();
         if (/slice$/.test(scaleMethod)) {
@@ -254,10 +274,16 @@ exports.packView = function (view) {
 
 
 
+
+
+
+
     var text;
     if (view instanceof TextView) {
       text = view.getText();
     }
+
+
 
 
     var s = view.style;
@@ -334,6 +360,8 @@ exports.unpack = function (data) {
     }
 
 
+
+
     view.uid = data.uid;
 
     if (data.subviews) {
@@ -342,6 +370,8 @@ exports.unpack = function (data) {
       }
     }
   }
+
+
 
 
   GC.app.view.updateOpts(data.data);
@@ -396,6 +426,8 @@ exports.hideViewRange = function (a, b) {
   }
 
 
+
+
   exports.hideViews.apply(this, range);
 };
 
@@ -404,6 +436,10 @@ exports.showViewRange = function (a, b) {
   for (var i = a; i < b; ++i) {
     range.push(i);
   }
+
+
+
+
 
 
 

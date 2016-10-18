@@ -40,6 +40,8 @@ exports.install = function () {
     }
 
 
+
+
     if (!proto.localizePoint && proto.localizePt) {
       proto.localizePoint = proto.localizePt;
     }

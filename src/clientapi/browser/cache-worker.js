@@ -10,6 +10,8 @@ if (!Cache.prototype.add) {
 }
 
 
+
+
 if (!Cache.prototype.addAll) {
   Cache.prototype.addAll = function addAll(requests) {
     var cache = this;
@@ -27,6 +29,8 @@ if (!Cache.prototype.addAll) {
         throw new TypeError();
 
 
+
+
       requests = requests.map(function (request) {
         if (request instanceof Request) {
           return request;
@@ -42,11 +46,15 @@ if (!Cache.prototype.addAll) {
         }
 
 
+
+
         var scheme = new URL(request.url).protocol;
 
         if (scheme !== 'http:' && scheme !== 'https:') {
           throw new NetworkError('Invalid scheme');
         }
+
+
 
 
         return fetch(request.clone());
@@ -62,6 +70,8 @@ if (!Cache.prototype.addAll) {
     });
   };
 }
+
+
 
 
 if (!CacheStorage.prototype.match) {
@@ -85,6 +95,10 @@ if (!CacheStorage.prototype.match) {
     });
   };
 }
+
+
+
+
 
 
 
@@ -121,14 +135,20 @@ function addToList(list, pattern) {
   }
 
 
+
+
   if (pattern in list._patterns) {
     return;
   }
 
 
+
+
   list._patterns[pattern] = true;
   list.push(convertToRegexp(pattern));
 }
+
+
 
 
 function convertToRegexp(pattern) {
@@ -137,8 +157,12 @@ function convertToRegexp(pattern) {
   }
 
 
+
+
   return pattern;
 }
+
+
 
 
 // don't cache anything that looks like an api
@@ -154,6 +178,8 @@ self.addEventListener('install', function (event) {
   if (event.replace) {
     event.replace();
   }
+
+
 
 
   console.log('installing...');
@@ -201,6 +227,8 @@ function skipCache(request) {
   }
 
 
+
+
   for (var i = 0, n = whitelistOrigins.length; i < n; ++i) {
     if (whitelistOrigins[i].test(origin)) {
       return false;
@@ -208,8 +236,12 @@ function skipCache(request) {
   }
 
 
+
+
   return true;
 }
+
+
 
 
 // handle cache
@@ -226,6 +258,8 @@ self.addEventListener('fetch', function (event) {
     }
 
 
+
+
     // requests that don't get cached
     if (skipCache(request)) {
       console.log('skipping cache for', request.url);
@@ -233,11 +267,17 @@ self.addEventListener('fetch', function (event) {
     }
 
 
+
+
     // requests that only check cache (fail if not in cache)
     if (request.headers.get('Accept') == 'x-cache/only') {
       console.log('cache lookup failed for', request.url);
       return;
     }
+
+
+
+
 
 
 
@@ -300,6 +340,8 @@ function cacheURLs(urls) {
       if (index >= urls.length) {
         return resolve({ failedURLs: failedURLs });
       }
+
+
 
 
       // no-cors lets us cache cross-origin URLs

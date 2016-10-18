@@ -66,6 +66,8 @@ NATIVE.events.registerHandler('imageLoaded', function (evt) {
   }
 
 
+
+
   NATIVE.gl.publish('imageLoaded', evt);
 
   logger.debug('imageLoaded:', logURL, evt.originalWidth + 'x' + evt.originalHeight, '(' + evt.width + 'x' + evt.height + ')');

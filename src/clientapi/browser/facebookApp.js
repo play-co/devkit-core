@@ -73,6 +73,8 @@ exports.inviteFriends = function (opts, cb) {
   }
 
 
+
+
   FB.ui({
     method: 'apprequests',
     message: opts.message,
@@ -102,10 +104,14 @@ exports.challengeFriend = function (opts, cb) {
   }
 
 
+
+
   if (chromeFrame.isChromeFrame()) {
     this.sendChromeFrameMessage('challengeFriend', opts, cb);
     return;
   }
+
+
 
 
   // if no FB user id specified, use invite dialog instead of challenge
@@ -141,6 +147,8 @@ exports.buyWeeCoins = function (opts, cb) {
   }
 
 
+
+
   FB.ui({
     method: 'pay',
     display: 'iframe',
@@ -167,6 +175,8 @@ exports.sendChromeFrameMessage = function (method, data, cb) {
   }
 
 
+
+
   if (!data) {
     data = {};
   }
@@ -185,6 +195,12 @@ exports.receiveChromeFrameMessage = function (data, cb) {
     cb();
     return;
   }
+
+
+
+
+
+
 
 
 

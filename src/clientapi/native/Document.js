@@ -20,6 +20,8 @@ if (typeof document == 'undefined') {
 }
 
 
+
+
 if (!document.createElement) {
   var handlers = {};
 

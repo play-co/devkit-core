@@ -36,6 +36,8 @@ let exports = {};
   }
 
 
+
+
   function copyToFunction(group, f) {
     for (var method in group) {
       if (typeof group[method] === 'function') {
@@ -51,6 +53,10 @@ let exports = {};
 
 
 
+
+
+
+
   //****************************************************************
   function Group(superGroup, callback, firstSlotCallback) {
     this.args = [null];
@@ -61,6 +67,8 @@ let exports = {};
     // mcav
     this.superGroup = superGroup;
   }
+
+
 
 
   Group.prototype.done = function done() {
@@ -215,6 +223,8 @@ let exports = {};
     }
 
 
+
+
     this.currentGroup = new Group(this, function () {
     });
     this.context = context;
@@ -230,6 +240,8 @@ let exports = {};
   }
 
 
+
+
   for (var method in Group.prototype)
     if (Group.prototype.hasOwnProperty(method)) {
       SuperGroup.prototype[method] = function (method) {
@@ -240,6 +252,12 @@ let exports = {};
         };
       }(method);
     }
+
+
+
+
+
+
 
 
 
@@ -351,9 +369,10 @@ let exports = {};
     }
 
 
+
+
     return this.f;
   }
-
 ;
 
 
@@ -363,6 +382,8 @@ let exports = {};
     if (this.result) {
       return;
     }
+
+
 
 
     this.started = true;
@@ -383,6 +404,8 @@ let exports = {};
           this._runResultHandlers.apply(this, this.result);
           return;
         }
+
+
 
 
       } catch (e) {
@@ -425,6 +448,8 @@ let exports = {};
     }
 
 
+
+
     // if an error occurred during the callback chain and no one
     // attached an error handler, make sure we rethrow it
     if (this.isError && !this.hasErrorCallback && this.started) {
@@ -434,6 +459,8 @@ let exports = {};
         throw err;
       }.bind(this));
     }
+
+
 
 
     this.result = slice.call(arguments);
@@ -448,7 +475,6 @@ let exports = {};
 
     this.resultHandlers.length = 0;
   }
-
 ;
 
 
@@ -474,6 +500,8 @@ let exports = {};
   }
 
 
+
+
   ff.defer = function () {
     var superGroup = new SuperGroup(slice.call(arguments));
 
@@ -490,7 +518,6 @@ let exports = {};
 
     return f;
   }
-
 ;
 
 

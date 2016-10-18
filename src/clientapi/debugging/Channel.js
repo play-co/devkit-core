@@ -5,14 +5,13 @@ import { logger } from 'base';
 import PubSub from 'lib/PubSub';
 
 
-var Response = Class(function () {
-  this.init = function (channel, id) {
+class Response {
+  constructor(channel, id) {
     this.channel = channel;
     this.id = id;
     this.responded = false;
-  };
-
-  this.error = function (err) {
+  }
+  error(err) {
     if (this.responded) {
       return;
     }
@@ -21,9 +20,8 @@ var Response = Class(function () {
       error: err,
       res: this.id
     });
-  };
-
-  this.send = function (data) {
+  }
+  send(data) {
     if (this.responded) {
       return;
     }
@@ -32,27 +30,25 @@ var Response = Class(function () {
       data: data,
       res: this.id
     });
-  };
-});
+  }
+}
 
 
 var reqId = 0;
 
 
-exports = Class(PubSub, function (supr) {
-  this.init = function (name) {
+exports = class extends PubSub {
+  constructor(name) {
+    super();
+
     this._name = name;
     this._requests = {};
 
     this._onTransportConnect = this._onTransportConnect.bind(this);
     this._onTransportDisconnect = this._onTransportDisconnect.bind(this);
     this._onTransportMessage = this._onTransportMessage.bind(this);
-  };
-
-  /**
-   * returns a Promise that resolves once the channel is connected to another channel
-   */
-  this.connect = function () {
+  }
+  connect() {
     return new Promise(function (resolve, reject) {
       if (this._isConnected) {
         resolve();
@@ -60,25 +56,20 @@ exports = Class(PubSub, function (supr) {
         this.once('connect', resolve);
       }
     }.bind(this));
-  };
-
-  this._isConnected = false;
-
-  // is someone on the other end of this channel listening
-  this.isConnected = function () {
+  }
+  isConnected() {
     return this._isConnected;
-  };
-
-  this.close = function () {
+  }
+  close() {
     this._sendInternalMessage('disconnect');
-  };
-
-  // internal: set an underlying transport
-  this.setTransport = function (transport) {
+  }
+  setTransport(transport) {
     if (this._transport && this._transport != transport) {
       // tear-down an old transport
       this._transport.removeListener('disconnect', this._onTransportDisconnect).removeListener('connect', this._onTransportConnect).removeListener(this._name, this._onTransportMessage);
     }
+
+
 
 
     this._transport = transport;
@@ -88,18 +79,15 @@ exports = Class(PubSub, function (supr) {
       // start connect handshake
       this._onTransportConnect();
     }
-  };
-
-  this._onTransportConnect = function () {
+  }
+  _onTransportConnect() {
     // transport connected, start a connect handshake (see if anyone is listening)
     this._sendInternalMessage('connect');
-  };
-
-  this._onTransportDisconnect = function () {
+  }
+  _onTransportDisconnect() {
     this._isConnected = false;
-  };
-
-  this._onTransportMessage = function (msg) {
+  }
+  _onTransportMessage(msg) {
     if (msg.internal) {
       this._onInternalMessage(msg.internal);
     } else if (msg.res) {
@@ -109,31 +97,24 @@ exports = Class(PubSub, function (supr) {
         this._requests[msg.res].resolve(msg.data);
       }
     } else if (msg.id) {
-      supr(this, 'emit', [
-        msg.name,
-        msg.data,
-        new Response(this, msg.id)
-      ]);
+      super.emit(msg.name, msg.data, new Response(this, msg.id));
     } else {
-      supr(this, 'emit', [
-        msg.name,
-        msg.data
-      ]);
+      super.emit(msg.name, msg.data);
     }
-  };
-
-  this._sendInternalMessage = function (name) {
+  }
+  _sendInternalMessage(name) {
     if (this._transport) {
       this._transport.emit(this._name, { internal: name });
     }
-  };
-
-  this._onInternalMessage = function (msg) {
+  }
+  _onInternalMessage(msg) {
     // handle internal message protocol, used to determine if the receiver channel is listening to events
     switch (msg) {
     case 'connect':
       // complete the channel connection
       this._sendInternalMessage('connectConfirmed');
+
+
 
 
     // fall-through
@@ -146,23 +127,18 @@ exports = Class(PubSub, function (supr) {
       this._emit('disconnect');
       break;
     }
-  };
-
-  this._send = function (data) {
+  }
+  _send(data) {
     if (this._transport) {
       this._transport.emit(this._name, data);
     } else {
       logger.warn(this._name, 'failed to send', data);
     }
-  };
-
-  // emit an event locally on the channel object
-  this._emit = function (name, data) {
-    supr(this, 'emit', arguments);
-  };
-
-  // emit an event remotely on the receiver channel object
-  this.emit = function (name, data) {
+  }
+  _emit(name, data) {
+    super.emit(...arguments);
+  }
+  emit(name, data) {
     if (name == 'newListener') {
       return this._emit(name, data);
     }
@@ -170,12 +146,8 @@ exports = Class(PubSub, function (supr) {
       name: name,
       data: data
     });
-  };
-
-  /**
-   * emits
-   */
-  this.request = function (name, data) {
+  }
+  request(name, data) {
     return this.connect().bind(this).then(function () {
       var id = ++reqId;
       this._send({
@@ -190,10 +162,11 @@ exports = Class(PubSub, function (supr) {
         };
       }.bind(this));
     });
-  };
-});
+  }
+};
 
 
+exports.prototype._isConnected = false;
 exports.prototype.disconnect = exports.prototype.close;
 
 

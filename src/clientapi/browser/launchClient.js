@@ -48,6 +48,14 @@ if (isSimulator) {
 
 
 
+
+
+
+
+
+
+
+
 // shims
 import stdJSON from 'std/JSON';
 
@@ -56,11 +64,17 @@ if (!window.JSON) {
 }
 
 
+
+
 if (!window.console) {
   window.console = {};
   window.console.log = window.console.info = window.console.error = window.console.warn = function () {
   };
 }
+
+
+
+
 
 
 
@@ -79,6 +93,8 @@ if (!isSimulator) {
   // start the cache service-worker
   require('./cache');
 }
+
+
 
 
 var splash = document.getElementById('_GCSplash');
@@ -100,6 +116,10 @@ if (splash) {
     };
   }
 }
+
+
+
+
 
 
 
@@ -142,6 +162,10 @@ export const startGame = _ApplicationCtor => {
 
 
 
+
+
+
+
 function queueStart() {
   /* jshint -W117 */
   if (window.GC_LIVE_EDIT && GC_LIVE_EDIT._isLiveEdit) {
@@ -160,6 +184,14 @@ function queueStart() {
     startApp();
   }
 }
+
+
+
+
+
+
+
+
 
 
 
@@ -191,6 +223,8 @@ function startApp() {
       });
     });
   }
+
+
 
 
   GLOBAL.GC.buildApp('launchUI', ApplicationCtor);

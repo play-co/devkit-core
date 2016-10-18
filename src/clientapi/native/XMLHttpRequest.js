@@ -29,15 +29,14 @@ var state = {
   'DONE': 4
 };
 
-var XMLHttpRequest = Class(function () {
-  this.init = function () {
+class XMLHttpRequest {
+  constructor() {
     this.readyState = state.UNSENT;
     this.responseText = null;
     this._requestHeaders = {};
     this.__id = id;
-  };
-
-  this.open = function (method, url, async) {
+  }
+  open(method, url, async) {
     this._method = method;
     this._url = '' + url;
     this._async = async || false;
@@ -47,13 +46,11 @@ var XMLHttpRequest = Class(function () {
     if (!this._async) {
       logger.warn('synchronous xhrs not supported');
     }
-  };
-
-  this.getResponseHeader = function (name) {
+  }
+  getResponseHeader(name) {
     return this._responseHeadersLowerCase[name.toLowerCase()];
-  };
-
-  this.getAllResponseHeaders = function () {
+  }
+  getAllResponseHeaders() {
     var lines = [];
     var headers = this._responseHeaders;
     for (var key in headers) {
@@ -63,25 +60,21 @@ var XMLHttpRequest = Class(function () {
       lines.push(key + ': ' + headers[key]);
     }
     return lines.join('\r\n');
-  };
-
-  this.setRequestHeader = function (name, value) {
+  }
+  setRequestHeader(name, value) {
     this._requestHeaders[name] = value;
-  };
-
-  this.send = function (data) {
+  }
+  send(data) {
     this._data = data || '';
     xhrs[id++] = this;
     NATIVE.xhr.send(this._method, this._url, this._async, this._data, 0, this.__id, this._requestHeaders);
-  };
-
-  this.uploadFile = function (filename) {
+  }
+  uploadFile(filename) {
     this._filename = filename;
     xhrs[id++] = this;
     NATIVE.xhr.uploadFile(this.__id, this._filename, this._url, this._async, this._requestHeaders);
-  };
-
-  this._onreadystatechange = function (state, status, response) {
+  }
+  _onreadystatechange(state, status, response) {
     this.readyState = state;
     this.status = status;
     this.responseText = response || null;
@@ -89,11 +82,10 @@ var XMLHttpRequest = Class(function () {
     if (typeof this.onreadystatechange === 'function') {
       this.onreadystatechange();
     }
-  };
-
-  this.onreadystatechange = function () {
-  };
-});
+  }
+  onreadystatechange() {
+  }
+}
 
 var xhrs = {};
 var id = 0;

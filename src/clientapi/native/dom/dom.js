@@ -159,6 +159,8 @@ function _findNodeIndex(list, node) {
 }
 
 
+
+
 function _addNamedNode(el, list, newAttr, oldAttr) {
   if (oldAttr) {
     list[_findNodeIndex(list, oldAttr)] = newAttr;
@@ -424,6 +426,10 @@ function _xmlEncoder(c) {
 
 
 
+
+
+
+
 copy(NodeType, Node);
 copy(NodeType, Node.prototype);
 
@@ -443,6 +449,12 @@ function _visitNode(node, callback) {
     } while (node = node.nextSibling);
   }
 }
+
+
+
+
+
+
 
 
 
@@ -486,6 +498,8 @@ function _onUpdateChild(doc, el, newChild) {
     }
   }
 }
+
+
 
 
 /**
@@ -599,6 +613,8 @@ Document.prototype = {
     if (this.documentElement == null && newChild.nodeType == 1) {
       this.documentElement = newChild;
     }
+
+
 
 
     return _insertBefore(this, newChild, refChild), newChild.ownerDocument = this, newChild;
@@ -1106,6 +1122,8 @@ function cloneNode(doc, node, deep) {
 }
 
 
+
+
 function __set__(object, key, value) {
   object[key] = value;
 }
@@ -1169,9 +1187,16 @@ try {
 
 
 
+
+
+
+
+
+
 if (typeof require == 'function') {
   exports.DOMImplementation = DOMImplementation;
   exports.XMLSerializer = XMLSerializer;
 }
+
 
 export default exports;

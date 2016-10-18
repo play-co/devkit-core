@@ -167,6 +167,8 @@ function merge() {
 }
 
 
+
+
 exports.pick = function () {
   var list = merge.apply(this, arguments);
   return list[Math.random() * list.length | 0];

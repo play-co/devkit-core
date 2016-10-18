@@ -71,6 +71,8 @@ function installNativeView() {
 }
 
 
+
+
 logger.log(typeof GLOBAL.CONFIG, GLOBAL.CONFIG && CONFIG.disableNativeViews);
 
 if (GLOBAL.CONFIG && CONFIG.disableNativeViews || !hasNativeViews) {
@@ -80,5 +82,6 @@ if (GLOBAL.CONFIG && CONFIG.disableNativeViews || !hasNativeViews) {
 } else {
   exports.install = installNativeView;
 }
+
 
 export default exports;

@@ -90,11 +90,15 @@ function doLoad() {
 }
 
 
+
+
 function getSession(err) {
   if (err) {
     exports.state = 'failed';
     return GC.error('facebook', 'load_failed');
   }
+
+
 
 
   exports.state = 'completed';
@@ -119,10 +123,14 @@ function getSession(err) {
       }
 
 
+
+
       if (fbAccount.hasAccessToken) {
         withSession.fire(null);
         return;
       }
+
+
 
 
       FB.getLoginStatus(function (response) {
@@ -148,5 +156,6 @@ function getSession(err) {
     });
   });
 }
+
 
 export default exports;

@@ -33,6 +33,8 @@ function XMLReader() {
 }
 
 
+
+
 XMLReader.prototype = {
   parse: function (source, defaultNSMap, entityMap) {
     var domBuilder = this.domBuilder;
@@ -174,6 +176,18 @@ function parse(source, defaultNSMapCopy, entityMap, domBuilder, errorHandler) {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
     }
     if (end < 0) {
       //TODO: 这里有可能sax回退，有位置错误风险
@@ -189,6 +203,8 @@ function copyLocator(f, t) {
   return t;
 
 }
+
+
 
 
 /**
@@ -531,6 +547,12 @@ function parseDCC(source, start, domBuilder, errorHandler) {
 
 
 
+
+
+
+
+
+
 function parseInstruction(source, start, domBuilder) {
   var end = source.indexOf('?>', start);
   if (end) {
@@ -546,6 +568,8 @@ function parseInstruction(source, start, domBuilder) {
   }
   return -1;
 }
+
+
 
 
 /**
@@ -620,6 +644,8 @@ if (!(_set_proto_({}, _set_proto_.prototype) instanceof _set_proto_)) {
 }
 
 
+
+
 function split(source, start) {
   var match;
   var buf = [];
@@ -635,9 +661,16 @@ function split(source, start) {
 }
 
 
+
+
 if (typeof require == 'function') {
   exports.XMLReader = XMLReader;
 }
+
+
+
+
+
 
 
 
