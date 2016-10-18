@@ -47,15 +47,16 @@ if (!window.console) {
   window.console.log = window.console.info = window.console.error = window.console.warn = function () {};
 }
 
-if (typeof localStorage !== 'undefined') {
-  /* jshint -W020 */
-  localStorage = {
-    getItem: function () {},
-    setItem: function () {},
-    removeItem: function () {}
-  };
-  /* jshint +W020 */
-}
+// FIXME: Uncaught TypeError: Cannot assign to read only property 'localStorage' of object '#<Window>''
+// if (typeof localStorage !== 'undefined') {
+//   /* jshint -W020 */
+//   localStorage = {
+//     getItem: function () {},
+//     setItem: function () {},
+//     removeItem: function () {}
+//   };
+//   /* jshint +W020 */
+// }
 
 if (!isSimulator) {
   // start the cache service-worker
@@ -89,31 +90,37 @@ var mute = uri.hash('mute');
 CONFIG.isMuted = mute !== undefined && mute !== 'false' && mute !== '0' && mute !== 'no';
 
 var simulatorModules;
-if (DEBUG && isSimulator && Array.isArray(CONFIG.simulator.modules)) {
-  simulatorModules = [];
+var ApplicationCtor;
 
-  // client API inside simulator: call onLaunch() on each simulator module,
-  // optionally block on a returned promise for up to 5 seconds
-  Promise
-    .map(CONFIG.simulator.modules, function (name) {
-      // try {
-      //   var module = jsio(name);
-      //   if (module) {
-      //     simulatorModules.push(module);
-      //     if (typeof module.onLaunch == 'function') {
-      //       return module.onLaunch();
-      //     }
-      //   }
-      // } catch (e) {
-      //   console.warn(e);
-      // }
-      console.error('TODO: Dynamic require ctx');
-    })
-    .timeout(5000)
-    .finally(queueStart);
-} else {
-  queueStart();
-}
+export const startGame = (_ApplicationCtor) => {
+  ApplicationCtor = _ApplicationCtor;
+  if (DEBUG && isSimulator && Array.isArray(CONFIG.simulator.modules)) {
+    simulatorModules = [];
+
+    // client API inside simulator: call onLaunch() on each simulator module,
+    // optionally block on a returned promise for up to 5 seconds
+    Promise
+      .map(CONFIG.simulator.modules, function (name) {
+        // try {
+        //   var module = jsio(name);
+        //   if (module) {
+        //     simulatorModules.push(module);
+        //     if (typeof module.onLaunch == 'function') {
+        //       return module.onLaunch();
+        //     }
+        //   }
+        // } catch (e) {
+        //   console.warn(e);
+        // }
+        console.error('TODO: Dynamic require ctx');
+      })
+      .timeout(5000)
+      .finally(queueStart);
+  } else {
+    queueStart();
+  }
+};
+
 
 function queueStart() {
   /* jshint -W117 */
@@ -159,5 +166,5 @@ function startApp () {
     });
   }
 
-  GLOBAL.GC.buildApp('launchUI');
+  GLOBAL.GC.buildApp('launchUI', ApplicationCtor);
 }

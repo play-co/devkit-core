@@ -145,6 +145,8 @@ exports.JSCompiler = Class(function () {
           }
         });
 
+        options.useCircularDependencyPlugin = true;
+
         return configurator;
       },
       postConfigure: (configurator, options) => {
@@ -159,9 +161,14 @@ exports.JSCompiler = Class(function () {
             current.resolve.alias[pathCacheKey] = mapPath(jsioOpts.pathCache[pathCacheKey]);
           }
 
+          // This should be per platform (depending on build type)
           current.resolve.alias.timestepInit = path.resolve(
             __dirname, '..', 'clientapi', 'browser'
           );
+
+          current.resolve.root.push(path.resolve(
+            __dirname, '..', '..', 'modules', 'timestep'
+          ));
 
           // current.resolve.alias.jsio = path.dirname(require.resolve('jsio'));
           current.resolve.alias.jsio = path.resolve(

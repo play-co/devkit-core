@@ -153,11 +153,9 @@ exports.ClientAPI = Class(lib.PubSub, function () {
     this.publish('AfterShow');
   };
 
-  this.buildApp = function (entry) {
-    var Application = require('src/Application');
-
-    Application.prototype.__root = true;
-    this.app = new Application();
+  this.buildApp = function (entry, ApplicationCtor) {
+    ApplicationCtor.prototype.__root = true;
+    this.app = new ApplicationCtor();
     this.buildEngine(merge({view: this.app}, this.app._settings));
 
     this.emit('app', this.app);
