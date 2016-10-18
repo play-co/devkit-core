@@ -25,7 +25,7 @@ import PubSub from 'lib/PubSub';
 import setProperty from 'util/setProperty';
 
 exports = class extends PubSub {
-  constructor(src, width, height, glname) {
+  constructor (src, width, height, glname) {
     super();
 
     this._src = src || '';
@@ -36,7 +36,7 @@ exports = class extends PubSub {
     this._firedLoad = false;
     this._fireReload = false;
   }
-  _onload(width, height, gl_name) {
+  _onload (width, height, gl_name) {
     logger.log('onload called with', width, height, gl_name);
     this.complete = true;
     this.width = this.originalWidth = width;
@@ -48,9 +48,6 @@ exports = class extends PubSub {
       this.publish('load', { type: 'load' });
     }
 
-
-
-
     if (this._fireReload) {
       this.onreload && this.onreload();
       this.publish('reload', { type: 'reload' });
@@ -58,31 +55,28 @@ exports = class extends PubSub {
       this._fireReload = true;
     }
   }
-  _onerror() {
+  _onerror () {
     this.onerror();
     this.publish('error', { type: 'error' });
   }
-  reload() {
+  reload () {
     this._fireReload = true;
     NATIVE.gl.loadImage(this);
   }
-  destroy() {
+  destroy () {
     if (this._src) {
       NATIVE.gl.deleteTexture(this._src);
     }
   }
-  addEventListener(type, callback, useCapture) {
+  addEventListener (type, callback, useCapture) {
     this.subscribe(type, this, callback);
   }
-  removeEventListener(type, callback, useCapture) {
+  removeEventListener (type, callback, useCapture) {
     this.unsubscribe(type, this, callback);
   }
-  onload() {
-  }
-  onerror() {
-  }
-  onreload() {
-  }
+  onload () {}
+  onerror () {}
+  onreload () {}
 };
 var Image = exports;
 
@@ -94,14 +88,10 @@ setProperty(Image.prototype, 'src', {
       return;
     }
 
-
-
-
     this._src = value;
     NATIVE.gl.loadImage(this);
   }
 });
-
 
 exports.install = function () {
   GLOBAL.Image = Image;

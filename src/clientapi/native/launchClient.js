@@ -51,32 +51,25 @@ startApp();
  *
  * You can remove this or replace it with your own analytics if you like.
  */
-function analytics() {
+function analytics () {
   var config = GLOBAL.CONFIG;
-  var params = 'appID:' + encodeURIComponent(config.appID || '') + '&' + 'bundleID:' + encodeURIComponent(config.bundleID || '') + '&' + 'appleID:' + encodeURIComponent(config.appleID || '') + '&' + 'version:' + encodeURIComponent(config.version || '') + '&' + 'sdkVersion:' + encodeURIComponent(config.sdkVersion || '') + '&' + 'isAndroid:' + (device.isAndroid ? 1 : 0) + '&' + 'isIOS:' + (device.isIOS ? 1 : 0);
+  var params = 'appID:' + encodeURIComponent(config.appID || '') + '&' +
+    'bundleID:' + encodeURIComponent(config.bundleID || '') + '&' + 'appleID:' +
+    encodeURIComponent(config.appleID || '') + '&' + 'version:' +
+    encodeURIComponent(config.version || '') + '&' + 'sdkVersion:' +
+    encodeURIComponent(config.sdkVersion || '') + '&' + 'isAndroid:' + (device.isAndroid ?
+      1 : 0) + '&' + 'isIOS:' + (device.isIOS ? 1 : 0);
 
   var xhr = new XMLHttpRequest();
   xhr.open('GET', 'http://www.gameclosure.com/analytics?' + params, true);
   xhr.send();
 }
 
-
-
-
-
-
-
-
 import devkit from 'devkit';
 
-function startApp() {
+function startApp () {
   GLOBAL.GC = new devkit.ClientAPI();
 
   analytics();
   GLOBAL.GC.buildApp('launchUI');
 }
-
-
-
-
-

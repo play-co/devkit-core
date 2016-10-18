@@ -46,13 +46,6 @@ if (!GLOBAL.DEBUG) {
   GLOBAL.DEBUG = false;
 }
 
-
-
-
-
-
-
-
 var spritesheets;
 try {
   if (GLOBAL.CACHE) {
@@ -61,14 +54,6 @@ try {
 } catch (e) {
   logger.warn('spritesheet map failed to parse', e);
 }
-
-
-
-
-
-
-
-
 
 var soundMap;
 try {
@@ -79,38 +64,20 @@ try {
   logger.warn('sound map failed to parse', e);
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 class PluginManager {
-  constructor() {
+  constructor () {
     this._plugins = {};
   }
-  register(name, plugin) {
+  register (name, plugin) {
     this._plugins[name] = plugin;
   }
-  getPlugin(name) {
+  getPlugin (name) {
     return this._plugins[name];
   }
 }
 
-
 exports.ClientAPI = class extends PubSub {
-  constructor(opts) {
+  constructor (opts) {
     super();
 
     window.addEventListener('pageshow', bind(this, '_onShow'), false);
@@ -120,9 +87,6 @@ exports.ClientAPI = class extends PubSub {
       cards.browser.on('foreground', bind(this, '_onShow'));
       cards.browser.on('background', bind(this, '_onHide'));
     }
-
-
-
 
     this.isOnline = navigator.onLine;
 
@@ -140,13 +104,12 @@ exports.ClientAPI = class extends PubSub {
       }
     }), false);
 
-
     // var uri = new URI(window.location);
     // var campaign = uri.query('campaign') || "NO CAMPAIGN";
     //
     // XXX: The following lines cause a DOMException in some browsers
     // because we're using a <base> tag, which doesn't resolve the URL relative correctly.
-    //get rid of it in case the game uses something
+    // get rid of it in case the game uses something
     // if (window.history && window.history.replaceState) {
     //  history.replaceState(null, null, uri.toString().replace("?campaign=" + campaign, ""));
     // }
@@ -158,14 +121,11 @@ exports.ClientAPI = class extends PubSub {
       setTimeout(bind(this, '_onShow'), 0);
     }
 
-
-
-
     if (CONFIG.version) {
       logger.log('Version', CONFIG.version);
     }
   }
-  _onHide() {
+  _onHide () {
     // signal to the app that the window is going away
     this.app && this.app.onPause && this.app.onPause();
 
@@ -176,20 +136,20 @@ exports.ClientAPI = class extends PubSub {
       this.tracker.endSession();
     }
   }
-  _onShow() {
+  _onShow () {
     this.app && this.app.onResume && this.app.onResume();
 
     this.publish('Show');
     this.publish('AfterShow');
   }
-  buildApp(entry, ApplicationCtor) {
+  buildApp (entry, ApplicationCtor) {
     ApplicationCtor.prototype.__root = true;
     this.app = new ApplicationCtor();
     this.buildEngine(merge({ view: this.app }, this.app._settings));
 
     this.emit('app', this.app);
   }
-  buildEngine(opts) {
+  buildEngine (opts) {
     if (!opts) {
       opts = {};
     }
@@ -197,27 +157,14 @@ exports.ClientAPI = class extends PubSub {
       opts.entry = 'launchUI';
     }
 
-
-
-
     var view = opts.view;
     if (!view) {
       throw 'a timestep.Engine must be created with a root view';
     }
 
-
-
-
-
-
-
-
     if (!(view instanceof View)) {
       throw 'src/Application.js must export a Class that inherits from ui.View';
     }
-
-
-
 
     view.subscribe('onLoadError', this, '_onAppLoadError');
 
@@ -225,13 +172,6 @@ exports.ClientAPI = class extends PubSub {
     if (typeof view[opts.entry] == 'function') {
       launch = bind(view, opts.entry);
     }
-
-
-
-
-
-
-
 
     view.view = view;
     // legacy, deprecated
@@ -252,9 +192,6 @@ exports.ClientAPI = class extends PubSub {
         this.resources.preload(group, cb.chain());
       }
 
-
-
-
       // note that hidePreloader takes a null cb argument to avoid
       // forwarding the preloader result as the callback
       if (autoHide) {
@@ -270,14 +207,15 @@ exports.ClientAPI = class extends PubSub {
       launch && launch();
     }
   }
-  _onAppLoadError(error) {
-    logger.error('encountered error when creating src Application: ', JSON.stringify(error));
+  _onAppLoadError (error) {
+    logger.error('encountered error when creating src Application: ', JSON.stringify(
+      error));
     var splash = CONFIG.splash;
     if (splash && splash.onAppLoadError) {
       splash.onAppLoadError(error);
     }
   }
-  hidePreloader(cb) {
+  hidePreloader (cb) {
     var splash = CONFIG.splash;
     if (splash && splash.hide && !splash.hidden) {
       splash.hide(cb);
@@ -287,7 +225,6 @@ exports.ClientAPI = class extends PubSub {
     }
   }
 };
-
 
 exports.ClientAPI.prototype.Application = StackView;
 exports.ClientAPI.prototype.plugins = new PluginManager();
@@ -310,28 +247,11 @@ if (exports.ClientAPI.prototype.isNative) {
   exports.ClientAPI.prototype.isFacebook = GLOBAL.CONFIG.isFacebookApp;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 exports.ClientAPI.prototype.isKik = /Kik\/\d/.test(ua);
-
 
 exports.ClientAPI.prototype.hideSplash = exports.ClientAPI.prototype.hidePreloader;
 
 exports.ClientAPI.prototype.resources.addSheets(spritesheets);
 exports.ClientAPI.prototype.resources.addAudioMap(soundMap);
-
 
 export default exports;

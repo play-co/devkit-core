@@ -35,18 +35,18 @@ exports.onSession = function () {
 };
 exports.load = function (cb) {
   switch (exports.state) {
-  case 'completed':
-  case 'loading':
-    _load.run(cb);
-    return;
-  case 'failed':
+    case 'completed':
+    case 'loading':
+      _load.run(cb);
+      return;
+    case 'failed':
     // try again
-    if (_load.fired()) {
-      _load.reset();
-    }
-    break;
-  default:
-    break;
+      if (_load.fired()) {
+        _load.reset();
+      }
+      break;
+    default:
+      break;
   }
 
   // setup a timeout
@@ -66,7 +66,7 @@ exports.setAppID = function (appID) {
   withAppID.fire(appID);
 };
 
-function doLoad() {
+function doLoad () {
   window.fbAsyncInit = function () {
     if (!window.FB) {
       _load.fire('failed');
@@ -79,7 +79,8 @@ function doLoad() {
 
   el = document.body.appendChild(document.createElement('div'));
   el.id = 'fb-root';
-  el.style.cssText = 'position:absolute;left:-10px;top:-10px;width:1px;height:1px;visibility:hidden';
+  el.style.cssText =
+    'position:absolute;left:-10px;top:-10px;width:1px;height:1px;visibility:hidden';
 
   el = document.createElement('script');
   el.onerror = function () {
@@ -89,17 +90,11 @@ function doLoad() {
   document.getElementsByTagName('head')[0].appendChild(el);
 }
 
-
-
-
-function getSession(err) {
+function getSession (err) {
   if (err) {
     exports.state = 'failed';
     return GC.error('facebook', 'load_failed');
   }
-
-
-
 
   exports.state = 'completed';
 
@@ -122,16 +117,10 @@ function getSession(err) {
         return;
       }
 
-
-
-
       if (fbAccount.hasAccessToken) {
         withSession.fire(null);
         return;
       }
-
-
-
 
       FB.getLoginStatus(function (response) {
         if (response.session) {
@@ -156,6 +145,5 @@ function getSession(err) {
     });
   });
 }
-
 
 export default exports;

@@ -39,7 +39,7 @@ import NativeViewBacking from './timestep/NativeViewBacking';
 import NativeImageView from './timestep/NativeImageView';
 import ImageView from 'ui/ImageView';
 
-function installNativeView() {
+function installNativeView () {
   // extend the timestep View class
   NativeView.install();
 
@@ -70,18 +70,13 @@ function installNativeView() {
   logger.log('USING NATIVE VIEWS');
 }
 
-
-
-
 logger.log(typeof GLOBAL.CONFIG, GLOBAL.CONFIG && CONFIG.disableNativeViews);
 
 if (GLOBAL.CONFIG && CONFIG.disableNativeViews || !hasNativeViews) {
   logger.log('USING JS VIEWS');
-  exports.install = function () {
-  };
+  exports.install = function () {};
 } else {
   exports.install = installNativeView;
 }
-
 
 export default exports;

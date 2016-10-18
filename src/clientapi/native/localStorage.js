@@ -34,7 +34,7 @@ if (device.isIOS && GLOBAL.Proxy) {
 
 	var localStorageHandler = {
 		get: function (proxy, name) {
-			return _ls[name] || NATIVE.localStorage.getItem(name); 
+			return _ls[name] || NATIVE.localStorage.getItem(name);
 		},
 		set: function (proxy, name, value) {
 			if (NATIVE.localStorage.setItem(name, value.toString())) {
@@ -64,6 +64,4 @@ GLOBAL.localStorage = {
     logger.log('ERROR: localStorage.key() unimplemented');
     return null;
   }
-};  //}
-
-
+}; // }

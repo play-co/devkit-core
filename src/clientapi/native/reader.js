@@ -26,7 +26,7 @@ var allowed_modes = [
   'delimiter'
 ];
 exports.Reader = class {
-  constructor(cb, rmode, delim) {
+  constructor (cb, rmode, delim) {
     this._buff = '';
     this._unclosed = [];
     this._checked = 0;
@@ -34,62 +34,63 @@ exports.Reader = class {
     this.setCb(cb);
     this.setMode(rmode || 'stream', delim);
   }
-  setCb(func) {
+  setCb (func) {
     this._cb = func;
   }
-  setMode(mode, delim) {
+  setMode (mode, delim) {
     if (allowed_modes.indexOf(mode) == -1) {
       throw new Error('illegal read mode:', mode);
     }
     this._mode = mode;
     this._delim = mode == 'delimiter' ? delim : null;
   }
-  read(data) {
+  read (data) {
     this._buff += data;
     this._separate_events();
   }
-  _escaped(i) {
+  _escaped (i) {
     if (i == 0 || this._buff.charAt(i - 1) != '\\') {
       return false;
     }
     return !this._escaped(i - 1);
   }
-  _separate_events() {
+  _separate_events () {
     var frame;
     switch (this._mode) {
-    case 'json':
-      while (this._buff.length > this._checked) {
-        var last_unclosed = this._unclosed.length ? this._unclosed[this._unclosed.length - 1] : null;
-        var next_char = this._buff.charAt(this._checked);
-        if (this._unclosed.length > 0 && next_char == last_unclosed) {
-          if (!(next_char == '"' && this._escaped(this._checked))) {
-            this._unclosed.pop();
+      case 'json':
+        while (this._buff.length > this._checked) {
+          var last_unclosed = this._unclosed.length ? this._unclosed[this._unclosed
+          .length - 1] : null;
+          var next_char = this._buff.charAt(this._checked);
+          if (this._unclosed.length > 0 && next_char == last_unclosed) {
+            if (!(next_char == '"' && this._escaped(this._checked))) {
+              this._unclosed.pop();
+            }
+          } else if (next_char in json_chars && last_unclosed != '"') {
+            this._unclosed.push(json_chars[next_char]);
           }
-        } else if (next_char in json_chars && last_unclosed != '"') {
-          this._unclosed.push(json_chars[next_char]);
+          this._checked += 1;
+          if (this._buff && this._unclosed.length == 0) {
+            frame = JSON.parse(this._buff.slice(0, this._checked));
+            this._buff = this._buff.slice(this._checked);
+            this._checked = 0;
+            break;
+          }
         }
-        this._checked += 1;
-        if (this._buff && this._unclosed.length == 0) {
-          frame = JSON.parse(this._buff.slice(0, this._checked));
-          this._buff = this._buff.slice(this._checked);
-          this._checked = 0;
+        break;
+      case 'delimiter':
+        var sep = this._buff.indexOf(this._delim);
+        if (sep == -1) {
           break;
         }
-      }
-      break;
-    case 'delimiter':
-      var sep = this._buff.indexOf(this._delim);
-      if (sep == -1) {
+        frame = this._buff.slice(0, sep);
+        this._buff = this._buff.slice(sep + this._delim.length);
         break;
-      }
-      frame = this._buff.slice(0, sep);
-      this._buff = this._buff.slice(sep + this._delim.length);
-      break;
-    case 'stream':
-    default:
-      frame = this._buff.slice();
-      this._buff = '';
-      break;
+      case 'stream':
+      default:
+        frame = this._buff.slice();
+        this._buff = '';
+        break;
     }
     if (frame) {
       this._cb(frame);

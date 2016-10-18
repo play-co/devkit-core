@@ -30,13 +30,13 @@ var state = {
 };
 
 class XMLHttpRequest {
-  constructor() {
+  constructor () {
     this.readyState = state.UNSENT;
     this.responseText = null;
     this._requestHeaders = {};
     this.__id = id;
   }
-  open(method, url, async) {
+  open (method, url, async) {
     this._method = method;
     this._url = '' + url;
     this._async = async || false;
@@ -47,10 +47,10 @@ class XMLHttpRequest {
       logger.warn('synchronous xhrs not supported');
     }
   }
-  getResponseHeader(name) {
+  getResponseHeader (name) {
     return this._responseHeadersLowerCase[name.toLowerCase()];
   }
-  getAllResponseHeaders() {
+  getAllResponseHeaders () {
     var lines = [];
     var headers = this._responseHeaders;
     for (var key in headers) {
@@ -61,20 +61,22 @@ class XMLHttpRequest {
     }
     return lines.join('\r\n');
   }
-  setRequestHeader(name, value) {
+  setRequestHeader (name, value) {
     this._requestHeaders[name] = value;
   }
-  send(data) {
+  send (data) {
     this._data = data || '';
     xhrs[id++] = this;
-    NATIVE.xhr.send(this._method, this._url, this._async, this._data, 0, this.__id, this._requestHeaders);
+    NATIVE.xhr.send(this._method, this._url, this._async, this._data, 0, this
+      .__id, this._requestHeaders);
   }
-  uploadFile(filename) {
+  uploadFile (filename) {
     this._filename = filename;
     xhrs[id++] = this;
-    NATIVE.xhr.uploadFile(this.__id, this._filename, this._url, this._async, this._requestHeaders);
+    NATIVE.xhr.uploadFile(this.__id, this._filename, this._url, this._async,
+      this._requestHeaders);
   }
-  _onreadystatechange(state, status, response) {
+  _onreadystatechange (state, status, response) {
     this.readyState = state;
     this.status = status;
     this.responseText = response || null;
@@ -83,8 +85,7 @@ class XMLHttpRequest {
       this.onreadystatechange();
     }
   }
-  onreadystatechange() {
-  }
+  onreadystatechange () {}
 }
 
 var xhrs = {};
@@ -98,7 +99,8 @@ exports.install = function () {
       var headers = {};
       var headersLowercase = {};
       for (var i = 0, len = evt.headerKeys.length; i < len; i++) {
-        headersLowercase[evt.headerKeys[i].toLowerCase()] = headers[evt.headerKeys[i]] = evt.headerValues[i];
+        headersLowercase[evt.headerKeys[i].toLowerCase()] = headers[evt.headerKeys[
+          i]] = evt.headerValues[i];
       }
       xhr._responseHeaders = headers;
       xhr._responseHeadersLowerCase = headersLowercase;
@@ -106,7 +108,6 @@ exports.install = function () {
     }
     delete xhrs[evt.id];
   });
-
 };
 
 export default exports;

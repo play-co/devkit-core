@@ -4,14 +4,13 @@ import { logger } from 'base';
 
 import PubSub from 'lib/PubSub';
 
-
 class Response {
-  constructor(channel, id) {
+  constructor (channel, id) {
     this.channel = channel;
     this.id = id;
     this.responded = false;
   }
-  error(err) {
+  error (err) {
     if (this.responded) {
       return;
     }
@@ -21,7 +20,7 @@ class Response {
       res: this.id
     });
   }
-  send(data) {
+  send (data) {
     if (this.responded) {
       return;
     }
@@ -33,12 +32,10 @@ class Response {
   }
 }
 
-
 var reqId = 0;
 
-
 exports = class extends PubSub {
-  constructor(name) {
+  constructor (name) {
     super();
 
     this._name = name;
@@ -48,7 +45,7 @@ exports = class extends PubSub {
     this._onTransportDisconnect = this._onTransportDisconnect.bind(this);
     this._onTransportMessage = this._onTransportMessage.bind(this);
   }
-  connect() {
+  connect () {
     return new Promise(function (resolve, reject) {
       if (this._isConnected) {
         resolve();
@@ -57,37 +54,37 @@ exports = class extends PubSub {
       }
     }.bind(this));
   }
-  isConnected() {
+  isConnected () {
     return this._isConnected;
   }
-  close() {
+  close () {
     this._sendInternalMessage('disconnect');
   }
-  setTransport(transport) {
+  setTransport (transport) {
     if (this._transport && this._transport != transport) {
       // tear-down an old transport
-      this._transport.removeListener('disconnect', this._onTransportDisconnect).removeListener('connect', this._onTransportConnect).removeListener(this._name, this._onTransportMessage);
+      this._transport.removeListener('disconnect', this._onTransportDisconnect)
+        .removeListener('connect', this._onTransportConnect).removeListener(
+          this._name, this._onTransportMessage);
     }
-
-
-
 
     this._transport = transport;
     if (transport) {
-      transport.on('disconnect', this._onTransportDisconnect).on('connect', this._onTransportConnect).on(this._name, this._onTransportMessage);
+      transport.on('disconnect', this._onTransportDisconnect).on('connect',
+        this._onTransportConnect).on(this._name, this._onTransportMessage);
 
       // start connect handshake
       this._onTransportConnect();
     }
   }
-  _onTransportConnect() {
+  _onTransportConnect () {
     // transport connected, start a connect handshake (see if anyone is listening)
     this._sendInternalMessage('connect');
   }
-  _onTransportDisconnect() {
+  _onTransportDisconnect () {
     this._isConnected = false;
   }
-  _onTransportMessage(msg) {
+  _onTransportMessage (msg) {
     if (msg.internal) {
       this._onInternalMessage(msg.internal);
     } else if (msg.res) {
@@ -102,43 +99,40 @@ exports = class extends PubSub {
       super.emit(msg.name, msg.data);
     }
   }
-  _sendInternalMessage(name) {
+  _sendInternalMessage (name) {
     if (this._transport) {
       this._transport.emit(this._name, { internal: name });
     }
   }
-  _onInternalMessage(msg) {
+  _onInternalMessage (msg) {
     // handle internal message protocol, used to determine if the receiver channel is listening to events
     switch (msg) {
-    case 'connect':
+      case 'connect':
       // complete the channel connection
-      this._sendInternalMessage('connectConfirmed');
+        this._sendInternalMessage('connectConfirmed');
 
-
-
-
-    // fall-through
-    case 'connectConfirmed':
-      this._isConnected = true;
-      this._emit('connect');
-      break;
-    case 'disconnect':
-      this._isConnected = false;
-      this._emit('disconnect');
-      break;
+      // fall-through
+      case 'connectConfirmed':
+        this._isConnected = true;
+        this._emit('connect');
+        break;
+      case 'disconnect':
+        this._isConnected = false;
+        this._emit('disconnect');
+        break;
     }
   }
-  _send(data) {
+  _send (data) {
     if (this._transport) {
       this._transport.emit(this._name, data);
     } else {
       logger.warn(this._name, 'failed to send', data);
     }
   }
-  _emit(name, data) {
+  _emit (name, data) {
     super.emit(...arguments);
   }
-  emit(name, data) {
+  emit (name, data) {
     if (name == 'newListener') {
       return this._emit(name, data);
     }
@@ -147,7 +141,7 @@ exports = class extends PubSub {
       data: data
     });
   }
-  request(name, data) {
+  request (name, data) {
     return this.connect().bind(this).then(function () {
       var id = ++reqId;
       this._send({
@@ -165,9 +159,7 @@ exports = class extends PubSub {
   }
 };
 
-
 exports.prototype._isConnected = false;
 exports.prototype.disconnect = exports.prototype.close;
-
 
 export default exports;

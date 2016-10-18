@@ -33,28 +33,14 @@ var isNative = /^native/.test(CONFIG.target);
 if (isSimulator) {
   // prefix filenames in the debugger
   jsio.__env.debugPath = function (path) {
-    return 'http://' + (CONFIG.bundleID || CONFIG.packageName) + '/' + path.replace(/^[\.\/]+/, '');
+    return 'http://' + (CONFIG.bundleID || CONFIG.packageName) + '/' + path.replace(
+      /^[\.\/]+/, '');
   };
 
   if (isNative) {
     require('../debugging/nativeShim');
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 // shims
 import stdJSON from 'std/JSON';
@@ -63,21 +49,11 @@ if (!window.JSON) {
   stdJSON.createGlobal();
 }
 
-
-
-
 if (!window.console) {
   window.console = {};
-  window.console.log = window.console.info = window.console.error = window.console.warn = function () {
-  };
+  window.console.log = window.console.info = window.console.error = window.console
+    .warn = function () {};
 }
-
-
-
-
-
-
-
 
 // FIXME: Uncaught TypeError: Cannot assign to read only property 'localStorage' of object '#<Window>''
 // if (typeof localStorage !== 'undefined') {
@@ -93,9 +69,6 @@ if (!isSimulator) {
   // start the cache service-worker
   require('./cache');
 }
-
-
-
 
 var splash = document.getElementById('_GCSplash');
 if (splash) {
@@ -117,18 +90,12 @@ if (splash) {
   }
 }
 
-
-
-
-
-
-
-
 // parsing options
 import stdUri from 'std/uri';
 var uri = new stdUri(window.location);
 var mute = uri.hash('mute');
-CONFIG.isMuted = mute !== undefined && mute !== 'false' && mute !== '0' && mute !== 'no';
+CONFIG.isMuted = mute !== undefined && mute !== 'false' && mute !== '0' && mute !==
+  'no';
 
 var simulatorModules;
 var ApplicationCtor;
@@ -159,14 +126,7 @@ export const startGame = _ApplicationCtor => {
   }
 };
 
-
-
-
-
-
-
-
-function queueStart() {
+function queueStart () {
   /* jshint -W117 */
   if (window.GC_LIVE_EDIT && GC_LIVE_EDIT._isLiveEdit) {
     var intervalId = setInterval(function () {
@@ -185,28 +145,13 @@ function queueStart() {
   }
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /* jshint +W117 */
 import device from 'device';
 import initialize from 'platforms/browser/initialize';
 
 import devkit from 'devkit';
 
-function startApp() {
+function startApp () {
   // setup timestep device API
   device.init();
 
@@ -223,9 +168,6 @@ function startApp() {
       });
     });
   }
-
-
-
 
   GLOBAL.GC.buildApp('launchUI', ApplicationCtor);
 }

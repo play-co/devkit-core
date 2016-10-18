@@ -17,10 +17,10 @@ import Channel from './Channel';
 import BridgeTransport from './BridgeTransport';
 
 class API {
-  constructor() {
+  constructor () {
     this._channels = {};
   }
-  getChannel(channelName) {
+  getChannel (channelName) {
     var channel = this._channels[channelName];
     if (!channel) {
       channel = new Channel(channelName);
@@ -31,16 +31,9 @@ class API {
       }
     }
 
-
-
-
-
-
-
-
     return channel;
   }
-  __onConnect(transport) {
+  __onConnect (transport) {
     for (var channel in this._channels) {
       this._channels[channel].setTransport(transport);
     }
@@ -72,23 +65,11 @@ var tryToConnect = function () {
     var devkit;
     try {
       devkit = window.parent.devkit;
-    } catch (e) {
-    }
-
-
-
-
-
-
-
-
+    } catch (e) {}
 
     if (!devkit || !devkit.getSimulator) {
       return;
     }
-
-
-
 
     var simulator = devkit.getSimulator(CONFIG.simulator.deviceId);
     if (simulator) {
@@ -97,9 +78,7 @@ var tryToConnect = function () {
       setTransport(bridge.b);
     }
   } else {
-    if (/^browser/.test(CONFIG.target)) {
-    } else {
-    }
+    if (/^browser/.test(CONFIG.target)) {} else {}
   }
 };
 

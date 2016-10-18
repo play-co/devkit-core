@@ -24,12 +24,10 @@ import {
 
 import Callback from 'lib/Callback';
 
-
 var REQUEST_ID = 0;
 
-
 class chromeFrameClass {
-  constructor() {
+  constructor () {
     this._callBacks = {};
     this._isChromeFrame = !!window.externalHost;
     if (this._isChromeFrame) {
@@ -44,15 +42,12 @@ class chromeFrameClass {
       });
     }
   }
-  send(destination, data, cb) {
+  send (destination, data, cb) {
     var id = ++REQUEST_ID;
 
     if (typeof cb == 'function') {
       this._callBacks[id] = cb;
     }
-
-
-
 
     window.externalHost.postMessage(JSON.stringify({
       destination: destination,
@@ -60,10 +55,10 @@ class chromeFrameClass {
       requestID: id
     }), '*');
   }
-  isChromeFrame() {
+  isChromeFrame () {
     return this._isChromeFrame;
   }
-  _postMessage() {
+  _postMessage () {
     if (!this._isChromeFrame) {
       logger.log('Cannot post message to chrome frame, ');
       return;

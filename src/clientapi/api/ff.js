@@ -31,34 +31,24 @@ let exports = {};
 (function () {
   var slice = Array.prototype.slice;
 
-  function isPromise(maybePromise) {
+  function isPromise (maybePromise) {
     return maybePromise && typeof maybePromise.then === 'function';
   }
 
-
-
-
-  function copyToFunction(group, f) {
+  function copyToFunction (group, f) {
     for (var method in group) {
       if (typeof group[method] === 'function') {
-        f[method] = function (method) {
+        f[method] = (function (method) {
           return function () {
             return group[method].apply(group, arguments);
           };
-        }(method);
+        }(method));
       }
     }
   }
 
-
-
-
-
-
-
-
-  //****************************************************************
-  function Group(superGroup, callback, firstSlotCallback) {
+  //* ***************************************************************
+  function Group (superGroup, callback, firstSlotCallback) {
     this.args = [null];
     this.left = 0;
     this.callback = callback;
@@ -68,45 +58,44 @@ let exports = {};
     this.superGroup = superGroup;
   }
 
-
-
-
-  Group.prototype.done = function done() {
+  Group.prototype.done = function done () {
     if (this.isDone)
-      return;
+      { return; }
     this.isDone = true;
     this.callback.apply(null, this.args);
   };
 
   Group.prototype.succeed = function () {
     if (this.isDone)
-      return;
+      { return; }
     this.isDone = true;
     this.superGroup.result = [null].concat(slice.call(arguments));
 
     if (!this.superGroup.started) {
       // if we didn't start the chain of .next() steps,
       // just call the final results immediately.
-      this.superGroup._runResultHandlers.apply(this.superGroup, this.superGroup.result);
+      this.superGroup._runResultHandlers.apply(this.superGroup, this.superGroup
+        .result);
     }
   };
 
   Group.prototype.fail = function (err) {
     if (this.isDone)
-      return;
+      { return; }
     this.isDone = true;
     this.superGroup.result = [err];
     this.superGroup.isError = true;
     if (!this.superGroup.started) {
       // if we didn't start the chain of .next() steps,
       // just call the final results immediately.
-      this.superGroup._runResultHandlers.apply(this.superGroup, this.superGroup.result);
+      this.superGroup._runResultHandlers.apply(this.superGroup, this.superGroup
+        .result);
     }
   };
 
-  Group.prototype.error = function error(err) {
+  Group.prototype.error = function error (err) {
     if (this.isDone)
-      return;
+      { return; }
     this.isDone = true;
     this.superGroup.isError = true;
     var callback = this.callback;
@@ -131,7 +120,7 @@ let exports = {};
   // Register a slot in the next step and return a callback
   Group.prototype.slotMulti = function (argLength) {
     if (!argLength)
-      argLength = 1;
+      { argLength = 1; }
     var group = this;
     var index = group.args.length;
     group.args.length += argLength;
@@ -143,18 +132,18 @@ let exports = {};
     }
     return function (err) {
       if (err)
-        return group.error(err);
+        { return group.error(err); }
       var values = slice.call(arguments, 1);
       for (var i = 0; i < argLength; i++) {
         group.args[index + i] = values[i];
       }
       if (--group.left === 0)
-        group.done();
+        { group.done(); }
     };
   };
 
   // Register a slot in the next function which includes first param
-  Group.prototype.slotPlain = function slotPlain(argLength) {
+  Group.prototype.slotPlain = function slotPlain (argLength) {
     var group = this;
     var slot = group.slotMulti(argLength);
     return function () {
@@ -163,7 +152,7 @@ let exports = {};
   };
 
   // Block on this callback, but dont slot data
-  Group.prototype.wait = function wait() {
+  Group.prototype.wait = function wait () {
     var group = this;
     group.left++;
     if (this.firstSlotCallback) {
@@ -173,14 +162,14 @@ let exports = {};
     }
     return function (err, data) {
       if (err)
-        return group.error(err);
+        { return group.error(err); }
       if (--group.left === 0)
-        group.done();
+        { group.done(); }
     };
   };
 
   // Wait, but don't forward error
-  Group.prototype.waitPlain = function waitPlain() {
+  Group.prototype.waitPlain = function waitPlain () {
     var group = this;
     var wait = this.wait();
     return function () {
@@ -189,17 +178,17 @@ let exports = {};
   };
 
   // Creates a nested group where several callbacks go into a single array.
-  Group.prototype.group = function group() {
+  Group.prototype.group = function group () {
     var group = this;
     var index = this.args.length++;
     group.args[index] = [];
     var subgroup = new Group(this.superGroup, function (err) {
       if (err)
-        return group.error(err);
+        { return group.error(err); }
       var data = slice.call(arguments, 1);
       group.args[index] = data;
       if (--group.left === 0)
-        group.done();
+        { group.done(); }
     }, function () {
       group.left++;
     });
@@ -214,7 +203,7 @@ let exports = {};
   };
 
   // global group
-  function SuperGroup(args) {
+  function SuperGroup (args) {
     var context;
     if (typeof args[0] === 'function') {
       context = null;
@@ -222,11 +211,7 @@ let exports = {};
       context = args.shift();
     }
 
-
-
-
-    this.currentGroup = new Group(this, function () {
-    });
+    this.currentGroup = new Group(this, function () {});
     this.context = context;
     this.steps = [];
     this.resultHandlers = [];
@@ -239,33 +224,23 @@ let exports = {};
     }, this);
   }
 
-
-
-
   for (var method in Group.prototype)
-    if (Group.prototype.hasOwnProperty(method)) {
-      SuperGroup.prototype[method] = function (method) {
+    { if (Group.prototype.hasOwnProperty(method)) {
+      SuperGroup.prototype[method] = (function (method) {
         return function () {
           if (this.currentGroup) {
-            return this.currentGroup[method].apply(this.currentGroup, arguments);
+            return this.currentGroup[method].apply(this.currentGroup,
+              arguments);
           }
         };
-      }(method);
-    }
+      }(method));
+    } }
 
-
-
-
-
-
-
-
-
-  /**
-	 * Call this function regardless of whether or not an error has
-	 * propagated down the chain. You'll usually want to call this at the
-	 * end of your chain.
-	 */
+    /**
+     * Call this function regardless of whether or not an error has
+     * propagated down the chain. You'll usually want to call this at the
+     * end of your chain.
+     */
   SuperGroup.prototype.onComplete = function (cb, _onlySuccess) {
     if (!cb) {
       return this.f;
@@ -282,11 +257,11 @@ let exports = {};
   };
 
   /**
-	 * If and only if there was no error (this far in the chain), call cb
-	 * WITHOUT passing any error at all. Again, error won't be null, it'll
-	 * not be passed at all. Your function should only accept the next
-	 * arguments.
-	 */
+   * If and only if there was no error (this far in the chain), call cb
+   * WITHOUT passing any error at all. Again, error won't be null, it'll
+   * not be passed at all. Your function should only accept the next
+   * arguments.
+   */
   SuperGroup.prototype.onSuccess = function (cb) {
     if (!cb) {
       return this.f;
@@ -297,9 +272,9 @@ let exports = {};
   };
 
   /**
-	 * If and only if there was an error, call cb with the
-	 * error as an argument.
-	 */
+   * If and only if there was an error, call cb with the
+   * error as an argument.
+   */
   SuperGroup.prototype.onError = function (cb) {
     if (!cb) {
       return this.f;
@@ -368,23 +343,15 @@ let exports = {};
       }.bind(this), milliseconds);
     }
 
-
-
-
     return this.f;
-  }
-;
+  };
 
-
-  //****************************************************************
+  //* ***************************************************************
   // Stepper function
   SuperGroup.prototype._execNextStep = function (err) {
     if (this.result) {
       return;
     }
-
-
-
 
     this.started = true;
 
@@ -404,10 +371,6 @@ let exports = {};
           this._runResultHandlers.apply(this, this.result);
           return;
         }
-
-
-
-
       } catch (e) {
         group.left--;
 
@@ -421,7 +384,7 @@ let exports = {};
         group.error(e);
       }
       if (group.left === 0)
-        group.done();
+        { group.done(); }
     }
   };
 
@@ -447,26 +410,20 @@ let exports = {};
       clearTimeout(this._timeout);
     }
 
-
-
-
     // if an error occurred during the callback chain and no one
     // attached an error handler, make sure we rethrow it
     if (this.isError && !this.hasErrorCallback && this.started) {
       this.resultHandlers.push(function (err) {
         err._rethrow = true;
-        this.f && this.f.debug && console.log('Unhandled ff error:', err, err && err.stack);
+        this.f && this.f.debug && console.log('Unhandled ff error:',
+          err, err && err.stack);
         throw err;
       }.bind(this));
     }
 
-
-
-
     this.result = slice.call(arguments);
 
     this.currentGroup = null;
-
 
     var args = arguments;
     this.resultHandlers.forEach(function (handler) {
@@ -474,13 +431,11 @@ let exports = {};
     }.bind(this));
 
     this.resultHandlers.length = 0;
-  }
-;
-
+  };
 
   // null it out
-  //****************************************************************
-  function ff() {
+  //* ***************************************************************
+  function ff () {
     var superGroup = new SuperGroup(slice.call(arguments));
 
     // execute steps in next tick
@@ -499,15 +454,13 @@ let exports = {};
     return f;
   }
 
-
-
-
   ff.defer = function () {
     var superGroup = new SuperGroup(slice.call(arguments));
 
     var f = function () {
       if (!superGroup.started) {
-        superGroup._execNextStep.apply(superGroup, [null].concat(slice.call(arguments)));
+        superGroup._execNextStep.apply(superGroup, [null].concat(slice.call(
+          arguments)));
       } else {
         return superGroup.slot.apply(superGroup, arguments);
       }
@@ -517,11 +470,9 @@ let exports = {};
     copyToFunction(superGroup, f);
 
     return f;
-  }
-;
+  };
 
-
-  //****************************************************************
+  //* ***************************************************************
   // AMD // RequireJS
   if (typeof define !== 'undefined' && define.amd) {
     define([], function () {
@@ -534,10 +485,10 @@ let exports = {};
   if (typeof module !== 'undefined') {
     module.exports = ff;
   } else
-    // browser
-    {
-      this.ff = ff;
-    }
+  // browser
+  {
+    this.ff = ff;
+  }
 }());
 
 export default exports;

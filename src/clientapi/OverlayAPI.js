@@ -24,104 +24,88 @@ import {
 import engineInstance from 'ui/engineInstance';
 
 exports = class {
-  constructor(env) {
+  constructor (env) {
     logger.log('env', env);
     switch (env) {
-    case 'browser':
-      this.delegate = new BrowserDelegate(this);
-      break;
-    case 'ios':
-    case 'android':
-      logger.log('adding an overlay for android or iphone');
-      this.delegate = new IOSDelegate(this);
-      break;
+      case 'browser':
+        this.delegate = new BrowserDelegate(this);
+        break;
+      case 'ios':
+      case 'android':
+        logger.log('adding an overlay for android or iphone');
+        this.delegate = new IOSDelegate(this);
+        break;
     }
   }
-  setController(controller) {
+  setController (controller) {
     if (this.controller) {
       this.controller.onBeforeClose();
     }
     this.controller = controller;
   }
-  send(data) {
+  send (data) {
     this.delegate.send(data);
   }
-  show() {
+  show () {
     logger.log('showing overlay');
 
     if (this.controller.pauseTimestep()) {
       engineInstance.get().pause();
     }
 
-
-
-
-
-
-
-
     this.controller.onShow();
     this.delegate.show();
   }
-  hide() {
+  hide () {
     logger.log('hiding overlay');
 
     if (this.controller.pauseTimestep()) {
       engineInstance.get().resume();
     }
 
-
-
-
-
-
-
-
     this.controller.onHide();
     this.delegate.hide();
   }
-  pushMenu(name) {
+  pushMenu (name) {
     this.delegate.send({
       type: 'ui',
       target: name,
       method: 'push'
     });
   }
-  popMenu() {
+  popMenu () {
     this.delegate.send({
       type: 'ui',
       method: 'pop'
     });
   }
-  popToMenu(name) {
+  popToMenu (name) {
     this.delegate.send({
       type: 'ui',
       target: name,
       method: 'pop'
     });
   }
-  showDialog(name) {
+  showDialog (name) {
     this.delegate.send({
       type: 'ui',
       target: name,
       method: 'show'
     });
   }
-  hideDialog(name) {
+  hideDialog (name) {
     this.delegate.send({
       type: 'ui',
       target: name,
       method: 'hide'
     });
   }
-  load(name, opts) {
+  load (name, opts) {
     if (!/^[a-zA-Z0-9]+$/.test(name)) {
-      logger.error('Invalid name for overlay! (only letters and numbers please)');
+      logger.error(
+        'Invalid name for overlay! (only letters and numbers please)');
       return;
     }
-
-
-
 
     // var ctor = jsio('import overlay.' + name);
     // this.setController(new ctor(opts));
@@ -133,17 +117,13 @@ exports = class {
 var OverlayAPI = exports;
 
 exports.prototype.BaseOverlay = class {
-  pauseTimestep() {
+  pauseTimestep () {
     return true;
   }
-  onEvent() {
-  }
-  onShow() {
-  }
-  onHide() {
-  }
-  onBeforeClose() {
-  }
+  onEvent () {}
+  onShow () {}
+  onHide () {}
+  onBeforeClose () {}
 };
 
 import browser from 'util/browser';
@@ -154,17 +134,17 @@ import doc from './doc';
 import uri from 'std/uri';
 
 class BrowserDelegate {
-  constructor(api) {
+  constructor (api) {
     this._api = api;
     this._removeListener = $.onEvent(window, 'message', this, '_onMessage');
   }
-  destroy() {
+  destroy () {
     if (this._removeListener) {
       this._removeListener();
       this._removeListener = null;
     }
   }
-  load(name) {
+  load (name) {
     if (!this._el) {
       this._el = $({
         src: 'javascript:var d=document;d.open();d.close()',
@@ -188,20 +168,10 @@ class BrowserDelegate {
       $.hide(this._el);
     }
 
-
-
-
-
-
-
-
     var src = new uri('overlay/' + name + '.html');
     if (device.simulating) {
       src.addHash({ simulate: encodeURIComponent(device.simulating) });
     }
-
-
-
 
     if (device.isMobileBrowser) {
       src.addHash({ mobileBrowser: 1 });
@@ -212,46 +182,30 @@ class BrowserDelegate {
       });
     }
 
-
-
-
-
-
-
-
     this._el.src = src;
   }
-  _onMessage(e) {
+  _onMessage (e) {
     var data = e.data;
     if (data.substring(0, 8) == 'OVERLAY:') {
       try {
         var evt = JSON.parse(e.data.substring(8));
-      } catch (e) {
-      }
-
-
-
-
-
-
-
-
+      } catch (e) {}
 
       if (evt) {
         this._api.controller.onEvent(evt);
       }
     }
   }
-  send(data) {
+  send (data) {
     var win = this._el.contentWindow;
     win.postMessage('OVERLAY:' + JSON.stringify(data), '*');
   }
-  show() {
+  show () {
     this.send({ type: 'show' });
     $.show(this._el);
     device.hideAddressBar();
   }
-  hide(data) {
+  hide (data) {
     this.send({ type: 'hide' });
     $.hide(this._el);
     device.hideAddressBar();
@@ -259,10 +213,10 @@ class BrowserDelegate {
 }
 
 class IOSDelegate {
-  constructor(api) {
+  constructor (api) {
     this._api = api;
   }
-  load(name) {
+  load (name) {
     logger.log('loading', name);
     NATIVE.overlay.load('/overlay/' + name + '.html?' + +new Date());
     if (!this._subscribed) {
@@ -271,17 +225,17 @@ class IOSDelegate {
       this._subscribed = true;
     }
   }
-  _onMessage(data) {
+  _onMessage (data) {
     logger.log('got a message', data);
     this._api.controller.onEvent(data);
   }
-  show() {
+  show () {
     NATIVE.overlay.show();
   }
-  hide() {
+  hide () {
     NATIVE.overlay.hide();
   }
-  send(data) {
+  send (data) {
     logger.log('doing native.overlay.send');
     NATIVE.overlay.send(JSON.stringify(data));
   }

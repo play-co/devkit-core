@@ -4,20 +4,17 @@
 // --- POLYFILL
 // https://raw.githubusercontent.com/coonsta/cache-polyfill/master/dist/serviceworker-cache-polyfill.js
 if (!Cache.prototype.add) {
-  Cache.prototype.add = function add(request) {
+  Cache.prototype.add = function add (request) {
     return this.addAll([request]);
   };
 }
 
-
-
-
 if (!Cache.prototype.addAll) {
-  Cache.prototype.addAll = function addAll(requests) {
+  Cache.prototype.addAll = function addAll (requests) {
     var cache = this;
 
     // Since DOMExceptions are not constructable:
-    function NetworkError(message) {
+    function NetworkError (message) {
       this.name = 'NetworkError';
       this.code = 19;
       this.message = message;
@@ -26,10 +23,7 @@ if (!Cache.prototype.addAll) {
 
     return Promise.resolve().then(function () {
       if (arguments.length < 1)
-        throw new TypeError();
-
-
-
+        { throw new TypeError(); }
 
       requests = requests.map(function (request) {
         if (request instanceof Request) {
@@ -45,17 +39,11 @@ if (!Cache.prototype.addAll) {
           request = new Request(request);
         }
 
-
-
-
         var scheme = new URL(request.url).protocol;
 
         if (scheme !== 'http:' && scheme !== 'https:') {
           throw new NetworkError('Invalid scheme');
         }
-
-
-
 
         return fetch(request.clone());
       }));
@@ -71,12 +59,9 @@ if (!Cache.prototype.addAll) {
   };
 }
 
-
-
-
 if (!CacheStorage.prototype.match) {
   // This is probably vulnerable to race conditions (removing caches etc)
-  CacheStorage.prototype.match = function match(request, opts) {
+  CacheStorage.prototype.match = function match (request, opts) {
     var caches = this;
 
     return this.keys().then(function (cacheNames) {
@@ -84,7 +69,8 @@ if (!CacheStorage.prototype.match) {
 
       return cacheNames.reduce(function (chain, cacheName) {
         return chain.then(function () {
-          return match || caches.open(cacheName).then(function (cache) {
+          return match || caches.open(cacheName).then(function (
+            cache) {
             return cache.match(request, opts);
           }).then(function (response) {
             match = response;
@@ -96,16 +82,8 @@ if (!CacheStorage.prototype.match) {
   };
 }
 
-
-
-
-
-
-
-
 // --- END POLYFILL
 console.log('cache-worker starting at', location.toString());
-
 
 // devkit app data
 var APP_ID = 'INSERT:APP_ID';
@@ -129,41 +107,26 @@ var hostURL = location;
 var whitelistOrigins = [];
 var blacklistURLs = [];
 
-function addToList(list, pattern) {
+function addToList (list, pattern) {
   if (!list._patterns) {
     list._patterns = {};
   }
-
-
-
 
   if (pattern in list._patterns) {
     return;
   }
 
-
-
-
   list._patterns[pattern] = true;
   list.push(convertToRegexp(pattern));
 }
 
-
-
-
-function convertToRegexp(pattern) {
+function convertToRegexp (pattern) {
   if (typeof pattern == 'string') {
     return new RegExp(pattern.replace(/\./g, '\\.').replace(/\*/g, '.*'));
   }
 
-
-
-
   return pattern;
 }
-
-
-
 
 // don't cache anything that looks like an api
 addToList(blacklistURLs, /\/api\//);
@@ -178,9 +141,6 @@ self.addEventListener('install', function (event) {
   if (event.replace) {
     event.replace();
   }
-
-
-
 
   console.log('installing...');
 
@@ -203,9 +163,11 @@ self.addEventListener('activate', function (event) {
     return Promise.all(cacheNames.map(function (cacheName) {
       // if multiple apps are allowed, only older versions of cache for this
       // app id, else remove all devkit-app caches except this one
-      var prefix = ALLOW_MULTIPLE_APPS_PER_DOMAIN ? CACHE_NAME_APP_PREFIX : CACHE_NAME_PREFIX;
+      var prefix = ALLOW_MULTIPLE_APPS_PER_DOMAIN ?
+        CACHE_NAME_APP_PREFIX : CACHE_NAME_PREFIX;
 
-      if (cacheName.indexOf(prefix) === 0 && cacheName !== CACHE_NAME) {
+      if (cacheName.indexOf(prefix) === 0 && cacheName !==
+        CACHE_NAME) {
         console.error('[activate] removing cache', cacheName);
         return caches.delete(cacheName);
       } else {
@@ -217,7 +179,7 @@ self.addEventListener('activate', function (event) {
   }));
 });
 
-function skipCache(request) {
+function skipCache (request) {
   var origin = new URL(request.url).origin;
 
   for (var i = 0, n = blacklistURLs.length; i < n; ++i) {
@@ -226,23 +188,14 @@ function skipCache(request) {
     }
   }
 
-
-
-
   for (var i = 0, n = whitelistOrigins.length; i < n; ++i) {
     if (whitelistOrigins[i].test(origin)) {
       return false;
     }
   }
 
-
-
-
   return true;
 }
-
-
-
 
 // handle cache
 self.addEventListener('fetch', function (event) {
@@ -257,30 +210,17 @@ self.addEventListener('fetch', function (event) {
       return response;
     }
 
-
-
-
     // requests that don't get cached
     if (skipCache(request)) {
       console.log('skipping cache for', request.url);
       return fetch(request);
     }
 
-
-
-
     // requests that only check cache (fail if not in cache)
     if (request.headers.get('Accept') == 'x-cache/only') {
       console.log('cache lookup failed for', request.url);
       return;
     }
-
-
-
-
-
-
-
 
     return Promise.all([
       fetch(request.clone()),
@@ -303,24 +243,24 @@ self.addEventListener('message', function (event) {
   console.log(event.waitUntil);
   console.log('received command', event.data.command);
   switch (event.data.command) {
-  case 'addURLs':
-    var urls = event.data.urls;
-    console.log('[add] adding', urls.length, 'urls to cache');
-    cacheURLs(urls).then(function (res) {
-      console.log('[add] completed');
-      event.ports[0].postMessage({
-        status: 'complete',
-        failedURLs: res.failedURLs
+    case 'addURLs':
+      var urls = event.data.urls;
+      console.log('[add] adding', urls.length, 'urls to cache');
+      cacheURLs(urls).then(function (res) {
+        console.log('[add] completed');
+        event.ports[0].postMessage({
+          status: 'complete',
+          failedURLs: res.failedURLs
+        });
       });
-    });
-    break;
-  case 'addWhitelistDomain':
-    console.log('[add] whitelist domain:', event.data.domain);
-    addToList(whitelistOrigins, event.data.domain);
-    break;
-  default:
-    console.error('command unknown:', event.data.command);
-    break;
+      break;
+    case 'addWhitelistDomain':
+      console.log('[add] whitelist domain:', event.data.domain);
+      addToList(whitelistOrigins, event.data.domain);
+      break;
+    default:
+      console.error('command unknown:', event.data.command);
+      break;
   }
 });
 
@@ -329,20 +269,17 @@ self.addEventListener('message', function (event) {
 // {
 //   failedURLs: [ list of urls that couldn't be cached ]
 // }
-function cacheURLs(urls) {
+function cacheURLs (urls) {
   return new Promise(function (resolve, reject) {
     var failedURLs = [];
     var index = 0;
     cacheNext();
 
-    function cacheNext() {
+    function cacheNext () {
       // tried to cache all URLs, resolve the promise
       if (index >= urls.length) {
         return resolve({ failedURLs: failedURLs });
       }
-
-
-
 
       // no-cors lets us cache cross-origin URLs
       var url = urls[index];
@@ -356,7 +293,7 @@ function cacheURLs(urls) {
         } else {
           caches.open(CACHE_NAME).then(function (cache) {
             return cache.add(request);
-          }).then(cacheNext, function onCacheFail(e) {
+          }).then(cacheNext, function onCacheFail (e) {
             console.error('failed to cache', url, e);
             failedURLs.push(url);
             cacheNext();

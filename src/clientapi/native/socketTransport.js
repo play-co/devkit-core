@@ -24,12 +24,9 @@ import {
 import interfaces from 'net/interfaces';
 import reader from './reader';
 
-function onError(opts) {
+function onError (opts) {
   logger.log('SOCKET ERROR: ', JSON.stringify(opts));
 }
-
-
-
 
 var sockets = {};
 
@@ -38,10 +35,6 @@ NATIVE.events.registerHandler('socketOpened', function (evt) {
   if (socket) {
     socket.onConnect();
   }
-
-
-
-
 });
 NATIVE.events.registerHandler('socketClosed', function (evt) {
   var socket = sockets[evt.id];
@@ -65,14 +58,13 @@ NATIVE.events.registerHandler('socketRead', function (evt) {
   }
 });
 
-
 exports.Transport = class extends interfaces.Transport {
-  constructor(socket) {
+  constructor (socket) {
     super();
 
     this._socket = socket;
   }
-  makeConnection(protocol) {
+  makeConnection (protocol) {
     this._socket.onRead = function (data) {
       try {
         protocol.dataReceived.apply(protocol, arguments);
@@ -84,16 +76,15 @@ exports.Transport = class extends interfaces.Transport {
     this._socket.onError = bind(protocol, 'onError');
     this._socket.onClose = bind(protocol, 'connectionLost');
   }
-  write(data) {
+  write (data) {
     this._socket.send(data);
   }
-  loseConnection() {
+  loseConnection () {
     this._socket.close();
   }
 };
 
-
-//TODO add timeout
+// TODO add timeout
 exports.Socket = function (host, port) {
   var socket = new NATIVE.Socket(host, port);
   socket.reader = new reader.Reader(bind(socket, 'onRead'));
@@ -102,10 +93,13 @@ exports.Socket = function (host, port) {
 };
 
 exports.Connector = class extends interfaces.Connector {
-  connect() {
+  connect () {
     this._state = interfaces.STATE.CONNECTING;
 
-    var host = this._opts.host, port = this._opts.port, timeout = this._opts.connectTimeout, socket = new exports.Socket(host, port, timeout);
+    var host = this._opts.host,
+      port = this._opts.port,
+      timeout = this._opts.connectTimeout,
+      socket = new exports.Socket(host, port, timeout);
 
     logger.log('connecting to', host, port, timeout);
     socket.onConnect = bind(this, 'onSocketConnect', socket);
@@ -114,11 +108,10 @@ exports.Connector = class extends interfaces.Connector {
       this.onDisconnect();
     });
   }
-  onSocketConnect(socket) {
+  onSocketConnect (socket) {
     logger.log('connected!');
     this.onConnect(new exports.Transport(socket));
   }
 };
-
 
 export default exports;

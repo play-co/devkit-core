@@ -31,14 +31,14 @@ var getElementsByTagName = function (tag) {
       getElementsByTagName: getElementsByTagName,
       textContent: elements[i].text()
     });
-  }
-  ;
+  };
   return ret;
 };
 
 exports = {
   parseString: function (data) {
-    data = data.replace(/^<\?xml\s+version\s*=\s*(["'])[^\1]+\1[^?]*\?>/, '');
+    data = data.replace(/^<\?xml\s+version\s*=\s*(["'])[^\1]+\1[^?]*\?>/,
+      '');
 
     var xml = new XML(data);
     return {
@@ -46,20 +46,7 @@ exports = {
       getAttribute: getAttribute,
       getElementsByTagName: getElementsByTagName
     };
-
   }
 };
 
-
-
-
-
-
 export default exports;
-
-
-
-
-
-
-

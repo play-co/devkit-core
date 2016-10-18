@@ -25,7 +25,7 @@ import {
 var lastbg;
 
 exports = class {
-  constructor(url) {
+  constructor (url) {
     this._startedLoad = false;
     this._src = '';
     this.autoplay = false;
@@ -39,7 +39,7 @@ exports = class {
       this.src = url;
     }
   }
-  _updateElapsed() {
+  _updateElapsed () {
     if (this._startTime > 0) {
       var now = Date.now();
       this._et += now - this._startTime;
@@ -50,10 +50,10 @@ exports = class {
       this._startTime = now;
     }
   }
-  canPlayType(type) {
+  canPlayType (type) {
     return true;
   }
-  load(thenPlay) {
+  load (thenPlay) {
     if (this.isBackgroundMusic) {
       // Background music should not be preloaded like normal sounds
       return;
@@ -64,11 +64,12 @@ exports = class {
     }
     this._startedLoad = true;
   }
-  _play() {
-    NATIVE.sound.playSound(this._src, this._volume, this.loop === 'loop' || this.loop === true);
+  _play () {
+    NATIVE.sound.playSound(this._src, this._volume, this.loop === 'loop' ||
+      this.loop === true);
     this._startTime = Date.now();
   }
-  play() {
+  play () {
     this.paused = false;
     if (this.isBackgroundMusic) {
       lastbg = this;
@@ -81,7 +82,7 @@ exports = class {
       this._play();
     }
   }
-  pause() {
+  pause () {
     if (this.paused) {
       return;
     }
@@ -95,39 +96,28 @@ exports = class {
       this._startTime = 0;
     }
   }
-  stop() {
+  stop () {
     if (this._startedLoad) {
       if (!this.isBackgroundMusic || this == lastbg) {
         NATIVE.sound.stopSound(this._src);
       }
     }
 
-
-
-
     this.reset();
   }
-  reset() {
+  reset () {
     this._et = 0;
     this._startTime = 0;
   }
-  destroy() {
+  destroy () {
     if (this == lastbg) {
       lastbg = undefined;
     }
-
-
-
-
-
-
-
 
     NATIVE.sound.destroySound(this._src);
   }
 };
 var Audio = exports;
-
 
 Audio.prototype.__defineSetter__('src', function (url) {
   logger.log('audio source is ', url);
@@ -138,9 +128,6 @@ Audio.prototype.__defineSetter__('src', function (url) {
     if ((this.autoplay || this.preload == 'auto') && !this.isBackgroundMusic) {
       this.load();
     }
-
-
-
 
     if (this.autoplay) {
       this.play();
@@ -171,7 +158,6 @@ Audio.prototype.__defineSetter__('currentTime', function (t) {
     NATIVE.sound.seekTo(this._src, t);
   }
 });
-
 
 exports.install = function () {
   GLOBAL.Audio = Audio;

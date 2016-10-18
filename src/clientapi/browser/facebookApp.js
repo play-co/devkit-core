@@ -39,10 +39,12 @@ exports.init = function (appID) {
     window.fbAsyncInit = bind(this, '_onLoad', appID);
     var fbRoot = document.createElement('div');
     fbRoot.id = 'fb-root';
-    fbRoot.style.cssText = 'position:absolute;left:-10px;top:-10px;width:1px;height:1px;';
+    fbRoot.style.cssText =
+      'position:absolute;left:-10px;top:-10px;width:1px;height:1px;';
     document.body.appendChild(fbRoot);
     var el = document.createElement('script');
-    el.src = document.location.protocol + '//connect.facebook.net/en_US/all.js';
+    el.src = document.location.protocol +
+      '//connect.facebook.net/en_US/all.js';
     el.async = true;
     document.body.appendChild(el);
   }
@@ -54,12 +56,12 @@ exports._onLoad = function (appID) {
     status: true,
     cookie: true,
     xfbml: false,
-    channelUrl: window.location.protocol + '//' + window.location.hostname + '/facebook_channel.html',
+    channelUrl: window.location.protocol + '//' + window.location.hostname +
+      '/facebook_channel.html',
     oauth: true
   });
   withFacebook.fire();
 };
-
 
 /**
  * The difference between challenge and invite, is that with challenge
@@ -71,9 +73,6 @@ exports.inviteFriends = function (opts, cb) {
     this.sendChromeFrameMessage('inviteFriends', opts, cb);
     return;
   }
-
-
-
 
   FB.ui({
     method: 'apprequests',
@@ -103,19 +102,14 @@ exports.challengeFriend = function (opts, cb) {
     return;
   }
 
-
-
-
   if (chromeFrame.isChromeFrame()) {
     this.sendChromeFrameMessage('challengeFriend', opts, cb);
     return;
   }
 
-
-
-
   // if no FB user id specified, use invite dialog instead of challenge
-  if (!opts.user || !opts.user.user || !opts.user.user.facebook || !opts.user.user.facebook.id) {
+  if (!opts.user || !opts.user.user || !opts.user.user.facebook || !opts.user
+    .user.facebook.id) {
     this.inviteFriends(opts, cb);
   } else {
     FB.ui({
@@ -146,9 +140,6 @@ exports.buyWeeCoins = function (opts, cb) {
     return;
   }
 
-
-
-
   FB.ui({
     method: 'pay',
     display: 'iframe',
@@ -170,12 +161,11 @@ exports.buyWeeCoins = function (opts, cb) {
 
 exports.sendChromeFrameMessage = function (method, data, cb) {
   if (!chromeFrame.isChromeFrame()) {
-    logger.log('Cannot invoke send chrome frame message without chrome frame object');
+    logger.log(
+      'Cannot invoke send chrome frame message without chrome frame object'
+    );
     return;
   }
-
-
-
 
   if (!data) {
     data = {};
@@ -191,31 +181,26 @@ exports.receiveChromeFrameMessage = function (data, cb) {
     cb();
     return;
   } else if (!data._method) {
-    logger.log('No method specified in data from chrome frame from Facebook send');
+    logger.log(
+      'No method specified in data from chrome frame from Facebook send');
     cb();
     return;
   }
 
-
-
-
-
-
-
-
-
   switch (data._method) {
-  case 'inviteFriends':
-    this.inviteFriends(data, cb);
-    break;
-  case 'challengeFriend':
-    this.challengeFriend(data, cb);
-    break;
-  case 'buyWeeCoins':
-    this.buyWeeCoins(data, cb);
-    break;
-  default:
-    logger.log('Unrecognized method specified in data from chrome frame from Facebook send');
+    case 'inviteFriends':
+      this.inviteFriends(data, cb);
+      break;
+    case 'challengeFriend':
+      this.challengeFriend(data, cb);
+      break;
+    case 'buyWeeCoins':
+      this.buyWeeCoins(data, cb);
+      break;
+    default:
+      logger.log(
+      'Unrecognized method specified in data from chrome frame from Facebook send'
+    );
   }
 };
 

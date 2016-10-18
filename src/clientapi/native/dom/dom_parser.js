@@ -1,14 +1,13 @@
 let exports = {};
 
-function DOMParser(options) {
+function DOMParser (options) {
   this.options = options || { locator: {} };
-
 }
 DOMParser.prototype.parseFromString = function (source, mimeType) {
   var options = this.options;
   var sax = new XMLReader();
   var domBuilder = options.domBuilder || new DOMHandler();
-  //contentHandler and LexicalHandler
+  // contentHandler and LexicalHandler
   var errorHandler = options.errorHandler;
   var locator = options.locator;
   var defaultNSMap = options.xmlns || {};
@@ -22,9 +21,6 @@ DOMParser.prototype.parseFromString = function (source, mimeType) {
   if (locator) {
     domBuilder.setDocumentLocator(locator);
   }
-
-
-
 
   sax.errorHandler = buildErrorHandler(errorHandler, domBuilder, locator);
   sax.domBuilder = options.domBuilder || domBuilder;
@@ -40,7 +36,8 @@ DOMParser.prototype.parseFromString = function (source, mimeType) {
   }
   return domBuilder.document;
 };
-function buildErrorHandler(errorImpl, domBuilder, locator) {
+
+function buildErrorHandler (errorImpl, domBuilder, locator) {
   if (!errorImpl) {
     if (domBuilder instanceof DOMHandler) {
       return domBuilder;
@@ -50,7 +47,8 @@ function buildErrorHandler(errorImpl, domBuilder, locator) {
   var errorHandler = {};
   var isCallback = errorImpl instanceof Function;
   locator = locator || {};
-  function build(key) {
+
+  function build (key) {
     var fn = errorImpl[key];
     if (!fn) {
       if (isCallback) {
@@ -68,8 +66,7 @@ function buildErrorHandler(errorImpl, domBuilder, locator) {
     }
     errorHandler[key] = fn && function (msg) {
       fn(msg + _locator(locator));
-    } || function () {
-    };
+    } || function () {};
   }
   build('warning', 'warn');
   build('error', 'warn', 'warning');
@@ -79,16 +76,17 @@ function buildErrorHandler(errorImpl, domBuilder, locator) {
 /**
  * +ContentHandler+ErrorHandler
  * +LexicalHandler+EntityResolver2
- * -DeclHandler-DTDHandler 
- * 
+ * -DeclHandler-DTDHandler
+ *
  * DefaultHandler:EntityResolver, DTDHandler, ContentHandler, ErrorHandler
  * DefaultHandler2:DefaultHandler,LexicalHandler, DeclHandler, EntityResolver2
  * @link http://www.saxproject.org/apidoc/org/xml/sax/helpers/DefaultHandler.html
  */
-function DOMHandler() {
+function DOMHandler () {
   this.cdata = false;
 }
-function position(locator, node) {
+
+function position (locator, node) {
   node.lineNumber = locator.lineNumber;
   node.columnNumber = locator.columnNumber;
 }
@@ -128,20 +126,17 @@ DOMHandler.prototype = {
     var tagName = current.tagName;
     this.currentElement = current.parentNode;
   },
-  startPrefixMapping: function (prefix, uri) {
-  },
-  endPrefixMapping: function (prefix) {
-  },
+  startPrefixMapping: function (prefix, uri) {},
+  endPrefixMapping: function (prefix) {},
   processingInstruction: function (target, data) {
     var ins = this.document.createProcessingInstruction(target, data);
     this.locator && position(this.locator, ins);
     appendElement(this, ins);
   },
-  ignorableWhitespace: function (ch, start, length) {
-  },
+  ignorableWhitespace: function (ch, start, length) {},
   characters: function (chars, start, length) {
     chars = _toString.apply(this, arguments);
-    //console.log(chars)
+    // console.log(chars)
     if (this.currentElement && chars) {
       if (this.cdata) {
         var charNode = this.document.createCDATASection(chars);
@@ -153,8 +148,7 @@ DOMHandler.prototype = {
       this.locator && position(this.locator, charNode);
     }
   },
-  skippedEntity: function (name) {
-  },
+  skippedEntity: function (name) {},
   endDocument: function () {
     this.document.normalize();
   },
@@ -164,7 +158,7 @@ DOMHandler.prototype = {
       locator.lineNumber = 0;
     }
   },
-  //LexicalHandler
+  // LexicalHandler
   comment: function (chars, start, length) {
     chars = _toString.apply(this, arguments);
     var comm = this.document.createComment(chars);
@@ -172,7 +166,7 @@ DOMHandler.prototype = {
     appendElement(this, comm);
   },
   startCDATA: function () {
-    //used in characters() methods
+    // used in characters() methods
     this.cdata = true;
   },
   endCDATA: function () {
@@ -187,9 +181,9 @@ DOMHandler.prototype = {
     }
   },
   /**
-	 * @see org.xml.sax.ErrorHandler
-	 * @link http://www.saxproject.org/apidoc/org/xml/sax/ErrorHandler.html
-	 */
+   * @see org.xml.sax.ErrorHandler
+   * @link http://www.saxproject.org/apidoc/org/xml/sax/ErrorHandler.html
+   */
   warning: function (error) {
     console.warn(error, _locator(this.locator));
   },
@@ -201,25 +195,25 @@ DOMHandler.prototype = {
     throw error;
   }
 };
-function _locator(l) {
+
+function _locator (l) {
   if (l) {
-    return '\n@' + (l.systemId || '') + '#[line:' + l.lineNumber + ',col:' + l.columnNumber + ']';
+    return '\n@' + (l.systemId || '') + '#[line:' + l.lineNumber + ',col:' + l.columnNumber +
+      ']';
   }
 }
-function _toString(chars, start, length) {
+
+function _toString (chars, start, length) {
   if (typeof chars == 'string') {
     return chars.substr(start, length);
   } else {
-    //java sax connect width xmldom on rhino(what about: "? && !(chars instanceof String)")
+    // java sax connect width xmldom on rhino(what about: "? && !(chars instanceof String)")
     if (chars.length >= start + length || start) {
       return new java.lang.String(chars, start, length) + '';
     }
     return chars;
   }
 }
-
-
-
 
 /*
  * @link http://www.saxproject.org/apidoc/org/xml/sax/ext/LexicalHandler.html
@@ -252,14 +246,15 @@ function _toString(chars, start, length) {
  *  #notationDecl(name, publicId, systemId) {};
  *  #unparsedEntityDecl(name, publicId, systemId, notationName) {};
  */
-'endDTD,startEntity,endEntity,attributeDecl,elementDecl,externalEntityDecl,internalEntityDecl,resolveEntity,getExternalSubset,notationDecl,unparsedEntityDecl'.replace(/\w+/g, function (key) {
+'endDTD,startEntity,endEntity,attributeDecl,elementDecl,externalEntityDecl,internalEntityDecl,resolveEntity,getExternalSubset,notationDecl,unparsedEntityDecl'
+.replace(/\w+/g, function (key) {
   DOMHandler.prototype[key] = function () {
     return null;
   };
 });
 
 /* Private static helpers treated below as private instance methods, so don't need to add these to the public API; we might use a Relator to also get rid of non-standard public properties */
-function appendElement(hander, node) {
+function appendElement (hander, node) {
   if (!hander.currentElement) {
     hander.document.appendChild(node);
   } else {
@@ -267,14 +262,7 @@ function appendElement(hander, node) {
   }
 }
 
-
-
-
-
-
-
-
-//appendChild and setAttributeNS are preformance key
+// appendChild and setAttributeNS are preformance key
 import saxImport from './sax';
 import dom from './dom';
 var XMLReader = saxImport.XMLReader;

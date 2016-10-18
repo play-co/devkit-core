@@ -61,16 +61,13 @@ exports.findView = function (f, view) {
     }
   }
 
-
-
-
   return false;
 };
 
 var _isHighlighting = false;
 var _highlightViews = [];
 
-var _renderHighlights = function () {
+var _renderHighlights = (function () {
   var prev = null;
   var highlight = 0;
   var fadeIn = true;
@@ -81,9 +78,6 @@ var _renderHighlights = function () {
     if (prev) {
       dt = now - prev;
     }
-
-
-
 
     prev = now;
 
@@ -101,14 +95,12 @@ var _renderHighlights = function () {
       }
     }
 
-
-
-
     var gray = Math.round(255 * highlight / FADE_IN_TIME);
 
     ctx.save();
     ctx.globalCompositeOperation = 'source-over';
-    ctx.strokeStyle = 'rgba(' + gray + ',' + gray + ',' + gray + ',' + gray / 512 + ')';
+    ctx.strokeStyle = 'rgba(' + gray + ',' + gray + ',' + gray + ',' + gray /
+      512 + ')';
 
     var outlinedParents = {};
     _highlightViews.forEach(function (highlight) {
@@ -138,7 +130,8 @@ var _renderHighlights = function () {
       var opts = highlight.opts;
       var pos = view.getPosition();
       ctx.save();
-      ctx.fillStyle = 'rgba(' + gray + ',' + gray + ',' + gray + ',' + gray / 512 + ')';
+      ctx.fillStyle = 'rgba(' + gray + ',' + gray + ',' + gray + ',' +
+        gray / 512 + ')';
       ctx.strokeStyle = 'rgba(' + gray + ',0,0,1)';
       ctx.translate(pos.x, pos.y);
       ctx.rotate(pos.r);
@@ -149,14 +142,14 @@ var _renderHighlights = function () {
 
     ctx.restore();
   };
-}();
+}());
 
 exports.unhighlightViews = function () {
   _highlightViews = [];
   disableHighlighting();
 };
 
-function getHighlightIndex(view) {
+function getHighlightIndex (view) {
   var n = _highlightViews.length;
   for (var i = 0; i < n; ++i) {
     if (_highlightViews[i].view === view) {
@@ -164,32 +157,20 @@ function getHighlightIndex(view) {
     }
   }
 
-
-
-
   return -1;
 }
 
-
-
-
-function enableHighlighting() {
+function enableHighlighting () {
   if (!_isHighlighting) {
     _isHighlighting = true;
     GC.app.engine.on('Render', _renderHighlights);
   }
 }
 
-
-
-
-function disableHighlighting() {
+function disableHighlighting () {
   _isHighlighting = false;
   GC.app.engine.removeListener('Render', _renderHighlights);
 }
-
-
-
 
 exports.highlightView = function (view, opts) {
   if (getHighlightIndex(view) === -1) {
@@ -206,9 +187,6 @@ exports.unhighlightView = function (view) {
   if (i !== -1) {
     _highlightViews.splice(i, 1);
   }
-
-
-
 
   if (!_highlightViews.length) {
     disableHighlighting();
@@ -232,10 +210,6 @@ exports.getImages = function (view) {
         hash[url] = true;
       }
     }
-
-
-
-
   }, view || GC.app);
 
   var images = Object.keys(hash);
@@ -246,7 +220,6 @@ exports.getImages = function (view) {
 exports.pack = function () {
   return GC.app && exports.packView(GC.app.view);
 };
-
 
 exports.packView = function (view) {
   return exports.traverseView(function (view) {
@@ -259,9 +232,6 @@ exports.packView = function (view) {
         imageData = img.getOriginalURL() || img.getMap();
       }
 
-
-
-
       if (view.getScaleMethod) {
         var scaleMethod = view.getScaleMethod();
         if (/slice$/.test(scaleMethod)) {
@@ -271,20 +241,10 @@ exports.packView = function (view) {
       }
     }
 
-
-
-
-
-
-
-
     var text;
     if (view instanceof TextView) {
       text = view.getText();
     }
-
-
-
 
     var s = view.style;
     return {
@@ -305,9 +265,8 @@ exports.packView = function (view) {
   }, view);
 };
 
-
 exports.unpack = function (data) {
-  function buildView(superview, data) {
+  function buildView (superview, data) {
     var view;
 
     var opts = data.data;
@@ -359,9 +318,6 @@ exports.unpack = function (data) {
       });
     }
 
-
-
-
     view.uid = data.uid;
 
     if (data.subviews) {
@@ -370,9 +326,6 @@ exports.unpack = function (data) {
       }
     }
   }
-
-
-
 
   GC.app.view.updateOpts(data.data);
   for (var i = 0, sub; sub = data.subviews[i]; ++i) {
@@ -394,18 +347,18 @@ exports.eachView = function (list, f) {
 exports.hideViews = function ()
   /* id1, id2, id3, ... */
   {
-    exports.eachView(arguments, function (view) {
-      view.style.visible = false;
-    });
-  };
+  exports.eachView(arguments, function (view) {
+    view.style.visible = false;
+  });
+};
 
 exports.showViews = function ()
   /* id1, id2, id3, ... */
   {
-    exports.eachView(arguments, function (view) {
-      view.style.visible = true;
-    });
-  };
+  exports.eachView(arguments, function (view) {
+    view.style.visible = true;
+  });
+};
 
 exports.hideAllViews = function () {
   exports.traverse(function (view) {
@@ -425,9 +378,6 @@ exports.hideViewRange = function (a, b) {
     range.push(i);
   }
 
-
-
-
   exports.hideViews.apply(this, range);
 };
 
@@ -436,13 +386,6 @@ exports.showViewRange = function (a, b) {
   for (var i = a; i < b; ++i) {
     range.push(i);
   }
-
-
-
-
-
-
-
 
   exports.showViews.apply(this, range);
 };

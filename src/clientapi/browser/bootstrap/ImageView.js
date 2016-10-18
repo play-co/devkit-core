@@ -20,13 +20,10 @@ import { bind } from 'base';
 import renderer from './renderer';
 
 exports = class {
-  constructor(opts) {
+  constructor (opts) {
     if (!opts) {
       opts = {};
     }
-
-
-
 
     this.x = opts.x || 0;
     this.y = opts.y || 0;
@@ -67,20 +64,13 @@ exports = class {
       this._checkBounds = true;
     }
 
-
-
-
-
-
-
-
     this.computePosition();
     renderer.add(this);
   }
-  getImage() {
+  getImage () {
     return this._img;
   }
-  setImage(img) {
+  setImage (img) {
     if (typeof img == 'string') {
       this._img = new Image();
       this._img.onload = bind(this, function () {
@@ -93,7 +83,7 @@ exports = class {
       this._img = img;
     }
   }
-  computePosition() {
+  computePosition () {
     var w = this.width || renderer.width;
     var h = this.height || renderer.height;
 
@@ -104,56 +94,53 @@ exports = class {
       return false;
     }
 
-
-
-
     switch (this._scaleMethod) {
-    case 'none':
-      return {
-        x: 0,
-        y: 0,
-        width: iw,
-        height: ih,
-        scale: 1
-      };
-    case 'stretch':
-      return {
-        x: 0,
-        y: 0,
-        width: w,
-        height: h
-      };
-    case 'contain':
-    case 'cover':
-    default:
-      var scale = 1;
-      var targetRatio = iw / ih;
-      var ratio = w / h;
-      if (this._scaleMethod == 'cover' ? ratio > targetRatio : ratio < targetRatio) {
-        scale = w / iw;
-      } else {
-        scale = h / ih;
-      }
-      var finalWidth = iw * scale;
-      var finalHeight = ih * scale;
-      var x = this._align == 'left' ? 0 : this._align == 'right' ? w - finalWidth : (w - finalWidth) / 2;
-      var y = this._verticalAlign == 'top' ? 0 : this._verticalAlign == 'bottom' ? h - finalHeight : (h - finalHeight) / 2;
-      return {
-        x: x,
-        y: y,
-        width: finalWidth,
-        height: finalHeight,
-        scale: scale
-      };
+      case 'none':
+        return {
+          x: 0,
+          y: 0,
+          width: iw,
+          height: ih,
+          scale: 1
+        };
+      case 'stretch':
+        return {
+          x: 0,
+          y: 0,
+          width: w,
+          height: h
+        };
+      case 'contain':
+      case 'cover':
+      default:
+        var scale = 1;
+        var targetRatio = iw / ih;
+        var ratio = w / h;
+        if (this._scaleMethod == 'cover' ? ratio > targetRatio : ratio <
+        targetRatio) {
+          scale = w / iw;
+        } else {
+          scale = h / ih;
+        }
+        var finalWidth = iw * scale;
+        var finalHeight = ih * scale;
+        var x = this._align == 'left' ? 0 : this._align == 'right' ? w -
+        finalWidth : (w - finalWidth) / 2;
+        var y = this._verticalAlign == 'top' ? 0 : this._verticalAlign ==
+        'bottom' ? h - finalHeight : (h - finalHeight) / 2;
+        return {
+          x: x,
+          y: y,
+          width: finalWidth,
+          height: finalHeight,
+          scale: scale
+        };
     }
   }
-  render(ctx) {
+  render (ctx) {
     if (!this._img || !this._img.complete) {
       return;
     }
-
-
-
 
     ctx.save();
     try {
@@ -194,12 +181,10 @@ exports = class {
           }
           for (i = 0; i < 3; i++) {
             sourceSlicesHor[i] = sourceSlicesHor[i] * bounds.width / sw | 0;
-            sourceSlicesVer[i] = sourceSlicesVer[i] * bounds.height / sh | 0;
+            sourceSlicesVer[i] = sourceSlicesVer[i] * bounds.height / sh |
+              0;
           }
         }
-
-
-
 
         destSlicesHor[0] = this._destSlicesHor[0] * scale | 0;
         destSlicesHor[2] = this._destSlicesHor[2] * scale | 0;
@@ -227,37 +212,21 @@ exports = class {
               }
             }
 
-
-
-
             sx += sw;
             dx += dw;
           }
           sy += sh;
           dy += dh;
         }
-
-
-
-
       } else {
         var pos = this.computePosition();
         if (pos) {
           ctx.drawImage(this._img, pos.x, pos.y, pos.width, pos.height);
         }
       }
-    } catch (e) {
-    } finally {
+    } catch (e) {} finally {
       ctx.restore();
     }
-
-
-
-
-
-
-
-
   }
 };
 

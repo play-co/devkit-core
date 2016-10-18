@@ -16,14 +16,14 @@ let exports = {};
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
 class Renderer {
-  constructor() {
+  constructor () {
     this._views = [];
   }
-  add(view) {
+  add (view) {
     this._views.push(view);
     this.render();
   }
-  setOpts(delegate, ctx, width, height) {
+  setOpts (delegate, ctx, width, height) {
     this._delegate = delegate;
     this._ctx = ctx;
     this.width = width;
@@ -33,15 +33,12 @@ class Renderer {
     canvas.width = this.width;
     canvas.height = this.height;
   }
-  render() {
+  render () {
     // some android phones mock out html5 objects, but don't implement them
     var ctx = this._ctx;
     if (!ctx) {
       return;
     }
-
-
-
 
     // clear the canvas with clear rect
     var canvas = ctx.canvas;
@@ -52,37 +49,12 @@ class Renderer {
       v.render(ctx);
     }
 
-
-
-
     this._delegate('onRender', ctx);
     ctx.restore();
   }
 }
 
 exports = new Renderer();
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 // // Display name
 // if (displayName) {
@@ -100,70 +72,3 @@ exports = new Renderer();
 // 	ctx.drawImage(photoImg, r.x, r.y, r.w, r.h);
 // }
 export default exports;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

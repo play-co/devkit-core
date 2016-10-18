@@ -22,7 +22,7 @@ import base, {
 
 // this whole file should not get included in release
 if (DEBUG) {
-  function stringify(value) {
+  function stringify (value) {
     if (value === null) {
       return 'null';
     } else if (typeof value == 'object') {
@@ -41,9 +41,6 @@ if (DEBUG) {
       return String(value);
     }
   }
-
-
-
 
   var _logBuffer = [];
   var _isInstalled = false;
@@ -80,9 +77,6 @@ if (DEBUG) {
           args[i] = stringify(arguments[i]);
         }
 
-
-
-
         // buffer log lines
         if (!conn || !conn.isConnected()) {
           _logBuffer.push(args);
@@ -95,25 +89,12 @@ if (DEBUG) {
             _logBuffer = [];
           }
 
-
-
-
           // send log
           conn.sendEvent('LOG', args);
         }
 
-
-
-
         isLocked = false;
       }
-
-
-
-
-
-
-
 
       return oldLog.apply(this, arguments);
     };
@@ -125,21 +106,14 @@ if (DEBUG) {
       return conn.close();
     }
 
-
-
-
     // if we buffered log messages, send them
     var n = _logBuffer.length;
     for (var i = 0; i < n; ++i) {
       conn.sendEvent('LOG', _logBuffer[i]);
     }
 
-
-
-
     _logBuffer = [];
   };
 }
-
 
 export default exports;

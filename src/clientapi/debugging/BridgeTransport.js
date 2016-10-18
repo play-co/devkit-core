@@ -1,13 +1,11 @@
 import EventEmitter from 'lib/PubSub';
 import nextTick from 'nextTick';
 
-
 class Transport extends EventEmitter {
-  emit(name, data) {
+  emit (name, data) {
     nextTick(EventEmitter.prototype.emit.bind(this.target, name, data));
   }
 }
-
 
 /**
  * The BridgeTransport creates two Transport objects that look like vaguely
@@ -18,7 +16,7 @@ class Transport extends EventEmitter {
  * unexpected race conditions.
  */
 module.exports = class {
-  constructor() {
+  constructor () {
     this.a = new Transport();
     this.b = new Transport();
     this.a.target = this.b;

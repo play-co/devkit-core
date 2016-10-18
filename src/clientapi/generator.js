@@ -162,12 +162,10 @@ var nouns = [
   'tameness'
 ];
 
-function merge() {
-  return Array.prototype.concat.apply(arguments[0], Array.prototype.slice.call(arguments, 1));
+function merge () {
+  return Array.prototype.concat.apply(arguments[0], Array.prototype.slice.call(
+    arguments, 1));
 }
-
-
-
 
 exports.pick = function () {
   var list = merge.apply(this, arguments);

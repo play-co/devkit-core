@@ -34,62 +34,39 @@ if (navigator.displayMetrics) {
   baseScale = window.devicePixelRatio || 1;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 exports = class {
-  setTargetDensity(target) {
+  setTargetDensity (target) {
     switch (target) {
-    case 'high':
-      this._scale = baseScale * 0.5;
-      break;
-    case 'medium':
-      this._scale = baseScale * 0.75;
-      break;
-    case 'low':
-    default:
-      this._scale = baseScale;
-      break;
+      case 'high':
+        this._scale = baseScale * 0.5;
+        break;
+      case 'medium':
+        this._scale = baseScale * 0.75;
+        break;
+      case 'low':
+      default:
+        this._scale = baseScale;
+        break;
     }
 
     logger.log('scale:', this._scale);
   }
-  getScale() {
+  getScale () {
     return this._scale;
   }
-  getIntValue(val) {
+  getIntValue (val) {
     return Math.round(val * this._scale) / this._scale;
   }
-  showSpinner() {
+  showSpinner () {
     if (this._spinnerCounter) {
       ++this._spinnerCounter;
       return;
     }
 
-
-
-
     var parent = GC.app.view;
     if (!parent) {
       return;
     }
-
-
-
 
     ++this._spinnerCounter;
 
@@ -106,7 +83,7 @@ exports = class {
       parent.addSubview(this._spinner);
     }
   }
-  hideSpinner() {
+  hideSpinner () {
     --this._spinnerCounter;
     if (this._spinnerCounter <= 0) {
       this._spinnerCounter = 0;
@@ -115,7 +92,6 @@ exports = class {
     }
   }
 };
-
 
 exports.prototype._spinnerCounter = 0;
 exports.prototype._scale = baseScale;

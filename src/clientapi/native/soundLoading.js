@@ -28,7 +28,6 @@ NATIVE.events.registerHandler('soundLoaded', function (evt) {
   }
 });
 
-
 NATIVE.events.registerHandler('soundError', function (evt) {
   logger.log('sound with url', evt.url, 'failed to load');
   var failedSound = sounds[evt.url];
@@ -47,14 +46,12 @@ NATIVE.events.registerHandler('soundDuration', function (evt) {
 
 var sounds = {};
 class Sound {
-  constructor(opts) {
+  constructor (opts) {
     this.src = opts.src || null;
     this.complete = opts.complete || null;
   }
-  onload() {
-  }
-  onerror() {
-  }
+  onload () {}
+  onerror () {}
 }
 NATIVE.sound.preloadSound = function (url) {
   NATIVE.sound.loadSound(url);

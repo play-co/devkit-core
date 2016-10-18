@@ -46,16 +46,13 @@ NATIVE.events.dispatchEvent = function (evt, id) {
       return;
     }
   }
-  //TODO maybe do this in a better way
-  //android sends the requestId back on the event object
-  //ios does not
+  // TODO maybe do this in a better way
+  // android sends the requestId back on the event object
+  // ios does not
   if (evt._requestId && !id) {
     id = evt._requestId;
     delete evt._requestId;
   }
-
-
-
 
   var handler = handlers[evt.name];
   if (handler) {
