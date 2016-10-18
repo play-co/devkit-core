@@ -268,6 +268,7 @@ function appendElement(hander, node) {
 import saxImport from './sax';
 import dom from './dom';
 var XMLReader = saxImport.XMLReader;
-var DOMImplementation = exports.DOMImplementation = dom.DOMImplementation;
+exports.DOMImplementation = dom.DOMImplementation;
+var DOMImplementation = exports.DOMImplementation;
 exports.XMLSerializer = dom.XMLSerializer;
 exports.DOMParser = DOMParser;

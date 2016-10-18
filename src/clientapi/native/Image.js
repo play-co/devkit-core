@@ -22,7 +22,7 @@ import {
 import PubSub from 'lib/PubSub';
 import setProperty from 'util/setProperty';
 
-var Image = exports = Class(PubSub, function (supr) {
+exports = Class(PubSub, function (supr) {
   this.init = function (src, width, height, glname) {
     this._src = src || '';
     this.width = width || undefined;
@@ -84,6 +84,7 @@ var Image = exports = Class(PubSub, function (supr) {
   this.onreload = function () {
   };
 });
+var Image = exports;
 
 setProperty(Image.prototype, 'src', {
   set: function (value) {

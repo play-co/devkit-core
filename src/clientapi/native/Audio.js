@@ -22,7 +22,7 @@ import {
  */
 var lastbg;
 
-var Audio = exports = Class(function () {
+exports = Class(function () {
   this.init = function (url) {
     this._startedLoad = false;
     this._src = '';
@@ -128,6 +128,7 @@ var Audio = exports = Class(function () {
   };
 
 });
+var Audio = exports;
 
 
 Audio.prototype.__defineSetter__('src', function (url) {

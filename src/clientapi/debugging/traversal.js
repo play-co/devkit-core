@@ -197,11 +197,12 @@ exports.unhighlightView = function (view) {
   }
 };
 
-exports.getViewById = exports.getViewByID = function (uid) {
+exports.getViewByID = function (uid) {
   return exports.find(function (view) {
     return view.uid == uid;
   });
 };
+exports.getViewById = exports.getViewByID;
 
 exports.getImages = function (view) {
   var hash = {};

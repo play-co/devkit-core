@@ -21,7 +21,7 @@ import {
 
 import engineInstance from 'ui/engineInstance';
 
-var OverlayAPI = exports = Class(function () {
+exports = Class(function () {
   this.init = function (env) {
     logger.log('env', env);
     switch (env) {
@@ -128,6 +128,7 @@ var OverlayAPI = exports = Class(function () {
     throw new Error('TODO: Where is this supposed to import from?');
   };
 });
+var OverlayAPI = exports;
 
 exports.prototype.BaseOverlay = Class(function () {
   this.pauseTimestep = function () {
