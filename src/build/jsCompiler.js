@@ -1,9 +1,11 @@
+'use strict';
 var path = require('path');
 var crypto = require('crypto');
+var EventEmitter = require('events').EventEmitter;
 
 var argv = require('optimist').argv;
 var mkdirp = require('mkdirp');
-var EventEmitter = require('events').EventEmitter;
+var tempfile = require('tempfile');
 
 var jsioWebpack = require('jsio-webpack');
 
@@ -13,9 +15,14 @@ var jsio = require('jsio').clone();
 var uglify = require('uglify-js');
 
 var fs = require('./util/fs');
+const webpackWatchers = require('./webpackWatchers');
 
 var logger;
 var compressLog;
+
+
+const WP_OUTPUT_DIR = tempfile();
+
 
 exports.JSCompiler = Class(function () {
   this.init = function (api, app, config, jsConfig) {
@@ -97,8 +104,8 @@ exports.JSCompiler = Class(function () {
 
     // for debugging purposes, build the equivalent command that can be executed
     // from the command-line (not used for anything other than logging to the screen)
-    var cmd = ["jsio_compile", JSON.stringify(importStatement)];
-    for (key in jsioOpts) {
+    var cmd = ['jsio_compile', JSON.stringify(importStatement)];
+    for (let key in jsioOpts) {
       cmd.push('--' + key);
 
       var value = JSON.stringify(jsioOpts[key]);
@@ -119,7 +126,7 @@ exports.JSCompiler = Class(function () {
     //     cb && cb(null, code);
     //   });
 
-    jsioOpts.preCompress = opts.preCompress; //this.precompress.bind(this);
+    jsioOpts.preCompress = opts.preCompress; // this.precompress.bind(this);
 
     // start the compile by passing something equivalent to argv (first argument is
     // ignored, but traditionally should be the name of the executable?)
@@ -131,6 +138,14 @@ exports.JSCompiler = Class(function () {
       return path.resolve(jsioOpts.cwd, p);
     };
 
+    const wpOutputDir = path.join(
+      WP_OUTPUT_DIR,
+      jsioOpts.cwd.replace(new RegExp(path.sep, 'g'), '_')
+    );
+    if (!fs.existsSync(wpOutputDir)) {
+      mkdirp.sync(wpOutputDir);
+    }
+
     const jsioWebpackConfig = {
       configure: (configurator, options) => {
         configurator.merge({
@@ -139,8 +154,7 @@ exports.JSCompiler = Class(function () {
           },
           output: {
             filename: '[name].js',
-            // path: path.resolve(jsioOpts.cwd, 'dist'),
-            path: path.dirname(jsCachePath),
+            path: wpOutputDir,
             publicPath: '/'
           }
         });
@@ -151,6 +165,14 @@ exports.JSCompiler = Class(function () {
       },
       postConfigure: (configurator, options) => {
         configurator.removePreLoader('eslint');
+
+        // TODO: want this?
+        // configurator.plugin('prefetch', webpack.PrefetchPlugin, [
+        //   [
+        //     '/Users/Brown/Documents/workspace/everwing/modules/devkit-core/modules/timestep/src'
+        //   ],
+        //   'device'
+        // ]);
 
         configurator.merge(current => {
           const paths = jsioOpts.path.map(mapPath);
@@ -178,34 +200,61 @@ exports.JSCompiler = Class(function () {
 
           current.resolve.alias.devkitCore = path.resolve(__dirname, '..');
 
-          // original code, no breakpoints
-          // current.devtool = 'cheap-module-eval-source-map';
-          // transformed code, no breakpoints
-          // current.devtool = 'cheap-eval-source-map';
-          // bundle, yes breakpoints
-          current.devtool = 'cheap-source-map';
-          current.output.pathinfo = true;
+          if (process.env.NODE_ENV === 'production') {
+            current.devtool = null;
+            current.output.pathinfo = false;
+          } else {
+            // original code, no breakpoints
+            // current.devtool = 'cheap-module-eval-source-map';
+            // transformed code, no breakpoints
+            // current.devtool = 'cheap-eval-source-map';
+            // bundle, yes breakpoints
+            current.devtool = 'cheap-source-map';
+            current.output.pathinfo = true;
+          }
 
           return current;
         });
       }
     };
 
-    mkdirp(jsCachePath, function () {
-      // compiler.start(['jsio_compile', jsioOpts.cwd || '.', importStatement], jsioOpts);
-      const outputPath = path.join(path.dirname(jsCachePath), 'app.js');
-      if (fs.existsSync(outputPath)) {
-        fs.unlinkSync(outputPath);
-      }
+    mkdirp(jsCachePath, () => {
+      const outputPath = path.join(wpOutputDir, 'app.js');
+      const watcher = webpackWatchers.getWatcher(
+        this._app.id,
+        logger,
+        jsioWebpackConfig
+      );
 
-      jsioWebpack.build(jsioWebpackConfig, () => {
-        if (!fs.existsSync(outputPath)) {
-          cb(new Error('Webpack build failed'));
+      const onCompileComplete = (err, stats) => {
+        // Show the last webpack output
+        jsioWebpack.compilerLogger(err, stats);
+
+        const finalize = () => {
+          if (err) {
+            cb(err);
+            return;
+          }
+
+          if (!fs.existsSync(outputPath)) {
+            cb(new Error('Webpack build failed'));
+            return;
+          }
+
+          const code = fs.readFileSync(outputPath, 'utf-8');
+          cb(null, code);
+        };
+
+        if (process.env.NODE_ENV === 'production') {
+          watcher.close(() => {
+            finalize();
+          });
+        } else {
+          finalize();
         }
-        // TODO: handle errors
-        const code = fs.readFileSync(outputPath, 'utf-8');
-        cb(null, code);
-      });
+      };
+
+      watcher.waitForBuild(onCompileComplete);
     });
   };
 
