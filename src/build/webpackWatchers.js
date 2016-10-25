@@ -91,6 +91,14 @@ const cleanOldWatchers = () => {
 };
 
 
+const getWebpackConfig = (userConfigs) => {
+  if (!Array.isArray(userConfigs)) {
+    userConfigs = [userConfigs];
+  }
+  return jsioWebpack.builder.getWebpackConfig(userConfigs);
+};
+
+
 const getWatcher = (id, logger, userConfigs) => {
   logger.log('Getting watcher for: ' + id);
   if (_watchers[id]) {
@@ -98,10 +106,7 @@ const getWatcher = (id, logger, userConfigs) => {
     return _watchers[id];
   }
 
-  if (!Array.isArray(userConfigs)) {
-    userConfigs = [userConfigs];
-  }
-  const webpackConfig = jsioWebpack.builder.getWebpackConfig(userConfigs);
+  const webpackConfig = getWebpackConfig(userConfigs);
 
   logger.log('> Creating new watcher');
   const watcher = new Watcher(logger, webpackConfig);
@@ -112,6 +117,26 @@ const getWatcher = (id, logger, userConfigs) => {
 };
 
 
+const removeWatcher = (id, cb) => {
+  const watcher = _watchers[id];
+  if (!watcher) {
+    cb(null, false);
+    return;
+  }
+
+  watcher.close(cb);
+  delete _watchers[id];
+};
+
+
+const getCompiler = (userConfigs) => {
+  const webpackConfig = getWebpackConfig(userConfigs);
+  return webpack(webpackConfig);
+};
+
+
 module.exports = {
-  getWatcher: getWatcher
+  getWatcher: getWatcher,
+  removeWatcher: removeWatcher,
+  getCompiler: getCompiler
 };

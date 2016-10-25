@@ -218,43 +218,41 @@ exports.JSCompiler = Class(function () {
       }
     };
 
+    // This will only be set for simulator builds
+    const inSimulator = !!this._opts.simulator.deviceId;
+
     mkdirp(jsCachePath, () => {
       const outputPath = path.join(wpOutputDir, 'app.js');
-      const watcher = webpackWatchers.getWatcher(
-        this._app.id,
-        logger,
-        jsioWebpackConfig
-      );
 
       const onCompileComplete = (err, stats) => {
         // Show the last webpack output
         jsioWebpack.compilerLogger(err, stats);
 
-        const finalize = () => {
-          if (err) {
-            cb(err);
-            return;
-          }
-
-          if (!fs.existsSync(outputPath)) {
-            cb(new Error('Webpack build failed'));
-            return;
-          }
-
-          const code = fs.readFileSync(outputPath, 'utf-8');
-          cb(null, code);
-        };
-
-        if (process.env.NODE_ENV === 'production') {
-          watcher.close(() => {
-            finalize();
-          });
-        } else {
-          finalize();
+        if (err) {
+          cb(err);
+          return;
         }
+
+        if (!fs.existsSync(outputPath)) {
+          cb(new Error('Webpack build failed'));
+          return;
+        }
+
+        const code = fs.readFileSync(outputPath, 'utf-8');
+        cb(null, code);
       };
 
-      watcher.waitForBuild(onCompileComplete);
+      if (inSimulator) {
+        const watcher = webpackWatchers.getWatcher(
+          this._app.id,
+          logger,
+          jsioWebpackConfig
+        );
+        watcher.waitForBuild(onCompileComplete);
+      } else {
+        const compiler = webpackWatchers.getCompiler(jsioWebpackConfig);
+        compiler.run(onCompileComplete);
+      }
     });
   };
 
