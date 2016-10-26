@@ -174,6 +174,11 @@ exports.JSCompiler = Class(function () {
         //   'device'
         // ]);
 
+        configurator.loader('babel', current => {
+          current.exclude = null;
+          return current;
+        });
+
         configurator.merge(current => {
           const paths = jsioOpts.path.map(mapPath);
           current.resolve.root = current.resolve.root.concat(paths);
@@ -209,7 +214,7 @@ exports.JSCompiler = Class(function () {
             // transformed code, no breakpoints
             // current.devtool = 'cheap-eval-source-map';
             // bundle, yes breakpoints
-            current.devtool = 'cheap-source-map';
+            current.devtool = 'bundle';
             current.output.pathinfo = true;
           }
 
