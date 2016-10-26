@@ -32,7 +32,8 @@ exports.JSConfig = Class(function () {
       splash: {
         autoHide: !(manifest.splash && manifest.splash.autoHide === false)
       },
-      useWebGL: manifest.browser && manifest.browser.canvas && manifest.browser.canvas.useWebGL || false
+      useWebGL: manifest.browser && manifest.browser.canvas && manifest.browser.canvas.useWebGL || false,
+      disableServiceWorkers: manifest.browser && manifest.browser.disableServiceWorkers || false
     };
 
     if (manifest.disableNativeViews) {

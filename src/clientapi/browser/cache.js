@@ -2,6 +2,8 @@ let exports = {};
 
 import device from 'device';
 
+import { CONFIG } from 'base';
+
 var _cacheWorker;
 
 function init () {
@@ -25,7 +27,11 @@ function init () {
     });
 }
 
-exports.isEnabled = 'serviceWorker' in navigator && !device.isSimulator;
+if (CONFIG.disableServiceWorkers) {
+  exports.isEnabled = false;
+} else {
+  exports.isEnabled = 'serviceWorker' in navigator && !device.isSimulator;
+}
 
 import loader from 'ui/resource/loader';
 
