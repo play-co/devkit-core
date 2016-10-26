@@ -1,3 +1,6 @@
+'use strict';
+const _ = require('lodash');
+
 var setVal = require('./util/obj').setVal;
 
 function deepCopy(obj) { return obj && JSON.parse(JSON.stringify(obj)); }
@@ -32,8 +35,9 @@ exports.JSConfig = Class(function () {
       splash: {
         autoHide: !(manifest.splash && manifest.splash.autoHide === false)
       },
-      useWebGL: manifest.browser && manifest.browser.canvas && manifest.browser.canvas.useWebGL || false,
-      disableServiceWorkers: manifest.browser && manifest.browser.disableServiceWorkers || false
+      useWebGL: _.get(manifest, 'browser.canvas.useWebGL', false),
+      preserveDrawingBuffer: _.get(manifest, 'browser.webGL.preserveDrawingBuffer', true),
+      disableServiceWorkers: _.get(manifest, 'browser.disableServiceWorkers', false)
     };
 
     if (manifest.disableNativeViews) {
