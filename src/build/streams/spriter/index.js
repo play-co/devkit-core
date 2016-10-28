@@ -28,7 +28,8 @@ var CACHE_FILENAME = "devkit-spriter";
 exports.sprite = function (api, config) {
   var stream;
 
-  if (config.createSpritesheets) {
+  // FIXME: make this configureable from manifest.json
+  if (true) {
     var logger = api.logging.get('spriter');
 
     var spriter = new DevKitSpriter(config.spritesheetsDirectory, {
