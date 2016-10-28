@@ -147,13 +147,13 @@ function queueStart () {
 
 /* jshint +W117 */
 
+import devkit from 'devkit';
+
 function startApp () {
   // setup timestep device API
   const device = require('device').default;
   require('platforms/browser/initialize');
   device.init();
-
-  const devkit = require('devkit').default;
 
   // init sets up the GC object
   GLOBAL.GC = new devkit.ClientAPI();
