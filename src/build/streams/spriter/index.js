@@ -32,12 +32,15 @@ var CACHE_FILENAME = "devkit-spriter";
 exports.sprite = function (api, config) {
   var stream;
 
-  const runSpriter = _.get(
-    config.manifest,
-    'devkit-core.build.runSpriter',
-    // Don't sprite in simulator
-    !config.simulator.deviceId
-  );
+  let runSpriter = true;
+  // When in simulator
+  if (config.simulator.deviceId) {
+    runSpriter = _.get(
+      config.manifest,
+      'devkit-core.spriter.runForSimulator',
+      true
+    );
+  }
 
   const logger = api.logging.get('spriter');
   if (runSpriter) {
