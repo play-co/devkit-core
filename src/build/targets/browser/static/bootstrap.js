@@ -177,7 +177,9 @@ window.GC_LOADER = (function (window) {
         name: 'start-app',
         parallel: false,
         call: function () {
-          jsio(controller.initialImport);
+          // TODO: should this really be disabled?
+          console.warn('Skipping jsio import of initialImport for webpack build');
+          // jsio(controller.initialImport);
         }
       }
     ]
