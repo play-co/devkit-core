@@ -214,7 +214,13 @@ exports.JSCompiler = Class(function () {
             // transformed code, no breakpoints
             // current.devtool = 'cheap-eval-source-map';
             // bundle, yes breakpoints
-            current.devtool = 'bundle';
+            // current.devtool = 'cheap-source-map';
+            // original code, no breakpoints
+            // current.devtool = 'eval-source-map';
+            // current.devtool = 'source-map';
+            // current.devtool = null;
+            // transformed code, yes breakpoints
+            current.devtool = 'eval';
             current.output.pathinfo = true;
           }
 
