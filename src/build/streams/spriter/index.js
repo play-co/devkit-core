@@ -1,6 +1,10 @@
+'use strict';
 var path = require('path');
-var spriter = require('devkit-spriter');
+
 var Promise = require('bluebird');
+const _ = require('lodash');
+
+var spriter = require('devkit-spriter');
 var fs = require('../../util/fs');
 var TaskQueue = require('../../task-queue').TaskQueue;
 var getCacheFilePath = require('../../DiskCache').getCacheFilePath;
@@ -28,10 +32,16 @@ var CACHE_FILENAME = "devkit-spriter";
 exports.sprite = function (api, config) {
   var stream;
 
-  // FIXME: make this configureable from manifest.json
-  if (true) {
-    var logger = api.logging.get('spriter');
+  const runSpriter = _.get(
+    config.manifest,
+    'devkit-core.build.runSpriter',
+    // Don't sprite in simulator
+    !config.simulator.deviceId
+  );
 
+  const logger = api.logging.get('spriter');
+  if (runSpriter) {
+    logger.log('Running spriter');
     var spriter = new DevKitSpriter(config.spritesheetsDirectory, {
       powerOfTwoSheets: config.powerOfTwoSheets,
       cacheFile: getCacheFilePath(config, CACHE_FILENAME),
@@ -62,6 +72,7 @@ exports.sprite = function (api, config) {
 
     stream.spriter = spriter;
   } else {
+    logger.log('Skipping spriter');
     stream = require('./skip-spriter').getStream(api, config);
   }
 
@@ -154,7 +165,7 @@ var DevKitSpriter = Class(function () {
 
   this.getSizes = function () { return this._result.toJSON().sizes; };
 
-  function compressOptsToString(opts) {
+  this._compressOptsToString = function (opts) {
     var keys = Object.keys(opts);
     keys.sort();
     return keys
@@ -162,9 +173,9 @@ var DevKitSpriter = Class(function () {
         return key + ':' + JSON.stringify(opts[key]);
       })
       .join(',');
-  }
+  };
 
-  function isPowerOfTwoSheets(file) {
+  this._isPowerOfTwoSheets = function (file) {
     var powerOfTwoSheets = file.getOption('powerOfTwoSheets');
     if (powerOfTwoSheets === undefined) {
       // legacy option is called po2
@@ -176,9 +187,9 @@ var DevKitSpriter = Class(function () {
     }
 
     return !!powerOfTwoSheets;
-  }
+  };
 
-  function getUniqueSheetName(name, animFrameKey) {
+  this._getUniqueSheetName = function (name, animFrameKey) {
     // compute a unique sheet name
     var baseName = name + (animFrameKey ? '-' + animFrameKey : '');
     var sheetName = baseName;
@@ -189,7 +200,7 @@ var DevKitSpriter = Class(function () {
 
     this._sheetNames[sheetName] = true;
     return sheetName;
-  }
+  };
 
   this.addFile = function (file) {
     /**
@@ -205,20 +216,20 @@ var DevKitSpriter = Class(function () {
     animFrameKey = animFrameKey && animFrameKey[1] || '';
 
     var compressOpts = file.getCompressOpts();
-    var powerOfTwoSheets = isPowerOfTwoSheets(file);
+    var powerOfTwoSheets = this._isPowerOfTwoSheets(file);
 
     var name = file.getOption('group') ||
       path.dirname(file.targetRelativePath).replace(/\//g, '-');
 
     var key = [
       (powerOfTwoSheets ? 'a' : 'b'),
-      compressOpts && compressOptsToString(compressOpts) || '',
+      compressOpts && this._compressOptsToString(compressOpts) || '',
       animFrameKey,
       name // must be last
     ].join('-');
 
     if (!this._groups[key]) {
-      var sheetName = getUniqueSheetName.call(this, name, animFrameKey);
+      var sheetName = this._getUniqueSheetName(name, animFrameKey);
       this._groups[key] = new Group(key, sheetName, compressOpts);
     }
 
@@ -299,7 +310,7 @@ var DevKitSpriter = Class(function () {
           .then(onResult);
       });
 
-    function onResult(res) {
+    function onResult (res) {
       res.spritesheets.map(this._result.addSheet.bind(this._result));
       res.unspritable.forEach(function (filename) {
         this._result.addUnspritedFile(filename, true);
