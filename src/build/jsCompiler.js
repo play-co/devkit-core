@@ -256,7 +256,6 @@ exports.JSCompiler = Class(function () {
       if (inSimulator) {
         const watcher = webpackWatchers.getWatcher(
           this._app.id,
-          logger,
           jsioWebpackConfig
         );
         watcher.waitForBuild(onCompileComplete);

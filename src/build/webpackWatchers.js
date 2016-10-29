@@ -1,12 +1,14 @@
 'use strict';
 const webpack = require('webpack');
+const debug = require('debug');
 
 const jsioWebpack = require('jsio-webpack');
 
 
 class Watcher {
-  constructor (logger, webpackConfig) {
-    this.logger = logger;
+  constructor (id, webpackConfig) {
+    this._id = id;
+    this.log = debug('devkit-core:WebpackWatcher:' + id);
 
     this.compiler = webpack(webpackConfig);
     this.watcher = this.compiler.watch({
@@ -46,12 +48,12 @@ class Watcher {
 
     // If not running, ready now
     if (!this.watcher.running && this._lastBuildResults) {
-      this.logger.log('Watcher: Using last build');
+      this.log('Using last build');
       this._applyBuildCallback(cb);
       return;
     }
     // Otherwise we need to add this to the callback list
-    this.logger.log('Watcher: Waiting for next build');
+    this.log('Waiting for next build');
     this._buildCallbacks.push(cb);
   }
 
@@ -73,8 +75,11 @@ const _watchers = {};
 
 
 const cleanOldWatchers = () => {
+  const log = debug('devkit-core:build:webpackWatchers:cleanOldWatchers');
+  log('Cleaning old watchers');
   const keys = Object.keys(_watchers);
   if (keys.length <= MAX_WATCHERS) {
+    log('> Too few watchers to run clean');
     return;
   }
 
@@ -85,6 +90,7 @@ const cleanOldWatchers = () => {
 
   for (let i = keys.length - 1; i > MAX_WATCHERS; i--) {
     const key = keys[i];
+    log('> Cleaning watcher: ' + key);
     _watchers[key].close();
     delete _watchers[key];
   }
@@ -99,17 +105,17 @@ const getWebpackConfig = (userConfigs) => {
 };
 
 
-const getWatcher = (id, logger, userConfigs) => {
-  logger.log('Getting watcher for: ' + id);
+const getWatcher = (id, userConfigs) => {
+  const log = debug('devkit-core:build:webpackWatchers:getWatcher');
+  log('Getting watcher for: ' + id);
   if (_watchers[id]) {
-    logger.log('> Using existing watcher');
+    log('> Using existing watcher');
     return _watchers[id];
   }
 
+  log('> Creating new watcher');
   const webpackConfig = getWebpackConfig(userConfigs);
-
-  logger.log('> Creating new watcher');
-  const watcher = new Watcher(logger, webpackConfig);
+  const watcher = new Watcher(id, webpackConfig);
   _watchers[id] = watcher;
   // Maybe clean up old watchers we dont need anymore
   cleanOldWatchers();
@@ -118,12 +124,16 @@ const getWatcher = (id, logger, userConfigs) => {
 
 
 const removeWatcher = (id, cb) => {
+  const log = debug('devkit-core:build:webpackWatchers:removeWatcher');
+  log('Removing watcher: ' + id);
   const watcher = _watchers[id];
   if (!watcher) {
+    log('> No watcher with that id');
     cb(null, false);
     return;
   }
 
+  log('> Watcher found, removing');
   watcher.close(cb);
   delete _watchers[id];
 };

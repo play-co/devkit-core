@@ -53,5 +53,8 @@
       "devkit": "src/clientapi",
       "*": "src/clientapi/api/"
     }
+  },
+  "devDependencies": {
+    "debug": "^2.2.0"
   }
 }
