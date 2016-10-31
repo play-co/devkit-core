@@ -161,6 +161,11 @@ exports.JSCompiler = Class(function () {
 
         options.useCircularDependencyPlugin = true;
 
+        configurator.loader('xml', {
+          test: /\.(xml|fnt)$/,
+          loaders: [ 'xml-loader' ]
+        });
+
         return configurator;
       },
       postConfigure: (configurator, options) => {
