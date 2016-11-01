@@ -57,5 +57,12 @@
   },
   "devDependencies": {
     "debug": "^2.2.0"
+  },
+  "jsioWebpack": {
+    "alias": {
+      "devkit-core": "src",
+      "devkit": "src/clientapi",
+      "timestepInit": "src/clientapi/browser"
+    }
   }
 }
