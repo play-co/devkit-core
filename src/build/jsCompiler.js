@@ -91,12 +91,12 @@ exports.JSCompiler = Class(function () {
       jsioOpts.compressResult = true;
     }
 
-    var importStatement = 'import ' + opts.initialImport;
-    logger.log('compiling', importStatement);
+    // var importStatement = 'import ' + opts.initialImport;
+    // logger.log('compiling', importStatement);
 
-    if (opts.scheme == 'debug') {
-      importStatement += ', util.syntax';
-    }
+    // if (opts.scheme == 'debug') {
+    //   importStatement += ', util.syntax';
+    // }
 
     // var _jsio = jsio.clone();
     // _jsio.path.add(path.join(_jsio.__env.getPath(), '..', 'compilers'));
@@ -104,18 +104,18 @@ exports.JSCompiler = Class(function () {
 
     // for debugging purposes, build the equivalent command that can be executed
     // from the command-line (not used for anything other than logging to the screen)
-    var cmd = ['jsio_compile', JSON.stringify(importStatement)];
-    for (let key in jsioOpts) {
-      cmd.push('--' + key);
+    // var cmd = ['jsio_compile', JSON.stringify(importStatement)];
+    // for (let key in jsioOpts) {
+    //   cmd.push('--' + key);
 
-      var value = JSON.stringify(jsioOpts[key]);
-      if (typeof jsioOpts[key] !== 'string') {
-        value = JSON.stringify(value);
-      }
-      cmd.push(value);
-    }
+    //   var value = JSON.stringify(jsioOpts[key]);
+    //   if (typeof jsioOpts[key] !== 'string') {
+    //     value = JSON.stringify(value);
+    //   }
+    //   cmd.push(value);
+    // }
 
-    logger.log(cmd.join(' '));
+    // logger.log(cmd.join(' '));
 
     // The DevKitJsioInterface implements platform-specific functions that the js.io
     // compiler needs like basic control flow and compression.  It's really more
@@ -150,7 +150,7 @@ exports.JSCompiler = Class(function () {
       configure: (configurator, options) => {
         configurator.merge({
           entry: {
-            app: path.resolve(jsioOpts.cwd, 'src', 'Application.js')
+            app: path.resolve(jsioOpts.cwd, 'src', 'Application')
           },
           output: {
             filename: '[name].js',
@@ -250,7 +250,7 @@ exports.JSCompiler = Class(function () {
         }
 
         if (!fs.existsSync(outputPath)) {
-          cb(new Error('Webpack build failed'));
+          cb(new Error('Webpack output missing: ' + outputPath));
           return;
         }
 
@@ -259,14 +259,16 @@ exports.JSCompiler = Class(function () {
       };
 
       if (inSimulator) {
-        const watcher = webpackWatchers.getWatcher(
+        webpackWatchers.getWatcher(
           this._app.id,
           jsioWebpackConfig
-        );
-        watcher.waitForBuild(onCompileComplete);
+        ).then(watcher => {
+          watcher.waitForBuild(onCompileComplete);
+        });
       } else {
-        const compiler = webpackWatchers.getCompiler(jsioWebpackConfig);
-        compiler.run(onCompileComplete);
+        webpackWatchers.getCompiler(jsioWebpackConfig).then(compiler => {
+          compiler.run(onCompileComplete);
+        });
       }
     });
   };

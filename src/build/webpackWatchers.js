@@ -106,20 +106,26 @@ const getWebpackConfig = (userConfigs) => {
 
 
 const getWatcher = (id, userConfigs) => {
-  const log = debug('devkit-core:build:webpackWatchers:getWatcher');
-  log('Getting watcher for: ' + id);
-  if (_watchers[id]) {
-    log('> Using existing watcher');
-    return _watchers[id];
-  }
+  return new Promise((resolve, reject) => {
+    const log = debug('devkit-core:build:webpackWatchers:getWatcher');
+    log('Getting watcher for: ' + id);
+    if (_watchers[id]) {
+      log('> Using existing watcher');
+      resolve(_watchers[id]);
+      return;
+    }
 
-  log('> Creating new watcher');
-  const webpackConfig = getWebpackConfig(userConfigs);
-  const watcher = new Watcher(id, webpackConfig);
-  _watchers[id] = watcher;
-  // Maybe clean up old watchers we dont need anymore
-  cleanOldWatchers();
-  return watcher;
+    log('> Creating new watcher');
+    getWebpackConfig(userConfigs).then(webpackConfig => {
+      const watcher = new Watcher(id, webpackConfig);
+      _watchers[id] = watcher;
+      // Maybe clean up old watchers we dont need anymore
+      cleanOldWatchers();
+
+      resolve(watcher);
+      return;
+    });
+  });
 };
 
 
@@ -140,8 +146,9 @@ const removeWatcher = (id, cb) => {
 
 
 const getCompiler = (userConfigs) => {
-  const webpackConfig = getWebpackConfig(userConfigs);
-  return webpack(webpackConfig);
+  return getWebpackConfig(userConfigs).then(webpackConfig => {
+    return webpack(webpackConfig);
+  });
 };
 
 
