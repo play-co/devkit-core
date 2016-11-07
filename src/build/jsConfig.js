@@ -37,7 +37,8 @@ exports.JSConfig = Class(function () {
       },
       useWebGL: _.get(manifest, 'browser.canvas.useWebGL', false),
       preserveDrawingBuffer: _.get(manifest, 'browser.webGL.preserveDrawingBuffer', true),
-      disableServiceWorkers: _.get(manifest, 'browser.disableServiceWorkers', false)
+      disableServiceWorkers: _.get(manifest, 'browser.disableServiceWorkers', false),
+      maxTick: _.get(manifest, 'browser.maxTick', 10000)
     };
 
     if (manifest.disableNativeViews) {
