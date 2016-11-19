@@ -15,7 +15,8 @@ var jsio = require('jsio').clone();
 var uglify = require('uglify-js');
 
 var fs = require('./util/fs');
-const webpackWatchers = require('./webpackWatchers');
+const webpackWatchers = require('./webpack/webpackWatchers');
+const jsCompilerUtils = require('./jsCompilerUtils');
 
 var logger;
 var compressLog;
@@ -38,27 +39,16 @@ exports.JSCompiler = Class(function () {
     this._path = [];
 
     if (config && config.clientPaths) {
-      this.addClientPaths(config.clientPaths);
+      jsCompilerUtils.addClientPaths(this._path, this._pathCache, config.clientPaths);
     }
 
     if (app && app.clientPaths) {
-      this.addClientPaths(app.clientPaths);
-    }
-  };
-
-  this.addClientPaths = function (clientPaths) {
-    var pathCache = this._pathCache;
-    for (var key in clientPaths) {
-      if (key !== '*') {
-        pathCache[key] = clientPaths[key];
-      } else {
-        this._path.push.apply(this._path, clientPaths['*']);
-      }
+      jsCompilerUtils.addClientPaths(this._path, this._pathCache, app.clientPaths);
     }
   };
 
   this.compile = function (opts, cb) {
-    var opts = merge({}, opts, this._opts);
+    opts = merge({}, opts, this._opts);
 
     var appPath = this._app.paths.root;
     var jsCachePath = opts.jsCachePath;
@@ -163,23 +153,15 @@ exports.JSCompiler = Class(function () {
         // TODO: turn this on and remove the postConfigure aliases
         // options.useModuleAliases = true;
 
-        configurator.loader('xml', {
-          test: /\.(xml|fnt)$/,
-          loaders: [ 'xml-loader' ]
-        });
-
         return configurator;
       },
       postConfigure: (configurator, options) => {
         configurator.removePreLoader('eslint');
 
-        // TODO: want this?
-        // configurator.plugin('prefetch', webpack.PrefetchPlugin, [
-        //   [
-        //     '/Users/Brown/Documents/workspace/everwing/modules/devkit-core/modules/timestep/src'
-        //   ],
-        //   'device'
-        // ]);
+        configurator.loader('xml', (current) => {
+          current.test = /\.(xml|fnt)$/;
+          return current;
+        });
 
         configurator.loader('babel', current => {
           current.exclude = null;
@@ -263,12 +245,15 @@ exports.JSCompiler = Class(function () {
       if (inSimulator) {
         webpackWatchers.getWatcher(
           this._app.id,
+          logger,
           jsioWebpackConfig
-        ).then(watcher => {
+        )
+        .then((watcher) => {
           watcher.waitForBuild(onCompileComplete);
         });
       } else {
-        webpackWatchers.getCompiler(jsioWebpackConfig).then(compiler => {
+        webpackWatchers.getCompiler(jsioWebpackConfig)
+        .then((compiler) => {
           compiler.run(onCompileComplete);
         });
       }
