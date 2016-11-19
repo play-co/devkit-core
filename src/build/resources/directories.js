@@ -17,9 +17,11 @@ exports.get = function (api, app, config) {
     if (module.extensions.build) {
       var extension = require(module.extensions.build);
       if (extension && extension.getResourceDirectories) {
+        logger.info('Adding resources from ' + name);
         extension.getResourceDirectories(api, app, config)
           .map(function (directory) {
             var target = path.join('modules', module.name, directory.target);
+            logger.info('> ' + directory.src + ' -> ' + target + ' (files=' + directory.files + ')');
             builder.add(directory.src, target, directory.files);
           });
       }
