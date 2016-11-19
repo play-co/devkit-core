@@ -160,6 +160,8 @@ exports.JSCompiler = Class(function () {
         });
 
         options.useCircularDependencyPlugin = true;
+        // TODO: turn this on and remove the postConfigure aliases
+        // options.useModuleAliases = true;
 
         configurator.loader('xml', {
           test: /\.(xml|fnt)$/,
