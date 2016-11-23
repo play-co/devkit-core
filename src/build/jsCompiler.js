@@ -163,6 +163,11 @@ exports.JSCompiler = Class(function () {
           return current;
         });
 
+        configurator.loader('ts', (current) => {
+          current.exclude = null;
+          return current;
+        });
+
         configurator.loader('babel', current => {
           current.exclude = null;
           return current;
