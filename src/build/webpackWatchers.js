@@ -1,5 +1,4 @@
 'use strict';
-const webpack = require('webpack');
 const debug = require('debug');
 
 const jsioWebpack = require('jsio-webpack');
@@ -10,7 +9,7 @@ class Watcher {
     this._id = id;
     this.log = debug('devkit-core:WebpackWatcher:' + id);
 
-    this.compiler = webpack(webpackConfig);
+    this.compiler = jsioWebpack.webpack(webpackConfig);
     this.watcher = this.compiler.watch({
       aggregateTimeout: 300 // wait so long for more changes
     }, this._onBuild.bind(this));
@@ -147,7 +146,7 @@ const removeWatcher = (id, cb) => {
 
 const getCompiler = (userConfigs) => {
   return getWebpackConfig(userConfigs).then(webpackConfig => {
-    return webpack(webpackConfig);
+    return jsioWebpack.webpack(webpackConfig);
   });
 };
 
