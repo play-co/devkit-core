@@ -1,6 +1,5 @@
 'use strict';
 const Promise = require('bluebird');
-const webpack = require('webpack');
 
 const jsioWebpack = require('jsio-webpack');
 
@@ -9,7 +8,7 @@ class Watcher {
   constructor (logger, webpackConfig) {
     this.logger = logger;
 
-    this.compiler = webpack(webpackConfig);
+    this.compiler = jsioWebpack.webpack(webpackConfig);
     this.watcher = this.compiler.watch({
       aggregateTimeout: 300 // wait so long for more changes
     }, this._onBuild.bind(this));
@@ -134,7 +133,7 @@ const removeWatcher = (id, cb) => {
 const getCompiler = (userConfigs) => {
   return getWebpackConfig(userConfigs)
     .then((webpackConfig) => {
-      return webpack(webpackConfig);
+      return jsioWebpack.webpack(webpackConfig);
     });
 };
 
