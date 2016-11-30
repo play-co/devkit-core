@@ -173,6 +173,15 @@ exports.JSCompiler = Class(function () {
           return current;
         });
 
+        // Some shims
+        configurator.merge({
+          resolve: {
+            alias: {
+              child_process: path.resolve(__dirname, 'shim', 'empty.js')
+            }
+          }
+        });
+
         configurator.merge(current => {
           const paths = jsioOpts.path.map(mapPath);
           current.resolve.root = current.resolve.root.concat(paths);
@@ -253,21 +262,21 @@ exports.JSCompiler = Class(function () {
           logger,
           jsioWebpackConfig
         )
-        .then((watcher) => {
-          watcher.waitForBuild(onCompileComplete);
-        });
+          .then((watcher) => {
+            watcher.waitForBuild(onCompileComplete);
+          });
       } else {
         webpackWatchers.getCompiler(jsioWebpackConfig)
-        .then((compiler) => {
-          compiler.run(onCompileComplete);
-        });
+          .then((compiler) => {
+            compiler.run(onCompileComplete);
+          });
       }
     });
   };
 
-   /**
-    * use the class opts to compress source code directly
-    */
+  /**
+   * use the class opts to compress source code directly
+   */
 
   this.strip = function (src, cb) {
     exports.strip(src, this.opts, cb);
@@ -310,7 +319,7 @@ exports.JSCompiler = Class(function () {
         cb(null, compressedSrc);
       } else {
         compressLog.error('exited with code', err.code);
-        cb({'code': err.code}, src);
+        cb({ 'code': err.code }, src);
       }
     });
   };
@@ -377,8 +386,8 @@ var DevKitJsioInterface = Class(EventEmitter, function () {
     if (opts.compressorCachePath && filename) {
       try {
         var cacheFilename = (/^\.\//.test(filename)
-                                ? 'R-' + filename.substring(2)
-                                : 'A-' + filename)
+          ? 'R-' + filename.substring(2)
+          : 'A-' + filename)
           .replace(/\.\.\//g, '--U--')
           .replace(/\//g, '---');
 
@@ -395,7 +404,7 @@ var DevKitJsioInterface = Class(EventEmitter, function () {
         }
 
         if (fs.existsSync(cachePath)) {
-          fs.readFile(cachePath, 'utf8', function(err, cachedContents) {
+          fs.readFile(cachePath, 'utf8', function (err, cachedContents) {
             if (err) {
               onCacheResult(err, src, true);
             } else {
@@ -429,7 +438,7 @@ var DevKitJsioInterface = Class(EventEmitter, function () {
         }
 
         compressLog.log('compressing JS' + (filename ? ' for ' + filename : '')
-            + '...');
+          + '...');
         bridge.compress(filename, src, opts, onCompress);
       } else {
         // Set cache path to false so it will not be updated in onCompress()
@@ -446,7 +455,7 @@ var DevKitJsioInterface = Class(EventEmitter, function () {
           if (cachePath && filename) {
             fs.writeFile(cachePath, checksum + '\n' + src);
           }
-        } catch(e) {
+        } catch (e) {
           compressLog.error(e);
         }
       }
