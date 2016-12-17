@@ -152,6 +152,7 @@ exports.JSCompiler = Class(function () {
         options.useCircularDependencyPlugin = true;
         // TODO: turn this on and remove the postConfigure aliases
         // options.useModuleAliases = true;
+        options.useGitRevisionPlugin = 'production';
 
         return configurator;
       },
