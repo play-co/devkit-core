@@ -146,7 +146,10 @@ exports.JSCompiler = Class(function () {
         // TODO: this is sort of hacky, this whole config generation should probably
         // be moved in to jsio-webpack sooner than later.
         const testIndexPath = path.resolve(jsioOpts.cwd, 'tests', 'index.js');
-        if (fs.existsSync(testIndexPath)) {
+        if (
+          process.env.CI === 'true'
+          && fs.existsSync(testIndexPath)
+        ) {
           console.log('> Adding test entry');
           entry.tests = testIndexPath;
         }
