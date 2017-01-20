@@ -128,20 +128,31 @@ exports.JSCompiler = Class(function () {
       return path.resolve(jsioOpts.cwd, p);
     };
 
-    const wpOutputDir = path.join(
-      WP_OUTPUT_DIR,
-      jsioOpts.cwd.replace(new RegExp(path.sep, 'g'), '_')
-    );
+    // Random dir
+    // const wpOutputDir = path.join(
+    //   WP_OUTPUT_DIR,
+    //   jsioOpts.cwd.replace(new RegExp(path.sep, 'g'), '_')
+    // );
+    const wpOutputDir = path.join(jsioOpts.cwd, 'dist');
     if (!fs.existsSync(wpOutputDir)) {
       mkdirp.sync(wpOutputDir);
     }
 
     const jsioWebpackConfig = {
       configure: (configurator, options) => {
+        const entry = {
+          app: path.resolve(jsioOpts.cwd, 'src', 'Application')
+        };
+        // TODO: this is sort of hacky, this whole config generation should probably
+        // be moved in to jsio-webpack sooner than later.
+        const testIndexPath = path.resolve(jsioOpts.cwd, 'tests', 'index.js');
+        if (fs.existsSync(testIndexPath)) {
+          console.log('> Adding test entry');
+          entry.tests = testIndexPath;
+        }
+
         configurator.merge({
-          entry: {
-            app: path.resolve(jsioOpts.cwd, 'src', 'Application')
-          },
+          entry: entry,
           output: {
             filename: '[name].js',
             path: wpOutputDir,
@@ -153,6 +164,7 @@ exports.JSCompiler = Class(function () {
         // TODO: turn this on and remove the postConfigure aliases
         // options.useModuleAliases = true;
         options.useGitRevisionPlugin = 'production';
+        // options.useVisualizerPlugin = true;
 
         return configurator;
       },
@@ -184,8 +196,14 @@ exports.JSCompiler = Class(function () {
         });
 
         configurator.merge(current => {
+          // Keep jsio-webpack last on root list (so that game files are resolved ahead of it)
+          const gameRoot = path.resolve(jsioOpts.cwd);
+          const gameNodeModules = path.join(gameRoot, 'node_modules');
+          const jsioWebpackRoot = path.resolve(__dirname, '..', '..', 'node_modules', 'jsio-webpack');
+          const jsioWebpackNodeModules = path.join(jsioWebpackRoot, 'node_modules');
+
           const paths = jsioOpts.path.map(mapPath);
-          current.resolve.root = current.resolve.root.concat(paths);
+          current.resolve.root = [].concat(paths);
 
           current.resolve.alias = current.resolve.alias || {};
           for (var pathCacheKey in jsioOpts.pathCache) {
@@ -200,6 +218,9 @@ exports.JSCompiler = Class(function () {
           current.resolve.root.push(path.resolve(
             __dirname, '..', '..', 'modules', 'timestep'
           ));
+
+          current.resolve.root.push(gameNodeModules);
+          current.resolve.root.push(jsioWebpackNodeModules);
 
           // current.resolve.alias.jsio = path.dirname(require.resolve('jsio'));
           current.resolve.alias.jsio = path.resolve(
