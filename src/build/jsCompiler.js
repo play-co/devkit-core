@@ -203,7 +203,7 @@ exports.JSCompiler = Class(function () {
           const jsioWebpackNodeModules = path.join(jsioWebpackRoot, 'node_modules');
 
           const paths = jsioOpts.path.map(mapPath);
-          current.resolve.root = [gameNodeModules].concat(paths);
+          current.resolve.root = [].concat(paths);
 
           current.resolve.alias = current.resolve.alias || {};
           for (var pathCacheKey in jsioOpts.pathCache) {
@@ -219,6 +219,7 @@ exports.JSCompiler = Class(function () {
             __dirname, '..', '..', 'modules', 'timestep'
           ));
 
+          current.resolve.root.push(gameNodeModules);
           current.resolve.root.push(jsioWebpackNodeModules);
 
           // current.resolve.alias.jsio = path.dirname(require.resolve('jsio'));
