@@ -202,6 +202,7 @@ exports.JSCompiler = Class(function () {
           const jsioWebpackRoot = path.resolve(__dirname, '..', '..', 'node_modules', 'jsio-webpack');
           const jsioWebpackNodeModules = path.join(jsioWebpackRoot, 'node_modules');
 
+          const paths = jsioOpts.path.map(mapPath);
           current.resolve.root = [gameNodeModules].concat(paths);
 
           current.resolve.alias = current.resolve.alias || {};
