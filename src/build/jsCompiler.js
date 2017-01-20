@@ -185,7 +185,14 @@ exports.JSCompiler = Class(function () {
 
         configurator.merge(current => {
           const paths = jsioOpts.path.map(mapPath);
-          current.resolve.root = current.resolve.root.concat(paths);
+          if (current.resolve.root.length !== 2) {
+            throw new Error('expected 2 roots, saw ' + current.resolve.root.length);
+          }
+          // Keep jsio-webpack last on root list (so that game files are resolved ahead of it)
+          const gameRoot = current.resolve.root[0];
+          const jsioWebpackRoot = current.resolve[1];
+
+          current.resolve.root = [gameRoot].concat(paths);
 
           current.resolve.alias = current.resolve.alias || {};
           for (var pathCacheKey in jsioOpts.pathCache) {
@@ -200,6 +207,8 @@ exports.JSCompiler = Class(function () {
           current.resolve.root.push(path.resolve(
             __dirname, '..', '..', 'modules', 'timestep'
           ));
+
+          current.resolve.root.push(jsioWebpackRoot);
 
           // current.resolve.alias.jsio = path.dirname(require.resolve('jsio'));
           current.resolve.alias.jsio = path.resolve(
