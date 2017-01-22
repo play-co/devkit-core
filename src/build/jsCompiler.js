@@ -8,6 +8,7 @@ var mkdirp = require('mkdirp');
 var tempfile = require('tempfile');
 
 var jsioWebpack = require('jsio-webpack');
+const webpack = jsioWebpack.webpack;
 
 // clone to modify the path for this jsio but not any others
 var jsio = require('jsio').clone();
@@ -128,6 +129,8 @@ exports.JSCompiler = Class(function () {
       return path.resolve(jsioOpts.cwd, p);
     };
 
+    console.log('Using jsio-webpack from:', require.resolve('jsio-webpack'));
+
     // Random dir
     // const wpOutputDir = path.join(
     //   WP_OUTPUT_DIR,
@@ -137,6 +140,25 @@ exports.JSCompiler = Class(function () {
     if (!fs.existsSync(wpOutputDir)) {
       mkdirp.sync(wpOutputDir);
     }
+
+    // Let the project configure some as well...
+    const projectJsioWebpackConfigPath = path.join(jsioOpts.cwd, 'jsio-webpack.config.js');
+    let projectConfig;
+    let secondaryProjectConfigs;
+    if (fs.existsSync(projectJsioWebpackConfigPath)) {
+      console.log('Loading project config at:', projectJsioWebpackConfigPath);
+      projectConfig = require(projectJsioWebpackConfigPath);
+      if (Array.isArray(projectConfig)) {
+        secondaryProjectConfigs = projectConfig.slice(1, projectConfig.length);
+        projectConfig = projectConfig[0];
+      }
+      console.log('> Loaded project config (' + secondaryProjectConfigs.length + ' secondary project configs)');
+    }
+
+    const gameRoot = path.resolve(jsioOpts.cwd);
+    const gameNodeModules = path.join(gameRoot, 'node_modules');
+    const jsioWebpackRoot = path.resolve(__dirname, '..', '..', 'node_modules', 'jsio-webpack');
+    const jsioWebpackNodeModules = path.join(jsioWebpackRoot, 'node_modules');
 
     const jsioWebpackConfig = {
       configure: (configurator, options) => {
@@ -165,10 +187,14 @@ exports.JSCompiler = Class(function () {
 
         options.useCircularDependencyPlugin = true;
         // TODO: turn this on and remove the postConfigure aliases
-        // options.useModuleAliases = true;
+        options.useModuleAliases = true;
         options.useGitRevisionPlugin = 'production';
         // options.useVisualizerPlugin = true;
 
+        if (projectConfig) {
+          console.log('> Sending to project config: configure');
+          return projectConfig.configure(configurator, options);
+        }
         return configurator;
       },
       postConfigure: (configurator, options) => {
@@ -200,10 +226,6 @@ exports.JSCompiler = Class(function () {
 
         configurator.merge(current => {
           // Keep jsio-webpack last on root list (so that game files are resolved ahead of it)
-          const gameRoot = path.resolve(jsioOpts.cwd);
-          const gameNodeModules = path.join(gameRoot, 'node_modules');
-          const jsioWebpackRoot = path.resolve(__dirname, '..', '..', 'node_modules', 'jsio-webpack');
-          const jsioWebpackNodeModules = path.join(jsioWebpackRoot, 'node_modules');
 
           const paths = jsioOpts.path.map(mapPath);
           current.resolve.root = [].concat(paths);
@@ -254,6 +276,18 @@ exports.JSCompiler = Class(function () {
 
           return current;
         });
+
+        // const jsioWebpackDllManifestPath = path.join(wpOutputDir, 'DLL_jsioWebpack-manifest.json');
+        // configurator.plugin('dllRef_jsioWebpack', webpack.DllReferencePlugin, [{
+        //   context: wpOutputDir,
+        //   manifest: require(jsioWebpackDllManifestPath),
+        //   sourceType: 'commonsjs2'
+        // }]);
+
+        if (projectConfig) {
+          console.log('> Sending to project config: postConfigure');
+          projectConfig.postConfigure(configurator, options);
+        }
       }
     };
 
@@ -281,17 +315,74 @@ exports.JSCompiler = Class(function () {
         cb(null, code);
       };
 
+      let jsioWebpackConfigFinal = [jsioWebpackConfig];
+      if (secondaryProjectConfigs) {
+        jsioWebpackConfigFinal = jsioWebpackConfigFinal.concat(secondaryProjectConfigs);
+      }
+
+      // ---- ----
+      // [START] Setup jsio-webpack dll
+
+      // const jsioWebpackDllConfigure = function (configurator, options) {
+      //   configurator.merge({
+      //     entry: {
+      //       jsioWebpack: ['jsio-webpack']
+      //     },
+      //     output: {
+      //       filename: '[name].dll.js',
+      //       path: wpOutputDir,
+      //       library: 'DLL_[name]',
+      //       libraryTarget: 'commonjs2'
+      //     }
+      //   });
+
+      //   // Set options for the jsio-webpack config generators
+      //   options.useModuleAliases = true;
+      //   // options.useNotifications = true;
+      //   options.devtool = 'source-map';
+
+      //   return configurator;
+      // };
+
+      // const jsioWebpackDllPostConfigure = function (configurator, options) {
+      //   configurator.removePreLoader('eslint');
+
+      //   configurator.plugin('dll', webpack.DllPlugin, [{
+      //     path: 'dist/DLL_[name]-manifest.json',
+      //     name: 'DLL_[name]',
+      //     context: wpOutputDir
+      //   }]);
+
+      //   configurator.merge({
+      //     resolve: {
+      //       alias: {
+      //         child_process: path.resolve(__dirname, 'shim', 'empty.js')
+      //       }
+      //     }
+      //   });
+      // };
+
+      // const jsioWebpackDllConf = {
+      //   configure: jsioWebpackDllConfigure,
+      //   postConfigure: jsioWebpackDllPostConfigure
+      // };
+
+      // jsioWebpackConfigFinal.unshift(jsioWebpackDllConf);
+
+      // [END] Setup jsio-webpack dll
+      // ---- ----
+
       if (inSimulator) {
         webpackWatchers.getWatcher(
           this._app.id,
           logger,
-          jsioWebpackConfig
+          jsioWebpackConfigFinal
         )
           .then((watcher) => {
             watcher.waitForBuild(onCompileComplete);
           });
       } else {
-        webpackWatchers.getCompiler(jsioWebpackConfig)
+        webpackWatchers.getCompiler(jsioWebpackConfigFinal)
           .then((compiler) => {
             compiler.run(onCompileComplete);
           });
