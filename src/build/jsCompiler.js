@@ -64,7 +64,10 @@ exports.JSCompiler = Class(function () {
     var jsioOpts = {
       cwd: opts.cwd || appPath,
       environment: opts.env,
-      path: [require('jsio').__env.getPath(), '.', 'lib'].concat(this._path),
+      path: [
+        require('jsio').__env.getPath(),
+        '.'
+      ].concat(this._path),
       includeJsio: 'includeJsio' in opts ? opts.includeJsio : true,
       appendImport: 'appendImport' in opts ? opts.appendImport : false,
       debug: argv.verbose ? 2 : 4,
