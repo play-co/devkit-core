@@ -237,8 +237,8 @@ exports.GameHTML = Class(function () {
           .set('compress', config.compress)
           .use(nib());
     var jsCompiler = new JSCompiler(api, app);
-    var renderCSS = Promise.promisify(stylusRenderer.render, stylusRenderer);
-    var compileJS = Promise.promisify(jsCompiler.compress, jsCompiler);
+    var renderCSS = Promise.promisify(stylusRenderer.render, { context: stylusRenderer });
+    var compileJS = Promise.promisify(jsCompiler.compress, { context: jsCompiler });
 
     // browser splash
     var splashImage = config.browser.splash

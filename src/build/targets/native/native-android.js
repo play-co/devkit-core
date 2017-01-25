@@ -79,7 +79,7 @@ exports.setupStreams = function (api, app, config) {
 
   function androidBuild() {
     var android = require('../../../../modules/native-android/build');
-    var build = Promise.promisify(android.build, android);
+    var build = Promise.promisify(android.build, { context: android });
     return build(api, app, config);
   }
 

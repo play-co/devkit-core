@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "archiver": "^0.14.4",
-    "bluebird": "^2.9.34",
+    "bluebird": "^3.4.7",
     "chalk": "^1.1.1",
     "devkit-spriter": "0.0.9",
     "fs-extra": "^0.23.1",

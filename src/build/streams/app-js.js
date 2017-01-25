@@ -14,7 +14,7 @@ exports.create = function (api, app, config, opts) {
 
   var jsConfig = new JSConfig(api, app, config);
   var jsCompiler = new JSCompiler(api, app, config, jsConfig);
-  var compileJS = Promise.promisify(jsCompiler.compile, jsCompiler);
+  var compileJS = Promise.promisify(jsCompiler.compile, { context: jsCompiler });
 
   var inlineCache;
   if (opts.inlineCache) {

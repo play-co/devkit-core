@@ -104,7 +104,8 @@ exports.createBuildTarget = function (buildExports) {
     }
 
     var buildStream = api.streams.create('src');
-    return Promise.try(function () {
+    return Promise.try(() => {
+      return Promise.resolve().then(() => {
         return buildExports.setupStreams(api, app, config);
       })
       .then(function () {
@@ -118,33 +119,52 @@ exports.createBuildTarget = function (buildExports) {
 
         return streamIds;
       })
-      // pipe all the streams together in the specified order
-      .map(function (streamId) {
-        if (!streamId) { return; }
+      .then((streamIds) => {
+        // pipe all the streams together in the specified order
+        let completedStreams = 0;
+        let startedStreams = 0;
+        // return Promise.each(streamIds, function (streamId) {
+        streamIds.forEach(function (streamId) {
+          if (!streamId) { return; }
 
-        buildStream = buildStream.pipe((api.streams.get(streamId) || api.streams.create(streamId))
-          .on('end', function () {
-            logger.log(streamId, 'complete');
-          })
-          .on('error', function (err) {
-            // showStack indicates this is a devkit build exception
-            if (err.showStack !== undefined) {
-              cb(err);
-            } else {
-              logger.error(err);
-              logger.log('Unexpected error in stream', streamId);
+          const promise = new Promise((resolve, reject) => {
+            const apiStream = (api.streams.get(streamId) || api.streams.create(streamId));
+            apiStream.on('end', function () {
+              completedStreams++;
+              logger.log(
+                'Stream complete: ' + streamId
+                + '\t ' + completedStreams + '/' + startedStreams
+              );
+              resolve();
+            });
+            apiStream.on('error', function (err) {
+              // showStack indicates this is a devkit build exception
+              if (err.showStack !== undefined) {
+                reject(err);
+              } else {
+                logger.error(err);
+                logger.log('Unexpected error in stream', streamId);
 
-              var wrappedError = new BuildError('error in ' + streamId + ' stream');
-              wrappedError.originalError = err;
-              cb(wrappedError);
-            }
-          }));
+                var wrappedError = new BuildError('error in ' + streamId + ' stream');
+                wrappedError.originalError = err;
+                reject(wrappedError);
+              }
+            });
+            buildStream = buildStream.pipe(apiStream);
+          });
+
+          // Dont count that one since its some weird internal state thing
+          if (streamId !== 'end-build') {
+            startedStreams++;
+          }
+        });
       })
-      .then(function () {
+      .then(() => {
         // block on the end-build stream finish
         return buildStream.onFinishBuild;
-      })
-      .nodeify(cb);
+      });
+    })
+    .nodeify(cb);
   };
 };
 
