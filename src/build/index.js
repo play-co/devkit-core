@@ -127,31 +127,34 @@ exports.createBuildTarget = function (buildExports) {
         streamIds.forEach(function (streamId) {
           if (!streamId) { return; }
 
-          const promise = new Promise((resolve, reject) => {
-            const apiStream = (api.streams.get(streamId) || api.streams.create(streamId));
-            apiStream.on('end', function () {
-              completedStreams++;
-              logger.log(
-                'Stream complete: ' + streamId
-                + '\t ' + completedStreams + '/' + startedStreams
-              );
-              resolve();
-            });
-            apiStream.on('error', function (err) {
-              // showStack indicates this is a devkit build exception
-              if (err.showStack !== undefined) {
-                reject(err);
-              } else {
-                logger.error(err);
-                logger.log('Unexpected error in stream', streamId);
-
-                var wrappedError = new BuildError('error in ' + streamId + ' stream');
-                wrappedError.originalError = err;
-                reject(wrappedError);
-              }
-            });
-            buildStream = buildStream.pipe(apiStream);
+          logger.log('Waiting for stream:', streamId);
+          const apiStream = (api.streams.get(streamId) || api.streams.create(streamId));
+          apiStream.on('end', function () {
+            completedStreams++;
+            logger.log(
+              'Stream complete: ' + streamId
+              + '\t ' + completedStreams + '/' + startedStreams
+            );
           });
+          apiStream.on('error', function (err) {
+            // showStack indicates this is a devkit build exception
+            if (err.showStack !== undefined) {
+              logger.error('Error from stream:', streamId, err);
+              // TODO: this weird end-build promise is bad, each stream should be
+              //   responsible for their own promises.  This callback makes the
+              //   logic very difficult to follow (might not even work).
+              cb(err);
+            } else {
+              logger.error(err);
+              logger.log('Unexpected error in stream', streamId);
+
+              var wrappedError = new BuildError('error in ' + streamId + ' stream');
+              wrappedError.originalError = err;
+              // TODO: Same, probably should not be calling cb here.
+              cb(wrappedError);
+            }
+          });
+          buildStream = buildStream.pipe(apiStream);
 
           // Dont count that one since its some weird internal state thing
           if (streamId !== 'end-build') {

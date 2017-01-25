@@ -1,6 +1,12 @@
 var path = require('path');
 var Promise = require('bluebird');
 var fork = require('child_process').fork;
+const debug = require('debug');
+const chalk = require('chalk');
+
+
+const log = debug('devkit-core:build:task-queue');
+
 
 var DEFAULT_NUM_WORKERS = require('os').cpus().length;
 var DEFAULT_TASKS_PER_WORKER = 1;
@@ -35,13 +41,43 @@ TaskQueue.prototype.shutdown = function () {
 };
 
 TaskQueue.prototype._createWorker = function () {
-  var child = fork(this._workerScript);
+  log('Creating worker:', this._workerScript);
+  const nodeBinPath = process.env.NODE;
+  if (!nodeBinPath) {
+    throw new Error('process.env.NODE not set');
+  }
+
+  var child = fork(this._workerScript, [], {
+    silent: true,
+    stdio: 'pipe',
+    execPath: nodeBinPath
+  });
+  log('> pid=', child.pid);
   var worker = {
     tasks: 0,
     child: child
   };
 
+  child.stdout.on('data', (data) => {
+    log(`[${chalk.yellow(child.pid)} OUT] ${data}`);
+  });
+  child.stderr.on('data', (data) => {
+    log(`[${chalk.yellow(child.pid)} ${chalk.red('ERR')}] ${data}`);
+  });
+
   child.on('message', this._onMessage.bind(this, worker));
+
+  child.on('close', (code) => {
+    if (code !== 0) {
+      console.error('Worker exited with nonzero exit code:', code);
+      process.exit(1);
+    }
+    log('Worker closed:', child.pid);
+  });
+  child.on('error', (err) => {
+    console.error('Worker error:', err);
+    process.exit(2);
+  });
   this._workers.push(worker);
   return worker;
 };
