@@ -190,6 +190,8 @@ exports.JSCompiler = Class(function () {
 
         options.useCircularDependencyPlugin = true;
         // TODO: turn this on and remove the postConfigure aliases
+        options.scanLibs = true;
+        // TODO: should get rid of this probably
         options.useModuleAliases = true;
         options.useGitRevisionPlugin = 'production';
         // options.useVisualizerPlugin = true;
@@ -242,6 +244,7 @@ exports.JSCompiler = Class(function () {
           current.resolve.alias.timestepInit = path.resolve(
             __dirname, '..', 'clientapi', 'browser'
           );
+
 
           current.resolve.root.push(path.resolve(
             __dirname, '..', '..', 'modules', 'timestep'
