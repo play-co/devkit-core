@@ -37,6 +37,7 @@ exports.JSConfig = Class(function () {
       },
       useWebGL: _.get(manifest, 'browser.canvas.useWebGL', false),
       preserveDrawingBuffer: _.get(manifest, 'browser.webGL.preserveDrawingBuffer', true),
+      maxTextureMegabytes: _.get(manifest, 'browser.webGL.maxTextureMegabytes', 192),
       disableServiceWorkers: _.get(manifest, 'browser.disableServiceWorkers', false),
       maxTick: _.get(manifest, 'browser.maxTick', 150)
     };
