@@ -77,29 +77,6 @@ window.GC_LOADER = (function (window) {
       }
     },
     pipeline: [{
-        name: 'override-config',
-        parallel: true,
-        call: function () {
-          // override any config params provided already
-          if (window.CONFIG_OVERRIDES) {
-            for (var key in window.CONFIG_OVERRIDES) {
-              window.CONFIG[key] = window.CONFIG_OVERRIDES[key];
-            }
-          }
-
-          var uri = decodeURIComponent((window.location.search || '?').substr(1));
-          if (uri[0] == '{') {
-            // override any config params in the URL
-            var overrideCONFIG = JSON.parse(uri);
-            if (overrideCONFIG) {
-              for (var key in overrideCONFIG) {
-                window.CONFIG[key] = overrideCONFIG[key];
-              }
-            }
-          }
-        }
-      },
-      {
         name: 'fetch-js',
         parallel: true,
         call: function () {
