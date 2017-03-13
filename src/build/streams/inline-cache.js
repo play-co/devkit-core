@@ -7,7 +7,6 @@ var fs = require('../util/fs');
 var streamToArray = require('../util/stream-to-array');
 
 var INLINE_EXTS = {
-  '.js': true,
   '.json': true,
   '.xml': true
 };
