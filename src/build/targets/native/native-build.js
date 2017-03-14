@@ -11,6 +11,7 @@ exports.setupStreams = function (api, app, config) {
   logger.log(config.target + ': writing resources for', config.appID);
 
   api.streams.create('spriter');
+  api.streams.create('resource-list');
   api.streams.create('sound-map');
   api.streams.create('app-js', {
     env: 'native',
@@ -36,6 +37,7 @@ exports.setupStreams = function (api, app, config) {
 exports.getStreamOrder = function (api, app, config) {
   return [
     'spriter',
+    'resource-list',
     'sound-map',
     'app-js',
     'static-files',

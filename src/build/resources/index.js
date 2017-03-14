@@ -152,6 +152,7 @@ exports.createFileStream = function (api, app, config, outputDirectory, director
           }
         }
       }
+      return null;
     })
     .then(function () {
       stream.end();

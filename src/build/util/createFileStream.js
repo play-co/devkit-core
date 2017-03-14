@@ -45,6 +45,7 @@ module.exports = function createFileStream(api, app, config, opts) {
       if (res !== api.streams.REMOVE_FILE) {
         stream.push(file);
       }
+      return null;
     })
     .catch(function (err) {
       stream.emit('error', err);
@@ -112,6 +113,7 @@ module.exports = function createFileStream(api, app, config, opts) {
         .then(function (contents) {
           file.setContents(contents);
           stream.push(file);
+          return null;
         });
       blockingEnd.push(onContents);
     } else {

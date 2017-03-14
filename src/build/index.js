@@ -204,6 +204,9 @@ exports.addStreamAPI = function (api, app, config) {
       if (!opts) { opts = {}; }
 
       switch (id) {
+        case 'resource-list':
+          stream = require('./streams/resource-list').create(api, config);
+          break;
         case 'sound-map':
           stream = require('./streams/sound-map').create(api, config);
           break;
