@@ -37,9 +37,8 @@ module.exports = function createFileStream(api, app, config, opts) {
     // don't end the read stream though until we've pushed all the data
     // through
 
-    // FIXME: this is spamming a bunch of warnings
     const promise = Promise.try(function () {
-      return opts.onFile.call(this, file);
+      return opts.onFile.call(this, file) || null;
     })
     .then(function (res) {
       if (res !== api.streams.REMOVE_FILE) {
@@ -49,11 +48,13 @@ module.exports = function createFileStream(api, app, config, opts) {
     })
     .catch(function (err) {
       stream.emit('error', err);
+      return null;
     });
     blockingEnd.push(promise);
 
     // ok to write more
     cb();
+    return null;
   }
 
   function addFile(opts) {
@@ -67,9 +68,9 @@ module.exports = function createFileStream(api, app, config, opts) {
         // legacy config, just an absolute path is provided, copy the file to
         // the root of the output directory
         opts = {
-            filename: path.basename(filename),
-            src: filename
-          };
+          filename: path.basename(filename),
+          src: filename
+        };
       } else {
         if (/^\.[\/\\]/.test(filename)) {
           filename = filename[2];
@@ -81,8 +82,8 @@ module.exports = function createFileStream(api, app, config, opts) {
 
         // legacy config, relative project path
         opts = {
-            filename: filename
-          };
+          filename: filename
+        };
       }
     }
 
@@ -119,6 +120,7 @@ module.exports = function createFileStream(api, app, config, opts) {
     } else {
       stream.push(file);
     }
+    return null;
   }
 
   // called by through2 when the write stream has finished
@@ -139,6 +141,7 @@ module.exports = function createFileStream(api, app, config, opts) {
       .all()
       .catch(function (err) {
         stream.emit('error', err);
+        return null;
       })
       .then(function () {
         cb();
