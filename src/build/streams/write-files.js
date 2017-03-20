@@ -31,14 +31,10 @@ exports.create = function (api, app, config) {
             .wrap(api.streams.createFileStream({
               onFile: function (file) {
                 if (file.stat && file.stat.atime && file.stat.mtime) {
-                  var atime = file.stat.atime.getTime();
-                  var mtime = file.stat.mtime.getTime();
+                  var atime = file.stat.atime;
+                  var mtime = file.stat.mtime;
                   if (!isNaN(atime) && !isNaN(mtime)) {
-                    try {
-                      return fs.utimesAsync(file.path, atime, mtime);
-                    } catch (e) {
-                      // this may fail on windows
-                    }
+                    return fs.utimesAsync(file.path, atime, mtime);
                   }
                 }
               }
