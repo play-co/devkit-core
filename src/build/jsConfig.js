@@ -11,8 +11,14 @@ exports.JSConfig = Class(function () {
 
     this._config = {
       appID: manifest.appID,
+      android: {
+        // platform specific webGL limits, default of 0 is ignored
+        maxTextureMegabytes: _.get(manifest, 'android.webGL.maxTextureMegabytes', 0)
+      },
       ios: {
-        appleID: manifest.ios && manifest.ios.appleID
+        appleID: manifest.ios && manifest.ios.appleID,
+        // platform specific webGL limits, default of 0 is ignored
+        maxTextureMegabytes: _.get(manifest, 'ios.webGL.maxTextureMegabytes', 0)
       },
       supportedOrientations: deepCopy(manifest.supportedOrientations),
       shortName: manifest.shortName,
