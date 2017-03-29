@@ -112,8 +112,10 @@ var Group = Class(function () {
   this.addFile = function (file, isLowRes) {
     var fullPath = file.sourcePath;
     var scale = file.getOption('scale') || 1;
+    var scaleLowRes = file.getOption('scaleLowRes');
+
     if (isLowRes) {
-      scale /= 2;
+      scale = scaleLowRes || scale / 2;
     }
 
     if (scale !== 1) {
