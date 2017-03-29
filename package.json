@@ -17,7 +17,7 @@
     "graceful-fs": "^4.1.2",
     "image-size": "^0.3.5",
     "jsio": "git+https://github.com/gameclosure/js.io.git#es6",
-    "jsio-webpack": "git+https://github.com/jsio-private/jsio-webpack.git#1245136ee20e483c4b91893644cd6ba2584fa116",
+    "jsio-webpack": "git+https://github.com/jsio-private/jsio-webpack.git#d1b64f26eeea596c525f23903292aedfda0aeb30",
     "lodash": "^4.16.4",
     "mime": "^1.3.4",
     "mkdirp": "^0.5.1",

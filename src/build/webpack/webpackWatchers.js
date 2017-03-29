@@ -95,7 +95,7 @@ const getWebpackConfig = (userConfigs) => {
   if (!Array.isArray(userConfigs)) {
     userConfigs = [userConfigs];
   }
-  return jsioWebpack.builder.getWebpackConfig(userConfigs);
+  return jsioWebpack.builderWebpackInterface.getWebpackConfig(userConfigs);
 };
 
 

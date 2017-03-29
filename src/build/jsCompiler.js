@@ -205,11 +205,6 @@ exports.JSCompiler = Class(function () {
       postConfigure: (configurator, options) => {
         configurator.removePreLoader('eslint');
 
-        configurator.loader('xml', (current) => {
-          current.test = /\.(xml|fnt)$/;
-          return current;
-        });
-
         configurator.loader('ts', (current) => {
           current.exclude = null;
           return current;
