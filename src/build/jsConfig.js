@@ -12,11 +12,15 @@ exports.JSConfig = Class(function () {
     this._config = {
       appID: manifest.appID,
       android: {
+        // TODO: this should become a memory limit heuristic rather than a bool
+        enableLowRes: _.get(manifest, 'android.enableLowRes', false),
         // platform specific webGL limits, default of 0 is ignored
         maxTextureMegabytes: _.get(manifest, 'android.webGL.maxTextureMegabytes', 0)
       },
       ios: {
         appleID: manifest.ios && manifest.ios.appleID,
+        // TODO: this should become a memory limit heuristic rather than a bool
+        enableLowRes: _.get(manifest, 'ios.enableLowRes', false),
         // platform specific webGL limits, default of 0 is ignored
         maxTextureMegabytes: _.get(manifest, 'ios.webGL.maxTextureMegabytes', 0)
       },
