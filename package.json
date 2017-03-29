@@ -11,7 +11,7 @@
     "archiver": "^0.14.4",
     "bluebird": "^3.4.7",
     "chalk": "^1.1.1",
-    "devkit-spriter": "git+https://github.com/gameclosure/devkit-spriter.git#es6",
+    "devkit-spriter": "git+https://github.com/gameclosure/devkit-spriter.git#es6-optimized",
     "fs-extra": "^0.23.1",
     "glob": "^5.0.2",
     "graceful-fs": "^4.1.2",

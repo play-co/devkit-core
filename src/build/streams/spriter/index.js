@@ -19,6 +19,9 @@ var SPRITABLE_EXTS = {
 };
 
 var CACHE_FILENAME = "devkit-spriter";
+var LOW_RES_KEY = '__dk_low_res';
+
+
 
 /**
  * Removes spritable image files from a file stream, sprites them, and inserts
@@ -106,12 +109,19 @@ var Group = Class(function () {
     this.mime = isJPG ? 'image/jpeg' : 'image/png';
   };
 
-  this.addFile = function (file) {
+  this.addFile = function (file, isLowRes) {
     var fullPath = file.sourcePath;
     var scale = file.getOption('scale') || 1;
+    var scaleLowRes = file.getOption('scaleLowRes');
+
+    if (isLowRes) {
+      scale = scaleLowRes || scale / 2;
+    }
+
     if (scale !== 1) {
       this.scale[fullPath] = scale;
     }
+
     this.filenames.push(fullPath);
   };
 });
@@ -138,6 +148,7 @@ var DevKitSpriter = Class(function () {
 
     // each group needs a unique sheet name
     this._sheetNames = {};
+    this._sheetNamesLowRes = {};
 
     this._result = new SpriterResult();
 
@@ -192,16 +203,27 @@ var DevKitSpriter = Class(function () {
     return !!powerOfTwoSheets;
   };
 
-  this._getUniqueSheetName = function (name, animFrameKey) {
+  this._getUniqueSheetName = function (name, animFrameKey, isLowRes) {
     // compute a unique sheet name
     var baseName = name + (animFrameKey ? '-' + animFrameKey : '');
     var sheetName = baseName;
+    var sheetNames = this._sheetNames;
     var i = 0;
-    while (this._sheetNames[sheetName]) {
+
+    if (isLowRes) {
+      sheetNames = this._sheetNamesLowRes;
+    }
+
+    while (sheetNames[sheetName]) {
       sheetName = baseName + '-' + (++i).toString(36);
     }
 
-    this._sheetNames[sheetName] = true;
+    sheetNames[sheetName] = true;
+
+    if (isLowRes) {
+      sheetName += LOW_RES_KEY;
+    }
+
     return sheetName;
   };
 
@@ -232,12 +254,30 @@ var DevKitSpriter = Class(function () {
     ].join('-');
 
     if (!this._groups[key]) {
-      var sheetName = this._getUniqueSheetName(name, animFrameKey);
+      var sheetName = this._getUniqueSheetName(name, animFrameKey, false);
       this._groups[key] = new Group(key, sheetName, compressOpts);
     }
 
-    this._groups[key].addFile(file);
+    this._groups[key].addFile(file, false);
     this._result.setRelativePath(file.sourcePath, file.targetRelativePath);
+
+    /**
+     * Create a set of low resolution sheets
+     * TODO: this should only occur with an option set, and for release builds
+     */
+
+    var keyLowRes = key + LOW_RES_KEY;
+    var groupLowRes = this._groups[keyLowRes];
+
+    if (!groupLowRes) {
+      var sheetNameLowRes = this._getUniqueSheetName(name, animFrameKey, true);
+      this._groups[keyLowRes] = groupLowRes = new Group(keyLowRes, sheetNameLowRes, compressOpts);
+    }
+
+    groupLowRes.addFile(file, true);
+    this._result.setRelativePath(
+      file.sourcePath.replace(groupLowRes.ext, LOW_RES_KEY + groupLowRes.ext),
+      file.targetRelativePath.replace(groupLowRes.ext, LOW_RES_KEY + groupLowRes.ext));
   };
 
   this.sprite = function (addFile) {
