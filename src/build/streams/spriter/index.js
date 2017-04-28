@@ -19,7 +19,7 @@ var SPRITABLE_EXTS = {
 };
 
 var CACHE_FILENAME = "devkit-spriter";
-var LOW_RES_KEY = '__dk_low_res';
+var LOW_RES_KEY = 'low_res_';
 
 
 
@@ -221,7 +221,7 @@ var DevKitSpriter = Class(function () {
     sheetNames[sheetName] = true;
 
     if (isLowRes) {
-      sheetName += LOW_RES_KEY;
+      sheetName = LOW_RES_KEY + sheetName;
     }
 
     return sheetName;
@@ -266,7 +266,7 @@ var DevKitSpriter = Class(function () {
      * TODO: this should only occur with an option set, and for release builds
      */
 
-    var keyLowRes = key + LOW_RES_KEY;
+    var keyLowRes = LOW_RES_KEY + key;
     var groupLowRes = this._groups[keyLowRes];
 
     if (!groupLowRes) {
@@ -275,9 +275,12 @@ var DevKitSpriter = Class(function () {
     }
 
     groupLowRes.addFile(file, true);
+
+    var sourceBasename = path.basename(file.sourcePath);
+    var targetBasename = path.basename(file.targetRelativePath);
     this._result.setRelativePath(
-      file.sourcePath.replace(groupLowRes.ext, LOW_RES_KEY + groupLowRes.ext),
-      file.targetRelativePath.replace(groupLowRes.ext, LOW_RES_KEY + groupLowRes.ext));
+      file.sourcePath.replace(sourceBasename, LOW_RES_KEY + sourceBasename),
+      file.targetRelativePath.replace(targetBasename, LOW_RES_KEY + targetBasename));
   };
 
   this.sprite = function (addFile) {
