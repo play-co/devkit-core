@@ -1,13 +1,10 @@
 machine:
   xcode:
     version: "7.0"
-  environment:
-    XCODE_SCHEME: none
-    XCODE_PROJECT: none
 
 dependencies:
   pre:
-    - brew install node
+    - brew install node@6
     - |
       if [ ! -d /usr/local/Cellar/android-sdk/ ]; then
         brew install android-sdk
