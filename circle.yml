@@ -1,16 +1,13 @@
 machine:
   xcode:
     version: "7.0"
-  environment:
-    XCODE_SCHEME: none
-    XCODE_PROJECT: none
 
 dependencies:
   pre:
-    - brew install node
+    - brew install node@6
     - |
       if [ ! -d /usr/local/Cellar/android-sdk/ ]; then
-        brew install android-sdk
+        brew install Caskroom/cask/android-sdk
         echo 'y' | android update sdk --no-ui --force --all --filter platform-tools,android-19,build-tools-20.0.0
       else
         brew link android-sdk

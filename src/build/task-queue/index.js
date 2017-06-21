@@ -8,7 +8,7 @@ const chalk = require('chalk');
 const log = debug('devkit-core:build:task-queue');
 
 
-var DEFAULT_NUM_WORKERS = require('os').cpus().length;
+var DEFAULT_NUM_WORKERS = 1;
 var DEFAULT_TASKS_PER_WORKER = 1;
 
 exports.TaskQueue = TaskQueue;
