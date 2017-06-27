@@ -145,7 +145,7 @@ exports.JSCompiler = Class(function () {
     }
 
     // Let the project configure some as well...
-    const projectJsioWebpackConfigPath = path.join(jsioOpts.cwd, 'jsio-webpack.config.js');
+    const projectJsioWebpackConfigPath = path.join(jsioOpts.cwd, 'devkit-jsio-webpack.config.js');
     let projectConfig;
     let secondaryProjectConfigs;
     if (fs.existsSync(projectJsioWebpackConfigPath)) {
