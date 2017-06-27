@@ -192,7 +192,7 @@ exports.JSCompiler = Class(function () {
         // TODO: turn this on and remove the postConfigure aliases
         options.scanLibs = true;
         // TODO: should get rid of this probably
-        options.useModuleAliases = true;
+        // options.useModuleAliases = true;
         options.useGitRevisionPlugin = 'production';
         // options.useVisualizerPlugin = true;
 
