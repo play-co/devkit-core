@@ -7,7 +7,7 @@ var argv = require('optimist').argv;
 var mkdirp = require('mkdirp');
 var tempfile = require('tempfile');
 
-var jsioWebpack = require('jsio-webpack');
+var jsioWebpack = require('jsio-webpack-v1');
 const webpack = jsioWebpack.webpack;
 
 // clone to modify the path for this jsio but not any others
@@ -132,7 +132,9 @@ exports.JSCompiler = Class(function () {
       return path.resolve(jsioOpts.cwd, p);
     };
 
-    console.log('Using jsio-webpack from:', require.resolve('jsio-webpack'));
+    // const jsioWebpackRoot = path.resolve(__dirname, '..', '..', 'node_modules', 'jsio-webpack-v1');
+    const jsioWebpackRoot = require.resolve('jsio-webpack-v1');
+    console.log('Using jsio-webpack from:', jsioWebpackRoot);
 
     // Random dir
     // const wpOutputDir = path.join(
@@ -160,7 +162,6 @@ exports.JSCompiler = Class(function () {
 
     const gameRoot = path.resolve(jsioOpts.cwd);
     const gameNodeModules = path.join(gameRoot, 'node_modules');
-    const jsioWebpackRoot = path.resolve(__dirname, '..', '..', 'node_modules', 'jsio-webpack');
     const jsioWebpackNodeModules = path.join(jsioWebpackRoot, 'node_modules');
 
     const jsioWebpackConfig = {
@@ -189,8 +190,10 @@ exports.JSCompiler = Class(function () {
         });
 
         options.useCircularDependencyPlugin = true;
+
         // TODO: turn this on and remove the postConfigure aliases
-        options.scanLibs = true;
+        options.scanLibs = false;
+
         // TODO: should get rid of this probably
         // options.useModuleAliases = true;
         options.useGitRevisionPlugin = 'production';
@@ -200,18 +203,17 @@ exports.JSCompiler = Class(function () {
           console.log('> Sending to project config: configure');
           return projectConfig.configure(configurator, options);
         }
-        return configurator;
       },
       postConfigure: (configurator, options) => {
-        configurator.removePreLoader('eslint');
+        configurator.removeLoader('eslint');
 
-        configurator.loader('ts', (current) => {
-          current.exclude = null;
+        configurator.modifyLoader('ts', (current) => {
+          delete current.exclude;
           return current;
         });
 
-        configurator.loader('babel', current => {
-          current.exclude = null;
+        configurator.modifyLoader('babel', current => {
+          delete current.exclude;
           return current;
         });
 
@@ -228,7 +230,7 @@ exports.JSCompiler = Class(function () {
           // Keep jsio-webpack last on root list (so that game files are resolved ahead of it)
 
           const paths = jsioOpts.path.map(mapPath);
-          current.resolve.root = [].concat(paths);
+          current.resolve.modules = [].concat(paths);
 
           current.resolve.alias = current.resolve.alias || {};
           for (var pathCacheKey in jsioOpts.pathCache) {
@@ -241,12 +243,12 @@ exports.JSCompiler = Class(function () {
           );
 
 
-          current.resolve.root.push(path.resolve(
+          current.resolve.modules.push(path.resolve(
             __dirname, '..', '..', 'modules', 'timestep'
           ));
 
-          current.resolve.root.push(gameNodeModules);
-          current.resolve.root.push(jsioWebpackNodeModules);
+          current.resolve.modules.push(gameNodeModules);
+          current.resolve.modules.push(jsioWebpackNodeModules);
 
           // current.resolve.alias.jsio = path.dirname(require.resolve('jsio'));
           current.resolve.alias.jsio = path.resolve(
