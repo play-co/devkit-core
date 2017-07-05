@@ -36,8 +36,7 @@ import device from 'device';
 import UI from './UI';
 import loader from 'ui/resource/loader';
 import AudioManager from 'AudioManager';
-
-var FontRenderer = device.get('FontRenderer');
+import FontRenderer from 'platforms/browser/FontRenderer';
 
 if (!GLOBAL.CONFIG) {
   GLOBAL.CONFIG = {};

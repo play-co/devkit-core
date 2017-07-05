@@ -1,11 +1,10 @@
 let exports = {};
 
-import device from 'device';
+import Canvas from 'platforms/browser/Canvas';
 
 exports.screenshot = function (cb) {
   var canvas = GC.app.engine.getElement();
 
-  var Canvas = device.get('Canvas');
   var _debugCanvas = new Canvas({
     width: canvas.width,
     height: canvas.height
