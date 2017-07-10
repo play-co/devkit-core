@@ -1,7 +1,7 @@
 'use strict';
 const Promise = require('bluebird');
 
-const jsioWebpack = require('jsio-webpack-v1');
+const jsioWebpack = require('@blackstormlabs/jsio-webpack-v1');
 
 
 class Watcher {

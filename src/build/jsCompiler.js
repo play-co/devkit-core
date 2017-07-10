@@ -7,7 +7,7 @@ var argv = require('optimist').argv;
 var mkdirp = require('mkdirp');
 var tempfile = require('tempfile');
 
-var jsioWebpack = require('jsio-webpack-v1');
+var jsioWebpack = require('@blackstormlabs/jsio-webpack-v1');
 const webpack = jsioWebpack.webpack;
 
 // clone to modify the path for this jsio but not any others
@@ -133,7 +133,7 @@ exports.JSCompiler = Class(function () {
     };
 
     // const jsioWebpackRoot = path.resolve(__dirname, '..', '..', 'node_modules', 'jsio-webpack-v1');
-    const jsioWebpackRoot = require.resolve('jsio-webpack-v1');
+    const jsioWebpackRoot = require.resolve('@blackstormlabs/jsio-webpack-v1');
     console.log('Using jsio-webpack from:', jsioWebpackRoot);
 
     // Random dir
