@@ -259,7 +259,7 @@ exports.JSCompiler = Class(function () {
           current.resolve.alias.devkitCore = path.resolve(__dirname, '..');
 
           if (process.env.NODE_ENV === 'production') {
-            current.devtool = null;
+            current.devtool = false;
             current.output.pathinfo = false;
           } else {
             // original code, no breakpoints
