@@ -185,7 +185,7 @@ exports.JSCompiler = Class(function () {
           output: {
             filename: '[name].js',
             path: wpOutputDir,
-            publicPath: '/'
+            publicPath: './'
           }
         });
 
