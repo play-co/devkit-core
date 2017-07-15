@@ -232,6 +232,18 @@ exports.JSCompiler = Class(function () {
           const paths = jsioOpts.path.map(mapPath);
           current.resolve.modules = [].concat(paths);
 
+          // Hack to make resolve.module for a linked jsio stay relative to project directory
+          const devkitCoreDir = path.resolve(__dirname, '..', '..');
+          const jsioDir = path.resolve(devkitCoreDir, 'node_modules', 'jsio');
+          const postfix = 'jsio/packages';
+          for (let i = 0; i < current.resolve.modules.length; i++) {
+            const modulePath = current.resolve.modules[i];
+            if (modulePath.indexOf(postfix) === modulePath.length - postfix.length) {
+              current.resolve.modules[i] = path.resolve(jsioDir, 'packages');
+              break;
+            }
+          }
+
           current.resolve.alias = current.resolve.alias || {};
           for (var pathCacheKey in jsioOpts.pathCache) {
             current.resolve.alias[pathCacheKey] = mapPath(jsioOpts.pathCache[pathCacheKey]);
@@ -242,21 +254,13 @@ exports.JSCompiler = Class(function () {
             __dirname, '..', 'clientapi', 'browser'
           );
 
-
-          current.resolve.modules.push(path.resolve(
-            __dirname, '..', '..', 'modules', 'timestep'
-          ));
+          current.resolve.modules.push(path.resolve(devkitCoreDir, 'modules', 'timestep'));
+          current.resolve.alias.devkitCore = path.resolve(devkitCoreDir, 'src');
 
           current.resolve.modules.push(gameNodeModules);
           current.resolve.modules.push(jsioWebpackNodeModules);
 
-          // current.resolve.alias.jsio = path.dirname(require.resolve('jsio'));
-          current.resolve.alias.jsio = path.resolve(
-            path.dirname(require.resolve('jsio')),
-            'jsio-web'
-          );
-
-          current.resolve.alias.devkitCore = path.resolve(__dirname, '..');
+          current.resolve.alias.jsio = path.resolve(jsioDir, 'packages', 'jsio-web');
 
           if (process.env.NODE_ENV === 'production') {
             current.devtool = false;
@@ -279,6 +283,8 @@ exports.JSCompiler = Class(function () {
 
           return current;
         });
+
+        configurator.addLoaderInclude('babel', 'glob:modules/**');
 
         // const jsioWebpackDllManifestPath = path.join(wpOutputDir, 'DLL_jsioWebpack-manifest.json');
         // configurator.plugin('dllRef_jsioWebpack', webpack.DllReferencePlugin, [{
