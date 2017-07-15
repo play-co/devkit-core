@@ -16,6 +16,8 @@
 var createBuildTarget = require('../../index').createBuildTarget;
 var cacheWorker = require('./cacheWorker');
 var webAppManifest = require('./webAppManifest');
+const path = require('path');
+const fs = require('../../util/fs');
 
 var slash = require('slash');
 
@@ -157,17 +159,22 @@ exports.setupStreams = function (api, app, config) {
   var fontStream = streams.create('fonts');
   streams.create('html', {fontStream: fontStream});
   streams.create('app-js', {
-      env: 'browser',
-      tasks: [],
-      inlineCache: true,
-      filename: config.target + '.js',
-      composite: function (tasks, js, cache, jsConfig) {
-        return 'NATIVE=false;'
-          + 'CACHE=' + JSON.stringify(cache) + ';\n'
-          + js + ';'
-          + 'GC_LOADER.onLoadApp("import ' + INITIAL_IMPORT + '");';
-      }
-    });
+    env: 'browser',
+    tasks: [],
+    inlineCache: true,
+    filename: config.target + '.js',
+    composite: function (tasks, js, cache, jsConfig) {
+      // Also output the old stuff
+      const devkitHeader = (
+        'NATIVE=false;'
+        + '\nCACHE=' + JSON.stringify(cache) + ';'
+        // + '\nGC_LOADER.onLoadApp("import ' + INITIAL_IMPORT + '");'
+      );
+      const devkitHeaderPath = path.join(config.outputResourcePath, 'devkitHeader.js');
+      fs.writeFileSync(devkitHeaderPath, devkitHeader, 'utf8');
+      return js;
+    }
+  });
 
   var staticFileStream = streams.create('static-files')
     .add(cacheWorker.generate(config))

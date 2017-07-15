@@ -276,8 +276,10 @@ exports.JSCompiler = Class(function () {
             // current.devtool = 'eval-source-map';
             // current.devtool = 'source-map';
             // current.devtool = null;
+            // original code, breakpoints half work
+            current.devtool = 'cheap-module-source-map';
             // transformed code, yes breakpoints
-            current.devtool = 'eval';
+            // current.devtool = 'eval';
             current.output.pathinfo = true;
           }
 
@@ -320,8 +322,21 @@ exports.JSCompiler = Class(function () {
           return;
         }
 
-        const code = fs.readFileSync(outputPath, 'utf-8');
-        cb(null, code);
+        // Copy all artifacts out
+        const filterFunc = (src, dest) => {
+          return src !== outputPath;
+        };
+        fs.copy(
+          wpOutputDir,
+          this._opts.outputResourcePath,
+          { filter: filterFunc },
+          err => {
+            if (err) { return cb(err); }
+            // Specifically get code now
+            const code = fs.readFileSync(outputPath, 'utf-8');
+            cb(null, code);
+          }
+        );
       };
 
       let jsioWebpackConfigFinal = [jsioWebpackConfig];
