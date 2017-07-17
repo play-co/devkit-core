@@ -31,7 +31,7 @@ import {
 
 window.self = window;
 
-import Promise from 'Promise';
+import Promise from 'bluebird';
 GLOBAL.Promise = Promise;
 
 // initialize native JS API wrappers
