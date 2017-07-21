@@ -132,6 +132,16 @@ exports.JSCompiler = Class(function () {
       return path.resolve(jsioOpts.cwd, p);
     };
 
+    const replacePathEntry = (paths, regExp, replacement) => {
+      for (let i = 0; i < paths.length; i++) {
+        const modulePath = paths[i];
+        if (regExp.test(modulePath)) {
+          paths[i] = replacement;
+          return;
+        }
+      }
+    };
+
     // const jsioWebpackRoot = path.resolve(__dirname, '..', '..', 'node_modules', 'jsio-webpack-v1');
     const jsioWebpackRoot = require.resolve('@blackstormlabs/jsio-webpack-v1');
     console.log('Using jsio-webpack from:', jsioWebpackRoot);
@@ -228,21 +238,23 @@ exports.JSCompiler = Class(function () {
 
         configurator.merge(current => {
           // Keep jsio-webpack last on root list (so that game files are resolved ahead of it)
-
-          const paths = jsioOpts.path.map(mapPath);
-          current.resolve.modules = [].concat(paths);
+          current.resolve.modules = (current.resolve.modules || []).concat(
+            jsioOpts.path.map(mapPath)
+          );
 
           // Hack to make resolve.module for a linked jsio stay relative to project directory
           const devkitCoreDir = path.resolve(__dirname, '..', '..');
           const jsioDir = path.resolve(devkitCoreDir, 'node_modules', 'jsio');
-          const postfix = 'jsio/packages';
-          for (let i = 0; i < current.resolve.modules.length; i++) {
-            const modulePath = current.resolve.modules[i];
-            if (modulePath.indexOf(postfix) === modulePath.length - postfix.length) {
-              current.resolve.modules[i] = path.resolve(jsioDir, 'packages');
-              break;
-            }
-          }
+          replacePathEntry(
+            current.resolve.modules,
+            /jsio\/packages$/,
+            path.join(jsioDir, 'packages')
+          );
+          replacePathEntry(
+            current.resolve.modules,
+            /timestep\/src$/,
+            path.resolve(devkitCoreDir, 'modules', 'timestep', 'src')
+          );
 
           current.resolve.alias = current.resolve.alias || {};
           for (var pathCacheKey in jsioOpts.pathCache) {
@@ -254,7 +266,6 @@ exports.JSCompiler = Class(function () {
             __dirname, '..', 'clientapi', 'browser'
           );
 
-          current.resolve.modules.push(path.resolve(devkitCoreDir, 'modules', 'timestep'));
           current.resolve.alias.devkitCore = path.resolve(devkitCoreDir, 'src');
 
           current.resolve.modules.push(gameNodeModules);
