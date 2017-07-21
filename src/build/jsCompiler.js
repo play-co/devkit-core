@@ -266,20 +266,9 @@ exports.JSCompiler = Class(function () {
             current.devtool = false;
             current.output.pathinfo = false;
           } else {
-            // original code, no breakpoints
-            // current.devtool = 'cheap-module-eval-source-map';
-            // transformed code, no breakpoints
-            // current.devtool = 'cheap-eval-source-map';
-            // bundle, yes breakpoints
+            current.devtool = 'cheap-eval-source-map';
+            // current.devtool = 'cheap-module-source-map';
             // current.devtool = 'cheap-source-map';
-            // original code, no breakpoints
-            // current.devtool = 'eval-source-map';
-            // current.devtool = 'source-map';
-            // current.devtool = null;
-            // original code, breakpoints half work
-            current.devtool = 'cheap-module-source-map';
-            // transformed code, yes breakpoints
-            // current.devtool = 'eval';
             current.output.pathinfo = true;
           }
 
@@ -324,7 +313,13 @@ exports.JSCompiler = Class(function () {
 
         // Copy all artifacts out
         const filterFunc = (src, dest) => {
-          return src !== outputPath;
+          if (src === outputPath) {
+            return false;
+          }
+          if (src.indexOf('.js.map') === src.length - 7) {
+            // TODO: Dont include .js.map in production
+          }
+          return true;
         };
         fs.copy(
           wpOutputDir,
