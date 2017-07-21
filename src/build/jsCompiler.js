@@ -238,9 +238,7 @@ exports.JSCompiler = Class(function () {
 
         configurator.merge(current => {
           // Keep jsio-webpack last on root list (so that game files are resolved ahead of it)
-          current.resolve.modules = (current.resolve.modules || []).concat(
-            jsioOpts.path.map(mapPath)
-          );
+          current.resolve.modules = jsioOpts.path.map(mapPath);
 
           // Hack to make resolve.module for a linked jsio stay relative to project directory
           const devkitCoreDir = path.resolve(__dirname, '..', '..');
