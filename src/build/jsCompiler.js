@@ -199,7 +199,7 @@ exports.JSCompiler = Class(function () {
           }
         });
 
-        options.useCircularDependencyPlugin = true;
+        // options.useCircularDependencyPlugin = true;
 
         // TODO: turn this on and remove the postConfigure aliases
         options.scanLibs = false;
