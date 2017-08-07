@@ -12,6 +12,7 @@ var getBase64Image = require('../util/datauri').getBase64Image;
 var TARGET_APPLE_TOUCH_ICON_SIZE = 152;
 var STATIC_BOOTSTRAP_CSS = getStaticFilePath('bootstrap.styl');
 var STATIC_BOOTSTRAP_JS = getStaticFilePath('bootstrap.js');
+var STATIC_BOOTSTRAP_PRODUCTION_JS = getStaticFilePath('bootstrap-production.js');
 var STATIC_LIVE_EDIT_JS = getStaticFilePath('liveEdit.js');
 
 // Static resources.
@@ -42,11 +43,11 @@ exports.create = function (api, app, config, opts) {
       }
     };
   }
-
+  const bootstrapFileName = config.scheme == 'release' ? STATIC_BOOTSTRAP_PRODUCTION_JS : STATIC_BOOTSTRAP_JS;
   // start file-system tasks in background immediately
   var tasks = [
     fs.readFileAsync(STATIC_BOOTSTRAP_CSS, 'utf8'),
-    fs.readFileAsync(STATIC_BOOTSTRAP_JS, 'utf8'),
+    fs.readFileAsync(bootstrapFileName, 'utf8'),
     isLiveEdit && fs.readFileAsync(STATIC_LIVE_EDIT_JS, 'utf8')
   ];
 
