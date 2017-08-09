@@ -24,7 +24,7 @@ jsio.__env.fetch = function (filename) {
   return false;
 };
 
-import Promise from 'Promise';
+import Promise from 'bluebird';
 GLOBAL.Promise = Promise;
 
 var isSimulator = GLOBAL.CONFIG && !!CONFIG.simulator;

@@ -27,6 +27,7 @@ import PubSub from 'lib/PubSub';
 var req = require.context('.', true, /^.*\.js$/);
 
 import device from 'device';
+import Canvas from 'platforms/browser/Canvas';
 
 
 exports.install = function () {
@@ -40,7 +41,6 @@ exports.install = function () {
   req('./launchInfo');
   req('./plugins');
   req('./screen');
-  device.get('Canvas');
 
   /* jshint ignore:end */
   req('./Image');
