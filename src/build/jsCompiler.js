@@ -7,7 +7,7 @@ var argv = require('optimist').argv;
 var mkdirp = require('mkdirp');
 var tempfile = require('tempfile');
 
-var jsioWebpack = require('jsio-webpack');
+var jsioWebpack = require('@blackstormlabs/jsio-webpack-v1');
 const webpack = jsioWebpack.webpack;
 
 // clone to modify the path for this jsio but not any others
@@ -132,7 +132,19 @@ exports.JSCompiler = Class(function () {
       return path.resolve(jsioOpts.cwd, p);
     };
 
-    console.log('Using jsio-webpack from:', require.resolve('jsio-webpack'));
+    const replacePathEntry = (paths, regExp, replacement) => {
+      for (let i = 0; i < paths.length; i++) {
+        const modulePath = paths[i];
+        if (regExp.test(modulePath)) {
+          paths[i] = replacement;
+          return;
+        }
+      }
+    };
+
+    // const jsioWebpackRoot = path.resolve(__dirname, '..', '..', 'node_modules', 'jsio-webpack-v1');
+    const jsioWebpackRoot = require.resolve('@blackstormlabs/jsio-webpack-v1');
+    console.log('Using jsio-webpack from:', jsioWebpackRoot);
 
     // Random dir
     // const wpOutputDir = path.join(
@@ -145,7 +157,7 @@ exports.JSCompiler = Class(function () {
     }
 
     // Let the project configure some as well...
-    const projectJsioWebpackConfigPath = path.join(jsioOpts.cwd, 'jsio-webpack.config.js');
+    const projectJsioWebpackConfigPath = path.join(jsioOpts.cwd, 'devkit-jsio-webpack.config.js');
     let projectConfig;
     let secondaryProjectConfigs;
     if (fs.existsSync(projectJsioWebpackConfigPath)) {
@@ -160,7 +172,6 @@ exports.JSCompiler = Class(function () {
 
     const gameRoot = path.resolve(jsioOpts.cwd);
     const gameNodeModules = path.join(gameRoot, 'node_modules');
-    const jsioWebpackRoot = path.resolve(__dirname, '..', '..', 'node_modules', 'jsio-webpack');
     const jsioWebpackNodeModules = path.join(jsioWebpackRoot, 'node_modules');
 
     const jsioWebpackConfig = {
@@ -184,15 +195,17 @@ exports.JSCompiler = Class(function () {
           output: {
             filename: '[name].js',
             path: wpOutputDir,
-            publicPath: '/'
+            publicPath: './'
           }
         });
 
-        options.useCircularDependencyPlugin = true;
+        // options.useCircularDependencyPlugin = true;
+
         // TODO: turn this on and remove the postConfigure aliases
-        options.scanLibs = true;
+        options.scanLibs = false;
+
         // TODO: should get rid of this probably
-        options.useModuleAliases = true;
+        // options.useModuleAliases = true;
         options.useGitRevisionPlugin = 'production';
         // options.useVisualizerPlugin = true;
 
@@ -200,18 +213,17 @@ exports.JSCompiler = Class(function () {
           console.log('> Sending to project config: configure');
           return projectConfig.configure(configurator, options);
         }
-        return configurator;
       },
       postConfigure: (configurator, options) => {
-        configurator.removePreLoader('eslint');
+        configurator.removeLoader('eslint');
 
-        configurator.loader('ts', (current) => {
-          current.exclude = null;
+        configurator.modifyLoader('ts', (current) => {
+          delete current.exclude;
           return current;
         });
 
-        configurator.loader('babel', current => {
-          current.exclude = null;
+        configurator.modifyLoader('babel', current => {
+          delete current.exclude;
           return current;
         });
 
@@ -226,9 +238,21 @@ exports.JSCompiler = Class(function () {
 
         configurator.merge(current => {
           // Keep jsio-webpack last on root list (so that game files are resolved ahead of it)
+          current.resolve.modules = jsioOpts.path.map(mapPath);
 
-          const paths = jsioOpts.path.map(mapPath);
-          current.resolve.root = [].concat(paths);
+          // Hack to make resolve.module for a linked jsio stay relative to project directory
+          const devkitCoreDir = path.resolve(__dirname, '..', '..');
+          const jsioDir = path.resolve(devkitCoreDir, 'node_modules', 'jsio');
+          replacePathEntry(
+            current.resolve.modules,
+            /jsio\/packages$/,
+            path.join(jsioDir, 'packages')
+          );
+          replacePathEntry(
+            current.resolve.modules,
+            /timestep\/src$/,
+            path.resolve(devkitCoreDir, 'modules', 'timestep', 'src')
+          );
 
           current.resolve.alias = current.resolve.alias || {};
           for (var pathCacheKey in jsioOpts.pathCache) {
@@ -240,43 +264,27 @@ exports.JSCompiler = Class(function () {
             __dirname, '..', 'clientapi', 'browser'
           );
 
+          current.resolve.alias.devkitCore = path.resolve(devkitCoreDir, 'src');
 
-          current.resolve.root.push(path.resolve(
-            __dirname, '..', '..', 'modules', 'timestep'
-          ));
+          current.resolve.modules.push(gameNodeModules);
+          current.resolve.modules.push(jsioWebpackNodeModules);
 
-          current.resolve.root.push(gameNodeModules);
-          current.resolve.root.push(jsioWebpackNodeModules);
-
-          // current.resolve.alias.jsio = path.dirname(require.resolve('jsio'));
-          current.resolve.alias.jsio = path.resolve(
-            path.dirname(require.resolve('jsio')),
-            'jsio-web'
-          );
-
-          current.resolve.alias.devkitCore = path.resolve(__dirname, '..');
+          current.resolve.alias.jsio = path.resolve(jsioDir, 'packages', 'jsio-web');
 
           if (process.env.NODE_ENV === 'production') {
-            current.devtool = null;
+            current.devtool = false;
             current.output.pathinfo = false;
           } else {
-            // original code, no breakpoints
-            // current.devtool = 'cheap-module-eval-source-map';
-            // transformed code, no breakpoints
-            // current.devtool = 'cheap-eval-source-map';
-            // bundle, yes breakpoints
+            current.devtool = 'cheap-eval-source-map';
+            // current.devtool = 'cheap-module-source-map';
             // current.devtool = 'cheap-source-map';
-            // original code, no breakpoints
-            // current.devtool = 'eval-source-map';
-            // current.devtool = 'source-map';
-            // current.devtool = null;
-            // transformed code, yes breakpoints
-            current.devtool = 'eval';
             current.output.pathinfo = true;
           }
 
           return current;
         });
+
+        configurator.addLoaderInclude('babel', 'glob:modules/**');
 
         // const jsioWebpackDllManifestPath = path.join(wpOutputDir, 'DLL_jsioWebpack-manifest.json');
         // configurator.plugin('dllRef_jsioWebpack', webpack.DllReferencePlugin, [{
@@ -312,8 +320,27 @@ exports.JSCompiler = Class(function () {
           return;
         }
 
-        const code = fs.readFileSync(outputPath, 'utf-8');
-        cb(null, code);
+        // Copy all artifacts out
+        const filterFunc = (src, dest) => {
+          if (src === outputPath) {
+            return false;
+          }
+          if (src.indexOf('.js.map') === src.length - 7) {
+            // TODO: Dont include .js.map in production
+          }
+          return true;
+        };
+        fs.copy(
+          wpOutputDir,
+          this._opts.outputResourcePath,
+          { filter: filterFunc },
+          err => {
+            if (err) { return cb(err); }
+            // Specifically get code now
+            const code = fs.readFileSync(outputPath, 'utf-8');
+            cb(null, code);
+          }
+        );
       };
 
       let jsioWebpackConfigFinal = [jsioWebpackConfig];

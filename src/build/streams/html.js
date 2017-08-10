@@ -85,6 +85,8 @@ exports.create = function (api, app, config, opts) {
             config.browser.headHTML.push('<link rel="manifest" href="web-app-manifest.json">');
           }
 
+          config.browser.headHTML.push('<script src="./devkitHeader.js"></script>');
+
           var hasIndexPage = !isMobile;
           addFile({
             filename: hasIndexPage ? 'game.html' : 'index.html',
