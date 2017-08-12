@@ -320,9 +320,10 @@ exports.JSCompiler = Class(function () {
             current.devtool = false;
             current.output.pathinfo = false;
           } else {
-            current.devtool = 'cheap-eval-source-map';
+            // See: https://webpack.js.org/configuration/devtool/
+            // current.devtool = 'cheap-eval-source-map';
             // current.devtool = 'cheap-module-source-map';
-            // current.devtool = 'cheap-source-map';
+            current.devtool = 'cheap-source-map';
             current.output.pathinfo = true;
           }
 
@@ -370,7 +371,8 @@ exports.JSCompiler = Class(function () {
           if (src === outputPath) {
             return false;
           }
-          if (src.indexOf('.js.map') === src.length - 7) {
+          // Only copy sourcemaps in production
+          if (opts.scheme === 'release' && src.indexOf('.js.map') === src.length - 7) {
             return false;
           }
           return true;
