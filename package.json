@@ -33,7 +33,7 @@
     "through2": "^2.0.0",
     "uglify-js": "^2.4.17",
     "vinyl": "^0.5.1",
-    "vinyl-fs": "^1.0.0",
+    "vinyl-fs": "^2.4.4",
     "xml-loader": "^1.1.0"
   },
   "scripts": {
