@@ -75,8 +75,8 @@ exports.create = function (api, app, config, opts) {
           gameHTML.addJS(jsConfig.toString());
           gameHTML.addJS(bootstrapJS);
           gameHTML.addJS(printf('GC_LOADER.init("%(target)s")', {
-              target: config.target
-            }));
+            target: config.target
+          }));
 
           liveEditJS && gameHTML.addJS(liveEditJS);
 
@@ -85,7 +85,13 @@ exports.create = function (api, app, config, opts) {
             config.browser.headHTML.push('<link rel="manifest" href="web-app-manifest.json">');
           }
 
+          // Add the devkit header (NATIVE, CACHE)
           config.browser.headHTML.push('<script src="./devkitHeader.js"></script>');
+          // Find all .chunk.js files, load them
+          const fileNames = fs.readdirSync(config.outputPath).filter(s => /\.chunk\.js$/.test(s));
+          fileNames.forEach((fileName) => {
+            config.browser.headHTML.push(`<script src="./${fileName}"></script>`);
+          });
 
           var hasIndexPage = !isMobile;
           addFile({
