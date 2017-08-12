@@ -203,11 +203,56 @@ exports.JSCompiler = Class(function () {
 
         // TODO: turn this on and remove the postConfigure aliases
         options.scanLibs = false;
-
-        // TODO: should get rid of this probably
-        // options.useModuleAliases = true;
         options.useGitRevisionPlugin = 'production';
-        // options.useVisualizerPlugin = true;
+
+        configurator.plugin(
+          'CommonsChunk_thirdParty',
+          webpack.optimize.CommonsChunkPlugin,
+          {
+            name: 'node_thirdParty',
+            filename: 'node_thirdParty.chunk.js',
+            minChunks: (module, count) => {
+              const context = module.context;
+              return (
+                context
+                && context.indexOf('node_modules') >= 0
+                && context.indexOf('@blackstormlabs') < 0
+              );
+            }
+          }
+        );
+
+        configurator.plugin(
+          'CommonsChunk_blackstormlabs',
+          webpack.optimize.CommonsChunkPlugin,
+          {
+            name: 'node_blackstormlabs',
+            filename: 'node_blackstormlabs.chunk.js',
+            minChunks: (module, count) => {
+              const context = module.context;
+              return (
+                context
+                && context.indexOf('blackstormlabs') >= 0
+              );
+            }
+          }
+        );
+
+        configurator.plugin(
+          'CommonsChunk_devkit',
+          webpack.optimize.CommonsChunkPlugin,
+          {
+            name: 'devkit_modules',
+            filename: 'devkit_modules.chunk.js',
+            minChunks: (module, count) => {
+              const context = module.context;
+              return (
+                context
+                && context.indexOf('modules/')
+              );
+            }
+          }
+        );
 
         if (projectConfig) {
           console.log('> Sending to project config: configure');
