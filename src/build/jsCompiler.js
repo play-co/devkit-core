@@ -326,7 +326,7 @@ exports.JSCompiler = Class(function () {
             return false;
           }
           if (src.indexOf('.js.map') === src.length - 7) {
-            // TODO: Dont include .js.map in production
+            return false;
           }
           return true;
         };
