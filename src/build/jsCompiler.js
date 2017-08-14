@@ -330,7 +330,7 @@ exports.JSCompiler = Class(function () {
           return current;
         });
 
-        configurator.addLoaderInclude('babel', 'glob:modules/**');
+        configurator.addLoaderInclude(['babel', 'ts'], 'glob:modules/**');
 
         // const jsioWebpackDllManifestPath = path.join(wpOutputDir, 'DLL_jsioWebpack-manifest.json');
         // configurator.plugin('dllRef_jsioWebpack', webpack.DllReferencePlugin, [{
