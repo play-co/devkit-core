@@ -88,6 +88,8 @@ exports.create = function (api, app, config, opts) {
           // Add the devkit header (NATIVE, CACHE)
           config.browser.headHTML.push('<script src="./devkitHeader.js"></script>');
           // Find all .chunk.js files, load them
+          // FIXME: This happens too soon, no .chunk.js files exist.
+          //   For now it works on second build, picks up the last build .chunk.js files.
           const fileNames = fs.readdirSync(config.outputPath).filter(s => /\.chunk\.js$/.test(s));
           fileNames.forEach((fileName) => {
             config.browser.headHTML.push(`<script src="./${fileName}"></script>`);
