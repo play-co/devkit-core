@@ -94,8 +94,8 @@ TaskQueue.prototype._onMessage = function (worker, message) {
 
     // schedule the next task
     if (this._pendingTasks[0]) {
-      log('> Still have pending tasks, length=', this._pendingTasks.length);
       this._pendingTasks.shift()(worker);
+      log('> Still have pending tasks, length=', this._pendingTasks.length);
     } else {
       --worker.tasks;
       log('> Worker', worker.child.pid, 'has', worker.tasks, 'remaining tasks');
@@ -171,11 +171,11 @@ TaskQueue.prototype._getWorkerForTask = function () {
 
     if (worker.tasks < this._tasksPerWorker) {
       ++worker.tasks;
-      log('> Assigning to worker ' + worker.child.pid + ', worker has ' + worker.tasks + ' tasks');
+      log(`> Assigning to worker ${worker.child.pid} worker has ${worker.tasks} tasks`);
       resolve(worker);
     } else {
       this._pendingTasks.push(resolve);
-      log('> Adding to _pendingTasks, _pendingTasks.length=' + this._pendingTasks.length);
+      log(`> Adding to _pendingTasks, _pendingTasks.length= ${this._pendingTasks.length}`);
     }
   }.bind(this));
 };
