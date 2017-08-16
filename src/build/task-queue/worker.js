@@ -16,9 +16,9 @@ process.on('message', function (evt) {
   var task = evt.task;
   var opts = evt.opts;
   log(`onMessage: ${id} ${task} ${typeof opts}`);
-  if (task.indexOf('/SpriteTask') > 0) {
-    log('> opts=', util.inspect(opts, { depth: 3, maxArrayLength: 8 }));
-  }
+  // if (task.indexOf('/SpriteTask') > 0) {
+  //   log('> opts=', util.inspect(opts, { depth: 3, maxArrayLength: 8 }));
+  // }
 
   require(task)
     .run(opts)
