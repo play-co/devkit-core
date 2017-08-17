@@ -1,3 +1,4 @@
+const util = require('util');
 var path = require('path');
 var Promise = require('bluebird');
 var fork = require('child_process').fork;
@@ -83,6 +84,7 @@ TaskQueue.prototype._createWorker = function () {
 };
 
 TaskQueue.prototype._onMessage = function (worker, message) {
+  log('onMessage: message.id=', message.id);
   var callbacks = this._callbacks;
   if (message.id in callbacks) {
     // complete the task callback
@@ -93,16 +95,42 @@ TaskQueue.prototype._onMessage = function (worker, message) {
     // schedule the next task
     if (this._pendingTasks[0]) {
       this._pendingTasks.shift()(worker);
+      log('> Still have pending tasks, length=', this._pendingTasks.length);
     } else {
       --worker.tasks;
+      log('> Worker', worker.child.pid, 'has', worker.tasks, 'remaining tasks');
     }
   } else {
-    console.error("TASK COMPLETED WITH NO LISTENER", message.id);
+    console.error('TASK COMPLETED WITH NO LISTENER', message.id);
   }
+
+  log(this._getSummaryText());
+};
+
+TaskQueue.prototype._getSummaryText = function () {
+  const workerSummaries = [];
+  for (let i = 0; i < this._workers.length; i++) {
+    const worker = this._workers[i];
+    let workerSummary = '\tWorker index=' + i;
+    if (worker.child) {
+      workerSummary += '\tChild process pid= ' + worker.child.pid;
+    } else {
+      workerSummary += '\tChild process is falsey';
+    }
+    workerSummary += '\tTask count=' + worker.tasks;
+    workerSummaries.push(workerSummary);
+  }
+  let s = 'TaskQueue Summary:';
+  s += '\n\tPending task count=' + this._pendingTasks.length;
+  s += '\n\tWorker count=' + this._workers.length;
+  s += '\n' + workerSummaries.join('\n');
+  return s;
 };
 
 TaskQueue.prototype.run = function (task, opts) {
+  log('run: task=', task, 'typeof opts=', typeof opts);
   if (this._isLocal) {
+    log('> _isLocal, running in current process');
     return require(task).run(opts);
   }
 
@@ -130,20 +158,24 @@ TaskQueue.prototype.run = function (task, opts) {
 
 TaskQueue.prototype._getWorkerForTask = function () {
   return new Promise(function (resolve) {
+    log('_getWorkerForTask');
     this._workers.sort(function (a, b) {
       return a.tasks - b.tasks;
     });
 
     var worker = this._workers[0];
     if (!worker || worker.tasks > 0 && this._workers.length < this._maxWorkers) {
+      log('> Creating new worker');
       worker = this._createWorker();
     }
 
     if (worker.tasks < this._tasksPerWorker) {
       ++worker.tasks;
+      log(`> Assigning to worker ${worker.child.pid} worker has ${worker.tasks} tasks`);
       resolve(worker);
     } else {
       this._pendingTasks.push(resolve);
+      log(`> Adding to _pendingTasks, _pendingTasks.length= ${this._pendingTasks.length}`);
     }
   }.bind(this));
 };

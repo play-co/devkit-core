@@ -203,11 +203,56 @@ exports.JSCompiler = Class(function () {
 
         // TODO: turn this on and remove the postConfigure aliases
         options.scanLibs = false;
-
-        // TODO: should get rid of this probably
-        // options.useModuleAliases = true;
         options.useGitRevisionPlugin = 'production';
-        // options.useVisualizerPlugin = true;
+
+        configurator.plugin(
+          'CommonsChunk_thirdParty',
+          webpack.optimize.CommonsChunkPlugin,
+          {
+            name: 'node_thirdParty',
+            filename: 'node_thirdParty.chunk.js',
+            minChunks: (module, count) => {
+              const context = module.context;
+              return (
+                context
+                && context.indexOf('node_modules') >= 0
+                && context.indexOf('@blackstormlabs') < 0
+              );
+            }
+          }
+        );
+
+        configurator.plugin(
+          'CommonsChunk_blackstormlabs',
+          webpack.optimize.CommonsChunkPlugin,
+          {
+            name: 'node_blackstormlabs',
+            filename: 'node_blackstormlabs.chunk.js',
+            minChunks: (module, count) => {
+              const context = module.context;
+              return (
+                context
+                && context.indexOf('blackstormlabs') >= 0
+              );
+            }
+          }
+        );
+
+        configurator.plugin(
+          'CommonsChunk_devkit',
+          webpack.optimize.CommonsChunkPlugin,
+          {
+            name: 'devkit_modules',
+            filename: 'devkit_modules.chunk.js',
+            minChunks: (module, count) => {
+              const context = module.context;
+              return (
+                context
+                && context.indexOf('modules/')
+              );
+            }
+          }
+        );
 
         if (projectConfig) {
           console.log('> Sending to project config: configure');
@@ -275,16 +320,17 @@ exports.JSCompiler = Class(function () {
             current.devtool = false;
             current.output.pathinfo = false;
           } else {
-            current.devtool = 'cheap-eval-source-map';
+            // See: https://webpack.js.org/configuration/devtool/
+            // current.devtool = 'cheap-eval-source-map';
             // current.devtool = 'cheap-module-source-map';
-            // current.devtool = 'cheap-source-map';
+            current.devtool = 'cheap-source-map';
             current.output.pathinfo = true;
           }
 
           return current;
         });
 
-        configurator.addLoaderInclude('babel', 'glob:modules/**');
+        configurator.addLoaderInclude(['babel', 'ts'], 'glob:modules/**');
 
         // const jsioWebpackDllManifestPath = path.join(wpOutputDir, 'DLL_jsioWebpack-manifest.json');
         // configurator.plugin('dllRef_jsioWebpack', webpack.DllReferencePlugin, [{
@@ -325,8 +371,9 @@ exports.JSCompiler = Class(function () {
           if (src === outputPath) {
             return false;
           }
-          if (src.indexOf('.js.map') === src.length - 7) {
-            // TODO: Dont include .js.map in production
+          // Only copy sourcemaps in production
+          if (opts.scheme === 'release' && src.indexOf('.js.map') === src.length - 7) {
+            return false;
           }
           return true;
         };

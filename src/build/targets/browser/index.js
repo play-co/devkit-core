@@ -156,9 +156,8 @@ exports.setupStreams = function (api, app, config) {
   streams.create('spriter');
   streams.create('resource-list');
   streams.create('sound-map');
-  var fontStream = streams.create('fonts');
-  streams.create('html', {fontStream: fontStream});
-  streams.create('app-js', {
+  const fontStream = streams.create('fonts');
+  const jsStream = streams.create('app-js', {
     env: 'browser',
     tasks: [],
     inlineCache: true,
@@ -174,6 +173,10 @@ exports.setupStreams = function (api, app, config) {
       fs.writeFileSync(devkitHeaderPath, devkitHeader, 'utf8');
       return js;
     }
+  });
+  streams.create('html', {
+    fontStream: fontStream,
+    jsStream: jsStream
   });
 
   var staticFileStream = streams.create('static-files')
@@ -193,8 +196,8 @@ exports.getStreamOrder = function (api, app, config) {
     'resource-list',
     'sound-map',
     'fonts',
-    'html',
     'app-js',
+    'html',
     'static-files',
     config.browser.hasApplicationCache && 'application-cache-manifest',
     'write-files'
