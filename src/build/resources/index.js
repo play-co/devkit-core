@@ -114,48 +114,57 @@ exports.File = ResourceFile;
 
 exports.getDirectories = require('./directories').get;
 exports.getMetadata = require('./metadata').get;
+
+
 exports.createFileStream = function (api, app, config, outputDirectory, directories) {
   var stream = through2.obj(undefined);
   var statCache = {};
   Promise.resolve(directories || exports.getDirectories(api, app, config))
-    .map(function (directory) {
-      var files = directory.files && Promise.resolve(directory.files)
-                || glob('**/*', {
-                        cwd: directory.src,
-                        nodir: true,
-                        statCache: statCache
-                      });
-
-      return files
-        .map(function (relativePath) {
-          var file = new ResourceFile(directory, relativePath, outputDirectory, statCache);
-          return exports.getMetadata(file)
-            .then(function (options) {
-              file.options = options;
-            })
-            .return(file);
+  .map(function (directory) {
+    let filesRaw;
+    if (directory.files) {
+      filesRaw = directory.files;
+    } else {
+      filesRaw = glob('**/*', {
+        cwd: directory.src,
+        nodir: true,
+        statCache: statCache
+      });
+    }
+    return Promise.resolve(filesRaw)
+    .then((files) => {
+      return Promise.map(files, function (relativePath) {
+        var file = new ResourceFile(directory, relativePath, outputDirectory, statCache);
+        return exports.getMetadata(file)
+        .then(function (options) {
+          file.options = options;
         })
-        .filter(function (file) {
+        .return(file);
+      }, { concurrency: 8 })
+      .then((files) => {
+        return files.filter(function (file) {
           return file.getOption('package') !== false;
         });
-    })
-    .then(function (resourceSets) {
-      // remove duplicate files based on target directory
-      var seen = {};
-      for (var i = resourceSets.length - 1; i >= 0; --i) {
-        var set = resourceSets[i];
-        for (var j = set.length - 1; j >= 0; --j) {
-          var file = set[j];
-          if (!seen[file.targetRelativePath]) {
-            seen[file.targetRelativePath] = true;
-            stream.write(file);
-          }
+      });
+    }, { concurrency: 8 });
+  })
+  .then(function (resourceSets) {
+    // remove duplicate files based on target directory
+    var seen = {};
+    for (var i = resourceSets.length - 1; i >= 0; --i) {
+      var set = resourceSets[i];
+      for (var j = set.length - 1; j >= 0; --j) {
+        var file = set[j];
+        if (!seen[file.targetRelativePath]) {
+          seen[file.targetRelativePath] = true;
+          stream.write(file);
         }
       }
-      return null;
-    })
-    .then(function () {
-      stream.end();
-    });
+    }
+    return null;
+  })
+  .then(function () {
+    stream.end();
+  });
   return stream;
 };
