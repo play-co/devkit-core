@@ -33,11 +33,9 @@ import StackView from 'ui/StackView';
 
 import device from 'device';
 
-import UI from './UI';
 import loader from 'ui/resource/loader';
 import AudioManager from 'AudioManager';
-
-var FontRenderer = device.get('FontRenderer');
+import FontRenderer from 'platforms/browser/FontRenderer';
 
 if (!GLOBAL.CONFIG) {
   GLOBAL.CONFIG = {};
@@ -228,7 +226,6 @@ exports.ClientAPI = class extends PubSub {
 
 exports.ClientAPI.prototype.Application = StackView;
 exports.ClientAPI.prototype.plugins = new PluginManager();
-exports.ClientAPI.prototype.ui = new UI();
 exports.ClientAPI.prototype.resources = loader;
 var ua = navigator.userAgent;
 exports.ClientAPI.prototype.isNative = /TeaLeaf/.test(ua);
