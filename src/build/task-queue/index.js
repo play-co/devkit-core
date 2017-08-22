@@ -1,3 +1,4 @@
+const os = require('os');
 const util = require('util');
 var path = require('path');
 var Promise = require('bluebird');
@@ -9,7 +10,11 @@ const chalk = require('chalk');
 const log = debug('devkit-core:build:task-queue');
 
 
-var DEFAULT_NUM_WORKERS = require('os').cpus().length;
+var DEFAULT_NUM_WORKERS = (
+  process.env.DEVKIT_CORE_TASKQUEUE_WORKERS
+  ? parseInt(process.env.DEVKIT_CORE_TASKQUEUE_WORKERS)
+  : os.cpus().length
+);
 var DEFAULT_TASKS_PER_WORKER = 1;
 
 exports.TaskQueue = TaskQueue;
