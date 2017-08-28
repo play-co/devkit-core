@@ -39,7 +39,7 @@ exports.extend = function (app, config) {
       }
     });
 
-  // default to non-power-of-two aligned sheets, set to true for native builds
+  // default to non-power-of-two aligned sheets
   config.powerOfTwoSheets = false;
 
   // default to removing unused sheets from build dir only in release mode

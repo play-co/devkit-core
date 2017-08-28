@@ -28,18 +28,12 @@ import Promise from 'bluebird';
 GLOBAL.Promise = Promise;
 
 var isSimulator = GLOBAL.CONFIG && !!CONFIG.simulator;
-var isNative = /^native/.test(CONFIG.target);
-
 if (isSimulator) {
   // prefix filenames in the debugger
   jsio.__env.debugPath = function (path) {
     return 'http://' + (CONFIG.bundleID || CONFIG.packageName) + '/' + path.replace(
       /^[\.\/]+/, '');
   };
-
-  if (isNative) {
-    require('../debugging/nativeShim');
-  }
 }
 
 // shims
@@ -155,19 +149,6 @@ function startApp () {
   require('platforms/browser/initialize');
   device.init();
 
-  // init sets up the GC object
-  GLOBAL.GC = new devkit.ClientAPI();
-  if (simulatorModules) {
-    GLOBAL.GC.on('app', function (app) {
-      // client API inside simulator: call init() on each simulator module,
-      // optionally block on a returned promise for up to 5 seconds
-      simulatorModules.forEach(function (module) {
-        if (typeof module.onApp == 'function') {
-          module.onApp(app);
-        }
-      });
-    });
-  }
-
-  GLOBAL.GC.buildApp('launchUI', ApplicationCtor);
+  // construct the app
+  devkit.startApp(ApplicationCtor, simulatorModules);
 }

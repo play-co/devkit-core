@@ -177,8 +177,11 @@ exports.JSCompiler = Class(function () {
     const jsioWebpackConfig = {
       configure: (configurator, options) => {
         const entry = {
-          app: path.resolve(jsioOpts.cwd, 'src', 'Application')
+          app: path.resolve(jsioOpts.cwd, 'src', 'Application'),
+          // adding client bootstrap to build config
+          bootstrap: path.resolve(__dirname, '..', 'clientapi', 'bootstrap.js')
         };
+
         // TODO: this is sort of hacky, this whole config generation should probably
         // be moved in to jsio-webpack sooner than later.
         const testIndexPath = path.resolve(jsioOpts.cwd, 'tests', 'index.js');

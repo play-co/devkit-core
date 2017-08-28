@@ -34,8 +34,8 @@ exports.addOrientationHTML = function (app, config) {
       '    var currentOrientation = window.innerHeight > window.innerWidth ? "portrait" : "landscape";',
       '    var isValid = currentOrientation === supportedOrientation;',
       '    os.display = isValid ? "none" : "block";',
-      waitForOrientation ? '    GC_LOADER.isOrientationValid = isValid;' : '',
-      waitForOrientation ? '    GC_LOADER.onOrientation && GC_LOADER.onOrientation(isValid)' : '',
+      waitForOrientation ? '    GC.isOrientationValid = isValid;' : '',
+      waitForOrientation ? '    GC.onOrientation && GC.onOrientation(isValid)' : '',
       '  };',
       '  onResize();',
       '  window.addEventListener("resize", onResize);',
@@ -44,6 +44,6 @@ exports.addOrientationHTML = function (app, config) {
   }
 
   if (!enableOrientationSplash || !waitForOrientation) {
-    config.browser.footerHTML.push("<script>GC_LOADER.isOrientationValid = true;</script>");
+    config.browser.footerHTML.push("<script>GC.isOrientationValid = true;</script>");
   }
 };
