@@ -114,30 +114,11 @@ export const startGame = _ApplicationCtor => {
       //   console.warn(e);
       // }
       console.error('TODO: Dynamic require ctx');
-    }).timeout(5000).finally(queueStart);
-  } else {
-    queueStart();
-  }
-};
-
-function queueStart () {
-  /* jshint -W117 */
-  if (window.GC_LIVE_EDIT && GC_LIVE_EDIT._isLiveEdit) {
-    var intervalId = setInterval(function () {
-      if (GC_LIVE_EDIT._liveEditReady) {
-        try {
-          startApp();
-        } catch (err) {
-          // In case loading fails, we will still clear the interval
-          console.error('Error while starting app', err);
-        }
-        clearInterval(intervalId);
-      }
-    }, 100);
+    }).timeout(5000).finally(startApp);
   } else {
     startApp();
   }
-}
+};
 
 /* jshint +W117 */
 
