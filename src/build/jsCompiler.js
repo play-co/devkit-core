@@ -450,6 +450,11 @@ exports.JSCompiler = Class(function () {
       // [END] Setup jsio-webpack dll
       // ---- ----
 
+      const loadedEnv = jsioWebpack.getLoadedEnv();
+      if (!loadedEnv) {
+        jsioWebpack.loadEnv(process.env.NODE_ENV || 'development');
+      }
+
       if (inSimulator) {
         webpackWatchers.getWatcher(
           this._app.id,

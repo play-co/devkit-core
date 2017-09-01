@@ -8,11 +8,11 @@
     "url": "http://github.com/gameclosure/devkit-core.git"
   },
   "dependencies": {
-    "@blackstormlabs/jsio-webpack-v1": "^1.4.0",
+    "@blackstormlabs/jsio-webpack-v1": "^2.2.0",
     "archiver": "^0.14.4",
     "bluebird": "^3.4.7",
     "chalk": "^1.1.1",
-    "devkit-spriter": "git+https://github.com/gameclosure/devkit-spriter.git#93322bcae2c33e63919d739145c30d0844f9d35c",
+    "devkit-spriter": "git+https://github.com/gameclosure/devkit-spriter.git#0c743d8985dfcccd73eb3be17510c06b4228a79c",
     "fs-extra": "^0.23.1",
     "glob": "^5.0.2",
     "graceful-fs": "^4.1.2",
