@@ -16,7 +16,7 @@
 import {
   NATIVE,
   logger
-} from 'base';
+} from 'jsio_base';
 
 import device from 'device';
 

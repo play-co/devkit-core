@@ -1,7 +1,6 @@
 import {
   GLOBAL,
-  CONFIG
-} from 'base';
+} from 'jsio_base';
 
 /**
  * @license
@@ -18,16 +17,11 @@ import {
  * You should have received a copy of the Mozilla Public License v. 2.0
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
-/* globals jsio, CONFIG, DEBUG */
-// no dynamic source fetching
-jsio.__env.fetch = function (filename) {
-  return false;
-};
 
 import Promise from 'bluebird';
 GLOBAL.Promise = Promise;
 
-var isSimulator = GLOBAL.CONFIG && !!CONFIG.simulator;
+var isSimulator = CONFIG && !!CONFIG.simulator;
 var isNative = /^native/.test(CONFIG.target);
 
 if (isSimulator) {
@@ -91,8 +85,8 @@ if (splash) {
 }
 
 // parsing options
-import stdUri from 'std/uri';
-var uri = new stdUri(window.location);
+import { URI } from 'std/uri';
+var uri = new URI(window.location);
 var mute = uri.hash('mute');
 CONFIG.isMuted = mute !== undefined && mute !== 'false' && mute !== '0' && mute !==
   'no';

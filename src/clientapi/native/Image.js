@@ -19,7 +19,7 @@ import {
   logger,
   NATIVE,
   GLOBAL
-} from 'base';
+} from 'jsio_base';
 
 import PubSub from 'lib/PubSub';
 import setProperty from 'util/setProperty';

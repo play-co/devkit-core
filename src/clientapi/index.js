@@ -21,11 +21,10 @@ import {
   GLOBAL,
   logger,
   bind,
-  CONFIG,
   merge
-} from 'base';
+} from 'jsio_base';
 
-import PubSub from 'lib/PubSub';
+import { PubSub } from 'lib/PubSub';
 import Callback from 'lib/Callback';
 import Engine from 'ui/Engine';
 import View from 'ui/View';
@@ -37,8 +36,8 @@ import loader from 'ui/resource/loader';
 import AudioManager from 'AudioManager';
 import FontRenderer from 'platforms/browser/FontRenderer';
 
-if (!GLOBAL.CONFIG) {
-  GLOBAL.CONFIG = {};
+if (!CONFIG) {
+  CONFIG = {};
 }
 if (!GLOBAL.DEBUG) {
   GLOBAL.DEBUG = false;
@@ -46,8 +45,12 @@ if (!GLOBAL.DEBUG) {
 
 var spritesheets;
 try {
-  if (GLOBAL.CACHE) {
-    spritesheets = JSON.parse(GLOBAL.CACHE['spritesheets/map.json']);
+  console.log("Checking cache for sprite map...");
+  if (CACHE) {
+    console.log("Sprite map: " + CACHE['spritesheets/map.json'])
+    spritesheets = CACHE['spritesheets/map.json'];
+  } else {
+    console.error("CACHE not set when trying to initialize sprite sheet map.");
   }
 } catch (e) {
   logger.warn('spritesheet map failed to parse', e);
@@ -55,8 +58,11 @@ try {
 
 var soundMap;
 try {
-  if (GLOBAL.CACHE) {
-    soundMap = JSON.parse(GLOBAL.CACHE['resources/sound-map.json']);
+  if (CACHE) {
+    console.log("Sound map: " + CACHE['resources/sound-map.json'])
+    soundMap = CACHE['resources/sound-map.json'];
+  } else {
+    console.error("CACHE not set when trying to initialize audio map.");
   }
 } catch (e) {
   logger.warn('sound map failed to parse', e);
@@ -241,7 +247,7 @@ if (exports.ClientAPI.prototype.isNative) {
   exports.ClientAPI.prototype.isAndroid = true;
 } else {
   exports.ClientAPI.prototype.isDesktop = true;
-  exports.ClientAPI.prototype.isFacebook = GLOBAL.CONFIG.isFacebookApp;
+  exports.ClientAPI.prototype.isFacebook = CONFIG.isFacebookApp;
 }
 
 exports.ClientAPI.prototype.isKik = /Kik\/\d/.test(ua);

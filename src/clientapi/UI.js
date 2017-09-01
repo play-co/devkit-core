@@ -16,9 +16,8 @@ let exports = {};
  * along with the Game Closure SDK.  If not, see <http://mozilla.org/MPL/2.0/>.
  */
 import {
-  CONFIG,
-  logger
-} from 'base';
+  from '  logger
+} from 'jsio_base';
 
 import device from 'device';
 import Spinner from 'ui/widget/Spinner';

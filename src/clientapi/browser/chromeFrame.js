@@ -3,7 +3,7 @@ let exports = {};
 import {
   bind,
   logger
-} from 'base';
+} from 'jsio_base';
 
 /**
  * @license

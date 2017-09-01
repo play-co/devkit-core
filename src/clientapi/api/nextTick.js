@@ -1,4 +1,4 @@
-import { bind } from 'base';
+import { bind } from 'jsio_base';
 
 var _onTick = window.requestAnimationFrame || window.setTimeout;
 

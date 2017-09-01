@@ -1,4 +1,4 @@
-import { NATIVE } from 'base';
+import { NATIVE } from 'jsio_base';
 
 /**
  * @license

@@ -2,10 +2,9 @@ let exports = {};
 
 import {
   logger,
-  CONFIG,
-  GLOBAL,
+  from '  GLOBAL,
   NATIVE
-} from 'base';
+} from 'jsio_base';
 
 /**
  * @license

@@ -4,7 +4,7 @@ import {
   NATIVE,
   GLOBAL,
   bind
-} from 'base';
+} from 'jsio_base';
 
 import device from 'device';
 import PubSub from 'lib/PubSub';

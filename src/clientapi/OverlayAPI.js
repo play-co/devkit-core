@@ -19,7 +19,7 @@ import {
   logger,
   bind,
   NATIVE
-} from 'base';
+} from 'jsio_base';
 
 import engineInstance from 'ui/engineInstance';
 

@@ -20,8 +20,7 @@ import {
   NATIVE,
   merge,
   logger,
-  CONFIG
-} from 'base';
+} from 'jsio_base';
 
 import device from 'device';
 import PubSub from 'lib/PubSub';
@@ -70,9 +69,9 @@ function installNativeView () {
   logger.log('USING NATIVE VIEWS');
 }
 
-logger.log(typeof GLOBAL.CONFIG, GLOBAL.CONFIG && CONFIG.disableNativeViews);
+logger.log(typeof CONFIG, CONFIG && CONFIG.disableNativeViews);
 
-if (GLOBAL.CONFIG && CONFIG.disableNativeViews || !hasNativeViews) {
+if (CONFIG && CONFIG.disableNativeViews || !hasNativeViews) {
   logger.log('USING JS VIEWS');
   exports.install = function () {};
 } else {

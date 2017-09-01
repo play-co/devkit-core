@@ -4,7 +4,7 @@ import {
   logger,
   NATIVE,
   GLOBAL
-} from 'base';
+} from 'jsio_base';
 
 /**
  * @license

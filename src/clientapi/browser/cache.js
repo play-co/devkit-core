@@ -2,7 +2,6 @@ let exports = {};
 
 import device from 'device';
 
-import { CONFIG } from 'base';
 
 var _cacheWorker;
 

@@ -18,7 +18,7 @@ let exports = {};
 import base, {
   isArray,
   log
-} from 'base';
+} from 'jsio_base';
 
 // this whole file should not get included in release
 if (DEBUG) {

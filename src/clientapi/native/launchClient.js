@@ -24,10 +24,9 @@ env.debugPath = function (path) {
 GLOBAL.console = logging.get('console');
 // add bluebird promise implementation to global scope
 import {
-  CONFIG,
-  GLOBAL,
+  from GLOBAL,
   logging
-} from 'base';
+} from 'jsio_base';
 
 window.self = window;
 
@@ -52,7 +51,7 @@ startApp();
  * You can remove this or replace it with your own analytics if you like.
  */
 function analytics () {
-  var config = GLOBAL.CONFIG;
+  var config = CONFIG;
   var params = 'appID:' + encodeURIComponent(config.appID || '') + '&' +
     'bundleID:' + encodeURIComponent(config.bundleID || '') + '&' + 'appleID:' +
     encodeURIComponent(config.appleID || '') + '&' + 'version:' +

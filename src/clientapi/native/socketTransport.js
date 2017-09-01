@@ -19,7 +19,7 @@ import {
   logger,
   NATIVE,
   bind
-} from 'base';
+} from 'jsio_base';
 
 import interfaces from 'net/interfaces';
 import reader from './reader';

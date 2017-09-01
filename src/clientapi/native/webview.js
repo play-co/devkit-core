@@ -3,7 +3,7 @@ let exports = {};
 import {
   GLOBAL,
   NATIVE
-} from 'base';
+} from 'jsio_base';
 
 /**
  * @license

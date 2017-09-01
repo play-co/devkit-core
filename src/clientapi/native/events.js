@@ -34,7 +34,7 @@ import {
   NATIVE,
   logger,
   log
-} from 'base';
+} from 'jsio_base';
 
 NATIVE.events.dispatchEvent = function (evt, id) {
   if (typeof evt == 'string') {

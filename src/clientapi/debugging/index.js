@@ -3,8 +3,7 @@ let exports = {};
 import {
   merge,
   bind,
-  CONFIG
-} from 'base';
+} from 'jsio_base';
 
 import PubSub from 'lib/PubSub';
 

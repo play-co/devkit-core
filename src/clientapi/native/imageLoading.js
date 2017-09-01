@@ -18,7 +18,7 @@ import {
   NATIVE,
   logger,
   GLOBAL
-} from 'base';
+} from 'jsio_base';
 
 import PubSub from 'lib/PubSub';
 

@@ -1,7 +1,7 @@
 import {
   NATIVE,
   bind
-} from 'base';
+} from 'jsio_base';
 
 /**
  * @license

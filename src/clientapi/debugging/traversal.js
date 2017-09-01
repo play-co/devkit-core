@@ -24,7 +24,7 @@ let exports = {};
 import {
   bind,
   logger
-} from 'base';
+} from 'jsio_base';
 
 import ImageView from 'ui/ImageView';
 import ImageScaleView from 'ui/ImageScaleView';

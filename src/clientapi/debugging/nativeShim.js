@@ -19,7 +19,7 @@ import {
   logger,
   merge,
   GLOBAL
-} from 'base';
+} from 'jsio_base';
 
 import PubSub from 'lib/PubSub';
 import Callback from 'lib/Callback';

@@ -5,7 +5,7 @@ import {
   bind,
   logger,
   GLOBAL
-} from 'base';
+} from 'jsio_base';
 
 /**
  * @license

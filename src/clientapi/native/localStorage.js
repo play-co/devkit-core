@@ -2,7 +2,7 @@ import {
   GLOBAL,
   NATIVE,
   logger
-} from 'base';
+} from 'jsio_base';
 
 /**
  * @license

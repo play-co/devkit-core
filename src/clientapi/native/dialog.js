@@ -1,8 +1,7 @@
 import {
   NATIVE,
-  CONFIG,
-  GLOBAL
-} from 'base';
+  from '  GLOBAL
+} from 'jsio_base';
 
 /**
  * @license

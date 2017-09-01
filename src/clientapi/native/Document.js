@@ -1,4 +1,4 @@
-import { GLOBAL } from 'base';
+import { GLOBAL } from 'jsio_base';
 
 /**
  * @license

@@ -16,7 +16,7 @@
 import {
   merge,
   NATIVE
-} from 'base';
+} from 'jsio_base';
 
 import PubSub from 'lib/PubSub';
 import device from 'device';

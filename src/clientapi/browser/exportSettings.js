@@ -1,4 +1,4 @@
-import { logger } from 'base';
+import { logger } from 'jsio_base';
 
 /**
  * @license

@@ -19,8 +19,7 @@ let exports = {};
 import {
   logger,
   NATIVE,
-  CONFIG
-} from 'base';
+} from 'jsio_base';
 
 import PubSub from 'lib/PubSub';
 

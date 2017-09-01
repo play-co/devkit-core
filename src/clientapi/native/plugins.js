@@ -17,7 +17,7 @@ import {
   NATIVE,
   bind,
   logger
-} from 'base';
+} from 'jsio_base';
 
 import Callback from 'lib/Callback';
 import PubSub from 'lib/PubSub';
