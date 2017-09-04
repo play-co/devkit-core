@@ -49,7 +49,7 @@
     "clientPaths": {
       "*": "timestep/src",
       "analytics": "src/clientapi/analytics/",
-      "devkit": "src/clientapi",
+      "devkit": "src/clientapi"
     }
   },
   "devDependencies": {

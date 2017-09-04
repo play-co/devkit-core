@@ -40,17 +40,12 @@ exports.JSCompiler = Class(function () {
     this._path = [];
 
     if (config && config.clientPaths) {
-    console.error('config.clientPaths', config.clientPaths)
       jsCompilerUtils.addClientPaths(this._path, this._pathCache, config.clientPaths);
     }
 
     if (app && app.clientPaths) {
-    console.error('app.clientPaths', app.clientPaths)
       jsCompilerUtils.addClientPaths(this._path, this._pathCache, app.clientPaths);
     }
-
-    console.error('this._path', this._path)
-    console.error('this._pathCache', this._pathCache)
   };
 
   this.compile = function (opts, cb) {
@@ -135,16 +130,6 @@ exports.JSCompiler = Class(function () {
         return p;
       }
       return path.resolve(jsioOpts.cwd, p);
-    };
-
-    const replacePathEntry = (paths, regExp, replacement) => {
-      for (let i = 0; i < paths.length; i++) {
-        const modulePath = paths[i];
-        if (regExp.test(modulePath)) {
-          paths[i] = replacement;
-          return;
-        }
-      }
     };
 
     // const jsioWebpackRoot = path.resolve(__dirname, '..', '..', 'node_modules', 'jsio-webpack-v1');
@@ -296,16 +281,6 @@ exports.JSCompiler = Class(function () {
           // Hack to make resolve.module for a linked jsio stay relative to project directory
           const devkitCoreDir = path.resolve(__dirname, '..', '..');
           const jsioDir = path.resolve(devkitCoreDir, 'node_modules', 'jsio');
-          replacePathEntry(
-            current.resolve.modules,
-            /jsio\/packages$/,
-            path.join(jsioDir, 'packages')
-          );
-          replacePathEntry(
-            current.resolve.modules,
-            /timestep\/src$/,
-            path.resolve(devkitCoreDir, 'modules', 'timestep', 'src')
-          );
 
           current.resolve.alias = current.resolve.alias || {};
           for (var pathCacheKey in jsioOpts.pathCache) {
