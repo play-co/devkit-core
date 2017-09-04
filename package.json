@@ -47,9 +47,9 @@
       "resources-bundle": "src/build/targets/resources-bundle"
     },
     "clientPaths": {
-      "devkit": "src/clientapi",
+      "*": "timestep/src",
       "analytics": "src/clientapi/analytics/",
-      "*": "src/clientapi/api/"
+      "devkit": "src/clientapi",
     }
   },
   "devDependencies": {

@@ -40,12 +40,17 @@ exports.JSCompiler = Class(function () {
     this._path = [];
 
     if (config && config.clientPaths) {
+    console.error('config.clientPaths', config.clientPaths)
       jsCompilerUtils.addClientPaths(this._path, this._pathCache, config.clientPaths);
     }
 
     if (app && app.clientPaths) {
+    console.error('app.clientPaths', app.clientPaths)
       jsCompilerUtils.addClientPaths(this._path, this._pathCache, app.clientPaths);
     }
+
+    console.error('this._path', this._path)
+    console.error('this._pathCache', this._pathCache)
   };
 
   this.compile = function (opts, cb) {
