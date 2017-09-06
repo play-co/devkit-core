@@ -87,16 +87,19 @@ class Analytics {
     this.sessionID = this.createGuid();
     this.userID = params.userID;
 
+    var isDev = userAgent.SIMULATED || process.env.NODE_ENV === 'development';
+    params = isDev && params.dev ? merge(params.dev, params.prod) : params.prod;
+
+    if (params.pixel && params.pixel.enabled) {
+      this.pixelEnabled = params.pixel.enabled && pixel.enabled;
+      this.pixelWhitelist = params.pixel.whitelist || {};
+    }
+
     this.keenWhitelist = params.keen.whitelist || {};
     this.amplitudeBlacklist = params.amplitude.blacklist || {};
-    this.pixelWhitelist = params.pixel.whitelist || {};
 
     if (params.amplitude.key) {
       this._initAmplitude(params.amplitude.key);
-    }
-
-    if (params.pixel.enabled) {
-      this.pixelEnabled = params.pixel.enabled && pixel.enabled;
     }
 
     keen.init(params.keen.projectID, params.keen.writeKey);
@@ -224,12 +227,12 @@ class Analytics {
         }
         
         // Duplicate events over to Facebook pixel if they are on the PIXEL whitelist
-        const sendToPixel = this.pixelEnabled && this.pixelWhitelist.indexOf(key) >= 0;
+        const sendToPixel = this.pixelEnabled && (!this.pixelWhitelist || this.pixelWhitelist.indexOf(key) >= 0);
         if (sendToPixel) {
           pixel.trackCustom(key, merge({}, data));
         }
 
-        const sendToKeen = this.keenWhitelist.indexOf(key) >= 0;
+        const sendToKeen = (!this.keenWhitelist || this.keenWhitelist.indexOf(key) >= 0);
         if (sendToKeen) {
           data.keen = this.keenAddons;
           data.userProperties = merge({}, this.userProperties);
@@ -252,6 +255,14 @@ class Analytics {
 
       this.eventQueue = [];
     }
+  }
+
+  /**
+   * Keen.io API for tracking AB Tests
+   */
+
+  setABTestVariants (data) {
+    keen.setABTestVariants(data);
   }
 
   /**
