@@ -40,7 +40,6 @@ export default class WebGLTextureManager extends PubSub {
   }
 
   deleteTextureForImage (image) {
-    console.error('deleteTextureForImage', image)
     var texture = image.texture;
     if (texture) {
       this.deleteTexture(texture);

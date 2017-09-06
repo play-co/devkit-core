@@ -415,29 +415,6 @@ class GLManager {
       gl.drawElements(gl.TRIANGLES, (next - start) * 6, gl.UNSIGNED_SHORT, start * 12);
     }
 
-  // setActiveRenderMode (id) {
-  //   if (this._activeRenderMode === id) {
-  //     return;
-  //   }
-
-  //   var ctx = this._activeCtx;
-  //   this._activeRenderMode = id;
-  //   var shader = this.shaders[id];
-
-  //   if (this._activeShader && this._activeShader !== shader) {
-  //     this._activeShader.disableVertexAttribArrays();
-  //   }
-
-  //   this._activeShader = shader;
-  //   var gl = this.gl;
-  //   gl.useProgram(shader.program);
-  //   shader.enableVertexAttribArrays();
-  //   gl.uniform2f(shader.uniforms.uResolution, ctx.width, ctx.height);
-  //   if (shader.uniforms.uSampler !== -1) {
-  //     gl.uniform1i(shader.uniforms.uSampler, 0);
-  //   }
-  // }
-
     this._drawIndex = -1;
     this._batchIndex = -1;
   }
