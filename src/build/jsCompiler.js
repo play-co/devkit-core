@@ -132,16 +132,6 @@ exports.JSCompiler = Class(function () {
       return path.resolve(jsioOpts.cwd, p);
     };
 
-    const replacePathEntry = (paths, regExp, replacement) => {
-      for (let i = 0; i < paths.length; i++) {
-        const modulePath = paths[i];
-        if (regExp.test(modulePath)) {
-          paths[i] = replacement;
-          return;
-        }
-      }
-    };
-
     // const jsioWebpackRoot = path.resolve(__dirname, '..', '..', 'node_modules', 'jsio-webpack-v1');
     const jsioWebpackRoot = require.resolve('@blackstormlabs/jsio-webpack-v1');
     console.log('Using jsio-webpack from:', jsioWebpackRoot);
@@ -291,16 +281,6 @@ exports.JSCompiler = Class(function () {
           // Hack to make resolve.module for a linked jsio stay relative to project directory
           const devkitCoreDir = path.resolve(__dirname, '..', '..');
           const jsioDir = path.resolve(devkitCoreDir, 'node_modules', 'jsio');
-          replacePathEntry(
-            current.resolve.modules,
-            /jsio\/packages$/,
-            path.join(jsioDir, 'packages')
-          );
-          replacePathEntry(
-            current.resolve.modules,
-            /timestep\/src$/,
-            path.resolve(devkitCoreDir, 'modules', 'timestep', 'src')
-          );
 
           current.resolve.alias = current.resolve.alias || {};
           for (var pathCacheKey in jsioOpts.pathCache) {
