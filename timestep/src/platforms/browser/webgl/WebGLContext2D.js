@@ -33,73 +33,6 @@ import Matrix2D from './Matrix2D';
 import WebGLTextureManager from './WebGLTextureManager';
 
 
-class ContextStateStack {
-
-  constructor () {
-    this._states = [this.getObject()];
-    this._stateIndex = 0;
-  }
-
-  save () {
-    var lastState = this.state;
-    if (++this._stateIndex >= this._states.length) {
-      this._states[this._stateIndex] = this.getObject();
-    }
-
-    var s = this.state;
-    s.globalCompositeOperation = lastState.globalCompositeOperation;
-    s.globalAlpha = lastState.globalAlpha;
-    s.transform.copy(lastState.transform);
-    s.textBaseLine = lastState.textBaseLine;
-    s.lineWidth = lastState.lineWidth;
-    s.strokeStyle = lastState.strokeStyle;
-    s.fillStyle = lastState.fillStyle;
-    s.filter = lastState.filter;
-    s.clip = lastState.clip;
-    s.clipRect.x = lastState.clipRect.x;
-    s.clipRect.y = lastState.clipRect.y;
-    s.clipRect.width = lastState.clipRect.width;
-    s.clipRect.height = lastState.clipRect.height;
-  }
-
-  restore () {
-    if (this._stateIndex > 0) {
-      this._stateIndex--;
-    }
-  }
-
-  getObject () {
-    return {
-      globalCompositeOperation: 'source-over',
-      globalAlpha: 1,
-      transform: new Matrix2D(),
-      lineWidth: 1,
-      filter: null,
-      clip: false,
-      clipRect: {
-        x: 0,
-        y: 0,
-        width: 0,
-        height: 0
-      },
-      fillStyle: '',
-      strokeStyle: ''
-    };
-  }
-
-  get state () {
-    return this._states[this._stateIndex];
-  }
-
-  get parentState () {
-    return this._stateIndex > 0
-      ? this._states[this._stateIndex - 1]
-      : null;
-  }
-}
-
-
-
 var STRIDE = 24;
 
 var RENDER_MODES = {
@@ -124,7 +57,6 @@ var getColor = function (key) {
 
 var MAX_BATCH_SIZE = 512;
 var CACHE_UID = 0;
-
 
 
 class GLManager {
@@ -186,12 +118,7 @@ class GLManager {
         index: 0,
         clip: false,
         filter: null,
-        clipRect: {
-          x: 0,
-          y: 0,
-          width: 0,
-          height: 0
-        },
+        clipRectangle: new Rectangle(0, 0, 0, 0),
         renderMode: 0
       };
     }
@@ -375,7 +302,7 @@ class GLManager {
     for (var i = 0; i <= this._batchIndex; i++) {
       var curQueueObj = this._batchQueue[i];
       if (curQueueObj.clip) {
-        var r = curQueueObj.clipRect;
+        var r = curQueueObj.clipRectangle;
         this.enableScissor(r.x, r.y, r.width, r.height);
       } else {
         this.disableScissor();
@@ -461,7 +388,7 @@ class GLManager {
 
     var filter = state.filter;
     var clip = state.clip;
-    var clipRect = state.clipRect;
+    var clipRectangle = state.clipRectangle;
 
     var queuedState = this._batchIndex > -1
       ? this._batchQueue[this._batchIndex]
@@ -471,10 +398,10 @@ class GLManager {
       || !texture && queuedState.fillStyle !== state.fillStyle
       || queuedState.globalCompositeOperation !== state.globalCompositeOperation
       || queuedState.filter !== filter || queuedState.clip !== clip
-      || queuedState.clipRect.x !== clipRect.x
-      || queuedState.clipRect.y !== clipRect.y
-      || queuedState.clipRect.width !== clipRect.width
-      || queuedState.clipRect.height !== clipRect.height;
+      || queuedState.clipRectangle.x !== clipRectangle.x
+      || queuedState.clipRectangle.y !== clipRectangle.y
+      || queuedState.clipRectangle.width !== clipRectangle.width
+      || queuedState.clipRectangle.height !== clipRectangle.height;
 
     if (stateChanged) {
       var queueObject = this._batchQueue[++this._batchIndex];
@@ -483,10 +410,10 @@ class GLManager {
       queueObject.globalCompositeOperation = state.globalCompositeOperation;
       queueObject.filter = filter;
       queueObject.clip = clip;
-      queueObject.clipRect.x = clipRect.x;
-      queueObject.clipRect.y = clipRect.y;
-      queueObject.clipRect.width = clipRect.width;
-      queueObject.clipRect.height = clipRect.height;
+      queueObject.clipRectangle.x = clipRectangle.x;
+      queueObject.clipRectangle.y = clipRectangle.y;
+      queueObject.clipRectangle.width = clipRectangle.width;
+      queueObject.clipRectangle.height = clipRectangle.height;
 
       if (!texture) {
         queueObject.renderMode = RENDER_MODES.Rect;
@@ -533,21 +460,86 @@ var textCtx = document.createElement('canvas').getContext('2d');
 // ---------------------------------------------------------------------------
 var min = Math.min;
 var max = Math.max;
-var floor = Math.floor;
-var ceil = Math.ceil;
 
-class Context2D {
+class Rectangle {
+
+  constructor (x, y, width, height) {
+    this.x = x;
+    this.y = y;
+    this.with = width;
+    this.height = height;
+  }
+
+  clone () {
+    return new Rectangle(this.x, this.y, this.width, this.height);
+  }
+
+}
+
+class ContextState {
+
+  constructor (state) {
+    if (state) {
+      this.setState(state);
+    } else {
+      this.globalCompositeOperation = 'source-over';
+      this.globalAlpha = 1;
+      this.transform = new Matrix2D();
+      this.lineWidth = 1;
+      this.filter = null;
+      this.clip = false;
+      this.clipRectangle = new Rectangle(0, 0, 0, 0);
+      this.fillStyle = '';
+      this.strokeStyle = '';
+    }
+  }
+
+  setState (state) {
+    this.globalCompositeOperation = state.globalCompositeOperation;
+    this.globalAlpha = state.globalAlpha;
+    this.transform = state.transform.clone();
+    this.lineWidth = state.lineWidth;
+    this.filter = state.filter;
+    this.clip = state.clip;
+    this.clipRectangle = state.clipRectangle.clone();
+    this.fillStyle = state.fillStyle;
+    this.strokeStyle = state.strokeStyle;
+  }
+
+}
+
+class Context2D extends ContextState {
 
   constructor (manager, canvas) {
+    super();
+
     this._manager = manager;
     this.canvas = canvas;
     this.width = canvas.width;
     this.height = canvas.height;
-    this.stack = new ContextStateStack();
     this.font = '11px ' + device.defaultFontFamily;
     this.frameBuffer = null;
     this.filter = null;
     this.isWebGL = true;
+
+    this.stack = [];
+    this.parentStateIndex = -1;
+  }
+
+  save () {
+    this.parentStateIndex += 1;
+    if (this.parentStateIndex <= this.stack.length) {
+      var state = new ContextState(this);
+      this.stack[this.parentStateIndex] = state;
+    } else {
+      this.stack[this.parentStateIndex].setState(this);
+    }
+  }
+
+  restore () {
+    var state = this.stack[this.parentStateIndex];
+    this.setState(state);
+    this.parentStateIndex -= 1;
   }
 
   createOffscreenFrameBuffer () {
@@ -563,28 +555,28 @@ class Context2D {
   }
 
   loadIdentity () {
-    this.stack.state.transform.identity();
+    this.transform.identity();
   }
 
   setTransform (a, b, c, d, tx, ty) {
-    this.stack.state.transform.setTo(a, b, c, d, tx, ty);
+    this.transform.setTo(a, b, c, d, tx, ty);
   }
 
   transform (a, b, c, d, tx, ty) {
     this._helperTransform.setTo(a, b, c, d, tx, ty);
-    this.stack.state.transform.transform(this._helperTransform);
+    this.transform.transform(this._helperTransform);
   }
 
   scale (x, y) {
-    this.stack.state.transform.scale(x, y);
+    this.transform.scale(x, y);
   }
 
   translate (x, y) {
-    this.stack.state.transform.translate(x, y);
+    this.transform.translate(x, y);
   }
 
   rotate (angle) {
-    this.stack.state.transform.rotate(angle);
+    this.transform.rotate(angle);
   }
 
   getElement () {
@@ -619,7 +611,7 @@ class Context2D {
   }
 
   clipRect (x, y, width, height) {
-    var m = this.stack.state.transform;
+    var m = this.transform;
     var xW = x + width;
     var yH = y + height;
     var x0 = x * m.a + y * m.c + m.tx;
@@ -632,8 +624,11 @@ class Context2D {
     var y3 = xW * m.b + yH * m.d + m.ty;
 
     var minX, maxX, minY, maxY;
-    var parent = this.stack.parentState;
-    var parentClipRect = parent && parent.clip && parent.clipRect;
+    var parentClipRect;
+    if (this.parentStateIndex >= 0) {
+      var parent = this.stack[this.parentStateIndex];
+      parentClipRect = parent.clip && parent.clipRectangle;
+    }
 
     if (parentClipRect) {
       minX = parentClipRect.x;
@@ -665,8 +660,8 @@ class Context2D {
       bottom = maxY;
     }
 
-    this.stack.state.clip = true;
-    var r = this.stack.state.clipRect;
+    this.clip = true;
+    var r = this.clipRectangle;
     r.x = left;
     r.y = top;
     r.width = right - left;
@@ -680,7 +675,7 @@ class Context2D {
   execSwap () {}
 
   setFilter (filter) {
-    this.filter = this.stack.state.filter = filter;
+    this.filter = filter;
   }
 
   setFilters (filters) {
@@ -693,20 +688,12 @@ class Context2D {
   }
 
   clearFilter () {
-    this.filter = this.stack.state.filter = null;
+    this.filter = null;
   }
 
   clearFilters () {
     logger.warn('ctx.clearFilters is deprecated, use ctx.clearFilter instead.');
     this.clearFilter();
-  }
-
-  save () {
-    this.stack.save();
-  }
-
-  restore () {
-    this.stack.restore();
   }
 
   circle (x, y, radius) {}
@@ -745,8 +732,7 @@ class Context2D {
       return;
     }
 
-    var state = this.stack.state;
-    var alpha = state.globalAlpha;
+    var alpha = this.globalAlpha;
     if (alpha === 0) {
       return;
     }
@@ -760,12 +746,12 @@ class Context2D {
       image.__needsUpload = false;
     }
 
-    var drawIndex = manager.addToBatch(this.stack.state, image.texture);
+    var drawIndex = manager.addToBatch(this, image.texture);
     var width = this.width;
     var height = this.height;
     var imageWidth = image.width;
     var imageHeight = image.height;
-    var m = state.transform;
+    var m = this.transform;
     var sxW = sx + sWidth;
     var syH = sy + sHeight;
     var dxW = dx + dWidth;
@@ -824,8 +810,8 @@ class Context2D {
     // v4
     vc[i + 22] = alpha;
 
-    if (state.filter) {
-      var color = state.filter.get();
+    if (this.filter) {
+      var color = this.filter.get();
       var cc = manager._colors;
       var packedColor = (color.r & 0xff) + ((color.g & 0xff) << 8) + ((color.b & 0xff) << 16) + (((color.a * 255) & 0xff) << 24);
       cc[i + 5] = cc[i + 11] = cc[i + 17] = cc[i + 23] = packedColor;
@@ -837,13 +823,13 @@ class Context2D {
       return;
     }
 
-    this._fillRect(x, y, width, height, getColor(this.stack.state.fillStyle));
+    this._fillRect(x, y, width, height, getColor(this.fillStyle));
   }
 
   strokeRect (x, y, width, height) {
-    var lineWidth = this.stack.state.lineWidth;
+    var lineWidth = this.lineWidth;
     var halfWidth = lineWidth / 2;
-    var strokeColor = getColor(this.stack.state.strokeStyle);
+    var strokeColor = getColor(this.strokeStyle);
     this._fillRect(x + halfWidth, y - halfWidth, width - lineWidth, lineWidth, strokeColor);
     this._fillRect(x + halfWidth, y + height - halfWidth, width - lineWidth, lineWidth, strokeColor);
     this._fillRect(x - halfWidth, y - halfWidth, lineWidth, height + lineWidth, strokeColor);
@@ -851,7 +837,7 @@ class Context2D {
   }
 
   _fillRect (x, y, width, height, color) {
-    var m = this.stack.state.transform;
+    var m = this.transform;
     var xW = x + width;
     var yH = y + height;
 
@@ -867,7 +853,7 @@ class Context2D {
 
     var manager = this._manager;
     manager.activate(this);
-    var drawIndex = manager.addToBatch(this.stack.state, null);
+    var drawIndex = manager.addToBatch(this, null);
 
     // TODO: remove private access to _vertices
     var vc = manager._vertices;
@@ -899,31 +885,6 @@ class Context2D {
   }
 }
 
-Context2D.prototype._helperTransform = new Matrix2D();
-var createContextProperty = function (ctx, name) {
-  Object.defineProperty(ctx, name, {
-    get: function () {
-      return this.stack.state[name];
-    },
-    set: function (value) {
-      this.stack.state[name] = value;
-    }
-  });
-};
-
-var contextProperties = [
-  'globalAlpha',
-  'globalCompositeOperation',
-  'textBaseLine',
-  'lineWidth',
-  'strokeStyle',
-  'fillStyle',
-  'font'
-];
-
-for (var i = 0; i < contextProperties.length; i++) {
-  createContextProperty(Context2D.prototype, contextProperties[i]);
-}
 
 var glManager = new GLManager();
 export default glManager;
