@@ -32,6 +32,23 @@ import Shaders from './Shaders';
 import Matrix2D from './Matrix2D';
 import WebGLTextureManager from './WebGLTextureManager';
 
+class Rectangle {
+
+  constructor () {
+    this.x = 0;
+    this.y = 0;
+    this.width = 0;
+    this.height = 0;
+  }
+
+  copy (rectangle) {
+    this.x = rectangle.x;
+    this.y = rectangle.y;
+    this.width = rectangle.width;
+    this.height = rectangle.height;
+  }
+
+}
 
 var STRIDE = 24;
 
@@ -118,7 +135,7 @@ class GLManager {
         index: 0,
         clip: false,
         filter: null,
-        clipRectangle: new Rectangle(0, 0, 0, 0),
+        clipRectangle: new Rectangle(),
         renderMode: 0
       };
     }
@@ -156,12 +173,7 @@ class GLManager {
     gl.activeTexture(gl.TEXTURE0);
 
     this._scissorEnabled = false;
-    this._activeScissor = {
-      x: 0,
-      y: 0,
-      width: 0,
-      height: 0
-    };
+    this._activeScissor = new Rectangle();
 
     this._activeCompositeOperation = '';
     this.setActiveCompositeOperation('source-over');
@@ -461,49 +473,31 @@ var textCtx = document.createElement('canvas').getContext('2d');
 var min = Math.min;
 var max = Math.max;
 
-class Rectangle {
-
-  constructor (x, y, width, height) {
-    this.x = x;
-    this.y = y;
-    this.with = width;
-    this.height = height;
-  }
-
-  clone () {
-    return new Rectangle(this.x, this.y, this.width, this.height);
-  }
-
-}
-
 class ContextState {
 
-  constructor (state) {
-    if (state) {
-      this.setState(state);
-    } else {
-      this.globalCompositeOperation = 'source-over';
-      this.globalAlpha = 1;
-      this.transform = new Matrix2D();
-      this.lineWidth = 1;
-      this.filter = null;
-      this.clip = false;
-      this.clipRectangle = new Rectangle(0, 0, 0, 0);
-      this.fillStyle = '';
-      this.strokeStyle = '';
-    }
+  constructor () {
+    this.globalCompositeOperation = 'source-over';
+    this.globalAlpha = 1;
+    this.transform = new Matrix2D();
+    this.lineWidth = 1;
+    this.filter = null;
+    this.clip = false;
+    this.clipRectangle = new Rectangle();
+    this.fillStyle = '';
+    this.strokeStyle = '';
   }
 
   setState (state) {
     this.globalCompositeOperation = state.globalCompositeOperation;
     this.globalAlpha = state.globalAlpha;
-    this.transform = state.transform.clone();
+    this.transform.copy(state.transform);
     this.lineWidth = state.lineWidth;
     this.filter = state.filter;
     this.clip = state.clip;
-    this.clipRectangle = state.clipRectangle.clone();
+    this.clipRectangle.copy(state.clipRectangle);
     this.fillStyle = state.fillStyle;
     this.strokeStyle = state.strokeStyle;
+    return this;
   }
 
 }
@@ -529,11 +523,10 @@ class Context2D extends ContextState {
   save () {
     this.parentStateIndex += 1;
     if (this.parentStateIndex <= this.stack.length) {
-      var state = new ContextState(this);
-      this.stack[this.parentStateIndex] = state;
-    } else {
-      this.stack[this.parentStateIndex].setState(this);
+      this.stack[this.parentStateIndex] = new ContextState();
     }
+
+    this.stack[this.parentStateIndex].setState(this);
   }
 
   restore () {
