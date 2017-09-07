@@ -1,3 +1,4 @@
 [submodule "modules/squill"]
 	path = modules/squill
-	url = https://github.com/gameclosure/squill#BJG-WebPackRedux
+	url = https://github.com/gameclosure/squill
+	branch = BJG-WebPackRedux
