@@ -38,13 +38,20 @@ exports = function (opts) {
     return el;
   };
 
-  Object.defineProperty(ctx, 'filter', {
-    get: function() { return this._filter; },
-    set: function(value) { this._filter = value; }
+  ctx.__needsUpload = true;
+  ctx.texture = null;
+  Object.defineProperty(ctx, 'needsUpload', {
+    get: function() { return this.__needsUpload; },
+    set: function(value) { this.__needsUpload = value; }
   });
 
   ctx.reset = function () {
   };
+
+  Object.defineProperty(ctx, 'filter', {
+    get: function() { return this._filter; },
+    set: function(value) { this._filter = value; }
+  });
 
   ctx.clear = function () {
     this.save();
