@@ -103,15 +103,19 @@ window.GC_LOADER = (function (window) {
         name: 'fetch-js',
         parallel: true,
         call: function () {
-          var el = document.createElement('script');
-          el.src = controller.scriptName;
-          document.getElementsByTagName('head')[0].appendChild(el);
+          var xhr = new XMLHttpRequest();
+          xhr.onload = function (res) {
+            var src = this.responseText;
+            window.eval(src);
+          };
+          xhr.open('GET', controller.scriptName);
+          xhr.send();
           return new Promise(function (resolve) {
-              controller.onLoadApp = resolve;
-            })
-            .then(function (initialImport) {
-              controller.initialImport = initialImport;
-            });
+            controller.onLoadApp = resolve;
+          })
+          .then(function (initialImport) {
+            controller.initialImport = initialImport;
+          });
         }
       },
       {
