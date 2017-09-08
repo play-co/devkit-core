@@ -452,7 +452,7 @@ exports.JSCompiler = Class(function () {
 
       const loadedEnv = jsioWebpack.getLoadedEnv();
       if (!loadedEnv) {
-        jsioWebpack.loadEnv(process.env.NODE_ENV || 'development');
+        jsioWebpack.loadEnv(process.env.JSIO_WEBPACK_ENV || 'development');
       }
 
       if (inSimulator) {
