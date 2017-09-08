@@ -25,16 +25,8 @@ import {
 
 import View from 'ui/View';
 import Image from 'ui/resource/Image';
+import ImageViewCache from 'ui/resource/ImageViewCache';
 import performance from 'performance';
-
-// Math references
-var sin = Math.sin;
-var cos = Math.cos;
-var min = Math.min;
-var max = Math.max;
-
-// class-wide image cache
-var imageCache = {};
 
 // animation transtion functions borrowed from animate
 var TRANSITION_LINEAR = 'linear';
@@ -54,7 +46,7 @@ var TRANSITIONS = {
 };
 
 class ParticleStyle {
-  consturctor () {
+  constructor () {
     this.x = 0;
     this.y = 0;
     this.offsetX = 0;
@@ -76,8 +68,9 @@ class ParticleStyle {
 }
 
 class Particle {
-  constructor (image) {
-    this.image = image;
+  constructor () {
+    this.image = null;
+    this.imageURL = '';
     this.style = new ParticleStyle();
 
     this.reset();
@@ -165,12 +158,14 @@ exports = class extends View {
     this._logViewCreation = initCount > 0;
   }
 
-  render (ctx) {
-    // console.error('rendering particle engine', this._activeParticles.length)
+  render (ctx, transform) {
     for (var p = 0; p < this._activeParticles.length; p += 1) {
       var particle = this._activeParticles[p];
-      var style = particle.style;
-      particle.image.renderShort(ctx, 0, 0, style.width, style.height);
+      var image = particle.image;
+      if (image) {
+        var style = particle.style;
+        image.renderShort(ctx, 0, 0, style.width, style.height);
+      }
     }
   }
 
@@ -192,30 +187,16 @@ exports = class extends View {
     return this._particleDataArray;
   }
   emitParticles (particleDataArray) {
-    var count = particleDataArray.length;
-    var active = this._activeParticles;
-    var free = this._freeParticles;
-    for (var i = 0; i < count; i++) {
+    for (var i = 0; i < particleDataArray.length; i++) {
       // get particle data object and recycled view if possible
       var data = particleDataArray.pop();
-      var particle = free.pop();
+      var particle = this._freeParticles.pop();
       if (!particle) {
         particle = new Particle();
         if (this._logViewCreation) {
-          logger.warn(this.getTag(), 'created View:', particle.getTag());
+          logger.warn(this.getTag(), 'created Particle');
         }
       }
-
-      particle.image = data.image;
-      // var image = data.image;
-      // if (particle.setImage && particle.lastImage !== image) {
-      //   var img = imageCache[image];
-      //   if (img === void 0) {
-      //     img = imageCache[image] = new Image({ url: image });
-      //   }
-      //   particle.setImage(img);
-      //   particle.lastImage = image;
-      // }
 
       // apply style properties
       var s = particle.style;
@@ -236,10 +217,25 @@ exports = class extends View {
       s.visible = data.visible;
 
       for (var property in data) {
-        if (particle[property] !== undefined) {
+        if (particle[property] !== undefined && property !== 'image') {
           particle[property] = data[property];
         }
       }
+
+      var imageURL = data.image;
+      if (imageURL !== particle.imageURL) {
+        particle.image = ImageViewCache.getImage(imageURL);
+        particle.imageURL = imageURL;
+      }
+      // var image = data.image;
+      // if (particle.setImage && particle.lastImage !== image) {
+      //   var img = imageCache[image];
+      //   if (img === void 0) {
+      //     img = imageCache[image] = new Image({ url: image });
+      //   }
+      //   particle.setImage(img);
+      //   particle.lastImage = image;
+      // }
 
       // start particles if there's no delay
       if (!data.delay) {
@@ -256,12 +252,12 @@ exports = class extends View {
 
       // and finally emit the particle
       this._prepareTriggers(data);
-      active.push(particle);
+      this._activeParticles.push(particle);
     }
   }
   _prepareTriggers (data) {
     var triggers = data.triggers;
-    for (var i = 0, len = triggers.length; i < len; i++) {
+    for (var i = 0; i < triggers.length; i++) {
       var trig = triggers[i];
       trig.isStyle = trig.isStyle !== void 0 ? trig.isStyle : trig.property
         .charAt(0) !== 'd';
@@ -284,10 +280,8 @@ exports = class extends View {
   }
   runTick (dt) {
     var i = 0;
-    var active = this._activeParticles;
-    var free = this._freeParticles;
-    while (i < active.length) {
-      var particle = active[i];
+    while (i < this._activeParticles.length) {
+      var particle = this._activeParticles[i];
       var s = particle.style;
       var data = particle;
 
@@ -331,8 +325,8 @@ exports = class extends View {
         data.dx += pct * data.ddx;
         data.dy += pct * data.ddy;
         // polar position
-        s.x = data.x = data.ox + data.radius * cos(data.theta);
-        s.y = data.y = data.oy + data.radius * sin(data.theta);
+        s.x = data.x = data.ox + data.radius * Math.cos(data.theta);
+        s.y = data.y = data.oy + data.radius * Math.sin(data.theta);
       } else {
         // cartesian by default
         var dx = pct * data.dx;
@@ -381,15 +375,15 @@ exports = class extends View {
       // scaling
       var ds = pct * data.dscale;
       if (ds !== 0) {
-        s.scale = data.scale = max(0, data.scale + ds);
+        s.scale = data.scale = Math.max(0, data.scale + ds);
       }
       var dsx = pct * data.dscaleX;
       if (dsx !== 0) {
-        s.scaleX = data.scaleX = max(0, data.scaleX + dsx);
+        s.scaleX = data.scaleX = Math.max(0, data.scaleX + dsx);
       }
       var dsy = pct * data.dscaleY;
       if (dsy !== 0) {
-        s.scaleY = data.scaleY = max(0, data.scaleY + dsy);
+        s.scaleY = data.scaleY = Math.max(0, data.scaleY + dsy);
       }
       data.dscale += pct * data.ddscale;
       data.dscaleX += pct * data.ddscaleX;
@@ -398,7 +392,7 @@ exports = class extends View {
       // opacity
       var dop = pct * data.dopacity;
       if (dop !== 0) {
-        s.opacity = data.opacity = max(0, min(1, data.opacity + dop));
+        s.opacity = data.opacity = Math.max(0, Math.min(1, data.opacity + dop));
       }
       data.dopacity += pct * data.ddopacity;
 
