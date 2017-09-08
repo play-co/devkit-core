@@ -25,7 +25,6 @@ import {
 
 import View from 'ui/View';
 import Image from 'ui/resource/Image';
-import ImageView from 'ui/ImageView';
 import performance from 'performance';
 
 // Math references
@@ -54,66 +53,93 @@ var TRANSITIONS = {
   }
 };
 
-var PARTICLE_DEFAULTS = {
-  x: 0,
-  y: 0,
-  r: 0,
-  anchorX: 0,
-  anchorY: 0,
-  width: 1,
-  height: 1,
-  scale: 1,
-  dscale: 0,
-  ddscale: 0,
-  scaleX: 1,
-  dscaleX: 0,
-  ddscaleX: 0,
-  scaleY: 1,
-  dscaleY: 0,
-  ddscaleY: 0,
-  dx: 0,
-  dy: 0,
-  dr: 0,
-  danchorX: 0,
-  danchorY: 0,
-  ddx: 0,
-  ddy: 0,
-  ddr: 0,
-  ddanchorX: 0,
-  ddanchorY: 0,
-  dwidth: 0,
-  dheight: 0,
-  ddwidth: 0,
-  ddheight: 0,
-  opacity: 1,
-  dopacity: 0,
-  ddopacity: 0,
-  ttl: 1000,
-  delay: 0,
-  flipX: false,
-  flipY: false,
-  visible: false,
-  polar: false,
-  ox: 0,
-  oy: 0,
-  theta: 0,
-  radius: 0,
-  dtheta: 0,
-  dradius: 0,
-  ddtheta: 0,
-  ddradius: 0,
-  elapsed: 0,
-  image: '',
-  compositeOperation: null,
-  transition: TRANSITION_LINEAR,
-  onStart: null,
-  onDeath: null,
-  external: false,
-  triggers: null
-};
+class ParticleStyle {
+  consturctor () {
+    this.x = 0;
+    this.y = 0;
+    this.offsetX = 0;
+    this.offsetY = 0;
+    this.anchorX = 0;
+    this.anchorY = 0;
+    this.centerAnchor = false;
+    this.width = 0;
+    this.height = 0;
+    this.r = 0;
+    this.opacity = 1;
+    this.scale = 1;
+    this.scaleX = 1;
+    this.scaleY = 1;
+    this.flipX = false;
+    this.flipY = false;
+    this.visible = true;
+  }
+}
 
-// NOT ok to use array here, assign later
-var PARTICLE_KEYS = Object.keys(PARTICLE_DEFAULTS);
+class Particle {
+  constructor (image) {
+    this.image = image;
+    this.style = new ParticleStyle();
+
+    this.reset();
+  }
+
+  reset () {
+    this.x = 0;
+    this.y = 0;
+    this.r = 0;
+    this.anchorX = 0;
+    this.anchorY = 0;
+    this.width = 1;
+    this.height = 1;
+    this.scale = 1;
+    this.dscale = 0;
+    this.ddscale = 0;
+    this.scaleX = 1;
+    this.dscaleX = 0;
+    this.ddscaleX = 0;
+    this.scaleY = 1;
+    this.dscaleY = 0;
+    this.ddscaleY = 0;
+    this.dx = 0;
+    this.dy = 0;
+    this.dr = 0;
+    this.danchorX = 0;
+    this.danchorY = 0;
+    this.ddx = 0;
+    this.ddy = 0;
+    this.ddr = 0;
+    this.ddanchorX = 0;
+    this.ddanchorY = 0;
+    this.dwidth = 0;
+    this.dheight = 0;
+    this.ddwidth = 0;
+    this.ddheight = 0;
+    this.opacity = 1;
+    this.dopacity = 0;
+    this.ddopacity = 0;
+    this.ttl = 1000;
+    this.delay = 0;
+    this.flipX = false;
+    this.flipY = false;
+    this.visible = false;
+    this.polar = false;
+    this.ox = 0;
+    this.oy = 0;
+    this.theta = 0;
+    this.radius = 0;
+    this.dtheta = 0;
+    this.dradius = 0;
+    this.ddtheta = 0;
+    this.ddradius = 0;
+    this.elapsed = 0;
+    this.compositeOperation = null;
+    this.transition = TRANSITION_LINEAR;
+    this.onStart = null;
+    this.triggers = [];
+
+    return this;
+  }
+}
 
 /**
  * @extends ui.View
@@ -126,14 +152,8 @@ exports = class extends View {
     opts.blockEvents = true;
     super(opts);
 
-    // particle view constructor
-    this._ctor = opts.ctor || ImageView;
-
     // container array for particle objects about to be emitted
     this._particleDataArray = [];
-
-    // recycled particle data objects
-    this._freeParticleObjects = [];
 
     // recycled and active particle views
     this._freeParticles = [];
@@ -144,73 +164,19 @@ exports = class extends View {
     initCount && this._initParticlePool(initCount);
     this._logViewCreation = initCount > 0;
   }
+
+  render (ctx) {
+    // console.error('rendering particle engine', this._activeParticles.length)
+    for (var p = 0; p < this._activeParticles.length; p += 1) {
+      var particle = this._activeParticles[p];
+      var style = particle.style;
+      particle.image.renderShort(ctx, 0, 0, style.width, style.height);
+    }
+  }
+
   _initParticlePool (count) {
     for (var i = 0; i < count; i++) {
-      // initialize particle views
-      this._freeParticles.push(new this._ctor({
-        superview: this,
-        visible: false,
-        canHandleEvents: false
-      }));
-      // initialize particle objects with default properties
-      // duplicate of default properties for optimal performance
-      this._freeParticleObjects.push({
-        x: 0,
-        y: 0,
-        r: 0,
-        anchorX: 0,
-        anchorY: 0,
-        width: 1,
-        height: 1,
-        scale: 1,
-        dscale: 0,
-        ddscale: 0,
-        scaleX: 1,
-        dscaleX: 0,
-        ddscaleX: 0,
-        scaleY: 1,
-        dscaleY: 0,
-        ddscaleY: 0,
-        dx: 0,
-        dy: 0,
-        dr: 0,
-        danchorX: 0,
-        danchorY: 0,
-        ddx: 0,
-        ddy: 0,
-        ddr: 0,
-        ddanchorX: 0,
-        ddanchorY: 0,
-        dwidth: 0,
-        dheight: 0,
-        ddwidth: 0,
-        ddheight: 0,
-        opacity: 1,
-        dopacity: 0,
-        ddopacity: 0,
-        ttl: 1000,
-        delay: 0,
-        flipX: false,
-        flipY: false,
-        visible: false,
-        polar: false,
-        ox: 0,
-        oy: 0,
-        theta: 0,
-        radius: 0,
-        dtheta: 0,
-        dradius: 0,
-        ddtheta: 0,
-        ddradius: 0,
-        elapsed: 0,
-        image: '',
-        compositeOperation: null,
-        transition: TRANSITION_LINEAR,
-        onStart: null,
-        onDeath: null,
-        external: false,
-        triggers: []
-      });
+      this._freeParticles.push(new Particle());
     }
   }
   obtainParticleArray (count, opts) {
@@ -220,100 +186,10 @@ exports = class extends View {
       opts.allowReduction);
 
     for (var i = 0; i < count; i++) {
-      // duplicate of default properties for optimal performance
-      this._particleDataArray.push(this._freeParticleObjects.pop() || {
-        x: 0,
-        y: 0,
-        r: 0,
-        anchorX: 0,
-        anchorY: 0,
-        width: 1,
-        height: 1,
-        scale: 1,
-        dscale: 0,
-        ddscale: 0,
-        scaleX: 1,
-        dscaleX: 0,
-        ddscaleX: 0,
-        scaleY: 1,
-        dscaleY: 0,
-        ddscaleY: 0,
-        dx: 0,
-        dy: 0,
-        dr: 0,
-        danchorX: 0,
-        danchorY: 0,
-        ddx: 0,
-        ddy: 0,
-        ddr: 0,
-        ddanchorX: 0,
-        ddanchorY: 0,
-        dwidth: 0,
-        dheight: 0,
-        ddwidth: 0,
-        ddheight: 0,
-        opacity: 1,
-        dopacity: 0,
-        ddopacity: 0,
-        ttl: 1000,
-        delay: 0,
-        flipX: false,
-        flipY: false,
-        visible: false,
-        polar: false,
-        ox: 0,
-        oy: 0,
-        theta: 0,
-        radius: 0,
-        dtheta: 0,
-        dradius: 0,
-        ddtheta: 0,
-        ddradius: 0,
-        elapsed: 0,
-        image: '',
-        compositeOperation: null,
-        transition: TRANSITION_LINEAR,
-        onStart: null,
-        onDeath: null,
-        external: false,
-        triggers: []
-      });
+      this._particleDataArray.push(this._freeParticles.pop() || new Particle());
     }
     // OK to use an array here
     return this._particleDataArray;
-  }
-  _cleanObject (obj) {
-    for (var i = 0, len = PARTICLE_KEYS.length; i < len; i++) {
-      var key = PARTICLE_KEYS[i];
-      obj[key] = PARTICLE_DEFAULTS[key];
-    }
-    obj.triggers = [];
-    // don't keep an array in the PARTICLE_DEFAULTS object
-    return obj;
-  }
-  _addExternalParticle (particle, data) {
-    // kill any particles already controlling this view
-    var active = this._activeParticles;
-    var index = active.indexOf(particle);
-    while (index !== -1) {
-      this._killParticle(particle, particle.pData, index);
-      index = active.indexOf(particle);
-    }
-    // now emit the particle
-    this._prepareTriggers(data);
-    data.external = true;
-    particle.pData = data;
-    active.push(particle);
-  }
-  addExternalParticles (views, data) {
-    var count = data.length;
-    for (var i = 0; i < count; i++) {
-      var obj = data.pop();
-      var view = views.pop();
-      if (view && obj) {
-        this._addExternalParticle(view, obj);
-      }
-    }
   }
   emitParticles (particleDataArray) {
     var count = particleDataArray.length;
@@ -324,26 +200,22 @@ exports = class extends View {
       var data = particleDataArray.pop();
       var particle = free.pop();
       if (!particle) {
-        particle = new this._ctor({
-          superview: this,
-          visible: false,
-          canHandleEvents: false
-        });
+        particle = new Particle();
         if (this._logViewCreation) {
           logger.warn(this.getTag(), 'created View:', particle.getTag());
         }
       }
 
-      // only set particle image if necessary
-      var image = data.image;
-      if (particle.setImage && particle.lastImage !== image) {
-        var img = imageCache[image];
-        if (img === void 0) {
-          img = imageCache[image] = new Image({ url: image });
-        }
-        particle.setImage(img);
-        particle.lastImage = image;
-      }
+      particle.image = data.image;
+      // var image = data.image;
+      // if (particle.setImage && particle.lastImage !== image) {
+      //   var img = imageCache[image];
+      //   if (img === void 0) {
+      //     img = imageCache[image] = new Image({ url: image });
+      //   }
+      //   particle.setImage(img);
+      //   particle.lastImage = image;
+      // }
 
       // apply style properties
       var s = particle.style;
@@ -363,6 +235,12 @@ exports = class extends View {
       s.compositeOperation = data.compositeOperation;
       s.visible = data.visible;
 
+      for (var property in data) {
+        if (particle[property] !== undefined) {
+          particle[property] = data[property];
+        }
+      }
+
       // start particles if there's no delay
       if (!data.delay) {
         s.visible = true;
@@ -378,7 +256,6 @@ exports = class extends View {
 
       // and finally emit the particle
       this._prepareTriggers(data);
-      particle.pData = data;
       active.push(particle);
     }
   }
@@ -390,22 +267,13 @@ exports = class extends View {
         .charAt(0) !== 'd';
     }
   }
-  _killParticle (particle, data, index) {
-    var active = this._activeParticles;
-    var s = particle.style;
-    var spliced = active.splice(index, 1);
+  _killParticle (particle, index) {
+    this._activeParticles.splice(index, 1);
 
-    particle.pData = null;
-    data && data.onDeath && data.onDeath(particle, data);
+    particle.reset();
+    particle.style.visible = false;
 
-    // external particles must handle their own clean-up, but we still handle the data object
-    if (data && data.external) {
-      this._freeParticleObjects.push(this._cleanObject(data));
-    } else {
-      s.visible = false;
-      this._freeParticles.push(spliced[0]);
-      data && this._freeParticleObjects.push(this._cleanObject(data));
-    }
+    this._freeParticles.push(particle);
   }
   killAllParticles () {
     var active = this._activeParticles;
@@ -421,14 +289,7 @@ exports = class extends View {
     while (i < active.length) {
       var particle = active[i];
       var s = particle.style;
-      var data = particle.pData;
-
-      // failsafe for a heisenbug that arises from mis-use of the engine
-      if (!data) {
-        // zombie particles must die
-        this._killParticle(particle, data, i);
-        continue;
-      }
+      var data = particle;
 
       // handle particle delays
       if (data.delay > 0) {
@@ -445,7 +306,7 @@ exports = class extends View {
       // is it dead yet?
       data.elapsed += dt;
       if (data.elapsed >= data.ttl) {
-        this._killParticle(particle, data, i);
+        this._killParticle(particle, i);
         continue;
       }
 

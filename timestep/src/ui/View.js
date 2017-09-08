@@ -173,6 +173,9 @@ export default class View extends IView {
     // whether assets associated with the view is loaded
     this._loaded = false;
 
+    // some views have a debug property
+    this.debug = false;
+
     this.updateOpts(opts);
   }
 

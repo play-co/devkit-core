@@ -72,6 +72,7 @@ export default class BitmapFontTextViewBacking {
     this._lastLayoutWidth = 0;
     this._lastLayoutHeight = 0;
     this._lastLayoutIsTruncated = false;
+    this.hasColor = false;
     this.wordWrap = !!opts.wordWrap;
 
     this._font = DEFAULT_TEXT_FORMAT.font;
@@ -88,9 +89,6 @@ export default class BitmapFontTextViewBacking {
 
     this._text = null;
     this._listener = null;
-
-    this._activeCharacters = [];
-    this._activeCharacterCount = 0;
 
     this._boundOnFontLoad = this._onFontLoad.bind(this);
     this.updateOpts(opts);
@@ -121,7 +119,7 @@ export default class BitmapFontTextViewBacking {
 
     if (opts.size !== undefined) { this._size = opts.size; }
     if (opts.autoSize !== undefined) { this._autoSize = opts.autoSize; }
-    if (opts.color !== undefined) { this._color = opts.color; }
+    if (opts.color !== undefined) { this._color = opts.color; this.hasColor = this._color !== '#ffffff'; }
     if (opts.align !== undefined) { this._align = opts.align; }
     if (opts.leading !== undefined) { this._leading = opts.leading; }
     if (opts.letterSpacing !== undefined) { this._letterSpacing = opts.letterSpacing; }
@@ -338,8 +336,7 @@ export default class BitmapFontTextViewBacking {
     }
 
     if (isInvalid || sizeInvalid) {
-      this._clearCharacterViews();
-      this._activeCharacterCount = 0;
+      this._listener._clearCharacterViews();
 
       if (this._text === null) {
         return;
@@ -351,14 +348,6 @@ export default class BitmapFontTextViewBacking {
       this._lastLayoutIsTruncated = HELPER_RESULT.isTruncated;
     }
 
-  }
-
-  _clearCharacterViews () {
-    for (let i = this._activeCharacterCount - 1; i >= 0; i--) {
-      var charView = this._activeCharacters[i];
-      this._activeCharacters[i] = null;
-      this._listener.clearCharacterView(charView);
-    }
   }
 
   layoutCharacters (result = new MeasureTextResult()) {
@@ -567,18 +556,11 @@ export default class BitmapFontTextViewBacking {
 
     this._verticalAlignOffsetY = this.getVerticalAlignOffsetY();
 
-    this._updateCharacterViews();
+    this._listener._updateCharacterViews();
 
     result.width = maxX;
     result.height = currentY + lineHeight - this._leading;
     return result;
-  }
-
-  _updateCharacterViews () {
-    for (var i = 0; i < this._activeCharacterCount; i++) {
-      var charView = this._activeCharacters[i];
-      this._listener.updateCharacterView(charView);
-    }
   }
 
   trimBuffer (skipCount) {
@@ -638,9 +620,7 @@ export default class BitmapFontTextViewBacking {
     // console.log('addCharacterToBatch', 'charData=', charData, 'x=', x, 'y=', y, 'scale=', scale)
     if (!charData.textureData) { return; }
 
-    var charView = this._listener.makeCharacterView(charData, x, y, scale);
-    this._activeCharacters[this._activeCharacterCount] = charView;
-    this._activeCharacterCount++;
+    this._listener.makeCharacterView(charData, x, y, scale);
   }
 
   getTruncatedText (width) {
@@ -842,6 +822,7 @@ export default class BitmapFontTextViewBacking {
   set color (value) {
     if (value === this._color) { return; }
     this._color = value;
+    this.hasColor = this._color !== '#ffffff';
     this.invalidate();
   }
 

@@ -59,6 +59,8 @@ export default class ImageView extends View {
   }
 
   updateOpts (opts) {
+    this._img = null;
+
     opts = super.updateOpts(opts);
 
     if (opts.autoSize !== void 0) {
@@ -137,7 +139,7 @@ export default class ImageView extends View {
     if (!this._img) { return; }
 
     var s = this.style;
-    this._img.renderShort(ctx, 0, 0, s.width, s.height);
+    this._img.renderShort(ctx, 0, 0, s._width, s._height);
   }
 
   getTag () {

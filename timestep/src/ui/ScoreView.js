@@ -23,6 +23,7 @@
 import { logger } from 'base';
 
 import View from 'ui/View';
+import Color from 'ui/Color';
 import ImageView from 'ui/ImageView';
 import Image from 'ui/resource/Image';
 import filter from 'ui/filter';
@@ -37,7 +38,9 @@ export default class ScoreView extends View {
     this._activeCharacters = [];
     this._ignoreCharacters = [];
     this._imageViews = [];
-    this._filterColor = opts.filterColor || null;
+
+    var filterColor = opts.filterColor;
+    this._filterColor = filterColor ? new Color(filterColor) : null;
 
     // container view for characters
     this._container = new View({
@@ -146,8 +149,7 @@ export default class ScoreView extends View {
     // trim excess characters
     this._activeCharacters.length = textLength;
 
-    var fc = this._filterColor;
-    var fcHash = this._getColorHash(fc);
+
     for (var i = 0; i < textLength; i++) {
       var data = this._activeCharacters[i];
       if (data === void 0) {
@@ -171,52 +173,43 @@ export default class ScoreView extends View {
       }
 
       view.setImage(data.img);
-
-      // update color filters
-      this._updateFilter(view, fc, fcHash);
     }
+
+    this._updateFilters(this._filterColor);
 
     while (i < this._imageViews.length) {
       this._imageViews[i].style.visible = false;
       i++;
     }
   }
-  setFilterColor (color) {
-    this._filterColor = color;
-    this._updateFilters();
+  setFilterColor (filterColor) {
+    if ((filterColor === null && this._filterColor === null) ||
+        (filterColor.r === this._filterColor.r &&
+         filterColor.g === this._filterColor.g &&
+         filterColor.b === this._filterColor.b &&
+         filterColor.a === this._filterColor.a)) {
+      // filters are equivalent
+      return;
+    }
+
+    this._filterColor = filterColor ? new Color(filterColor) : null;
+    this._updateFilters(this._filterColor);
   }
   clearFilterColor () {
     this.setFilterColor(null);
   }
-  _updateFilters () {
-    var fc = this._filterColor;
-    var fcHash = this._getColorHash(fc);
-    for (var i = 0, len = this._activeCharacters.length; i < len; i++) {
-      this._updateFilter(this._imageViews[i], fc, fcHash);
+  _updateFilters (filterColor) {
+    var colorFilter = filterColor ? new filter.MultiplyFilter(filterColor) : null;
+    for (var i = 0; i < this._activeCharacters.length; i++) {
+      this._updateFilter(this._imageViews[i], colorFilter);
     }
   }
-  _updateFilter (view, color, hash) {
-    if (color) {
-      if (!view.colorFilter) {
-        view.colorFilter = new filter.MultiplyFilter(color);
-        view.setFilter(view.colorFilter);
-        view.lastColorHash = hash;
-      } else if (view.lastColorHash !== hash) {
-        view.colorFilter.update(color);
-        view.lastColorHash = hash;
-      }
-    } else if (view.colorFilter) {
-      view.colorFilter = null;
+  _updateFilter (view, colorFilter) {
+    if (colorFilter) {
+      view.setFilter(colorFilter);
+    } else {
       view.removeFilter();
-      view.lastColorHash = 0;
     }
-  }
-  _getColorHash (color) {
-    var hash = 0;
-    if (color) {
-      hash = 1000 * color.r + color.g + 0.001 * color.b + 0.0001 * color.a;
-    }
-    return hash;
   }
 };
 

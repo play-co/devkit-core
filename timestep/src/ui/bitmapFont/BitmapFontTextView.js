@@ -36,6 +36,15 @@ import BitmapFontTextViewBacking from 'ui/bitmapFont/BitmapFontTextViewBacking';
 
 const CHARACTER_VIEW_POOL = new ViewPool({ ctor: ImageView });
 
+class Character {
+  constructor (image, x, y, width, height) {
+    this.image = image;
+    this.x = x;
+    this.y = y;
+    this.width = width;
+    this.height = height;
+  }
+}
 
 class BitmapFontTextView extends View {
   constructor(opts) {
@@ -43,6 +52,8 @@ class BitmapFontTextView extends View {
 
     this._backing = new BitmapFontTextViewBacking(merge({ listener: this }, opts));
     this.colorFilter = new filter.MultiplyFilter(this._backing.color);
+
+    this._characters = [];
   };
 
   _addAssetsToList (assetURLs) {
@@ -81,34 +92,49 @@ class BitmapFontTextView extends View {
     }
   }
 
-  clearCharacterView (charView) {
-    charView.removeFromSuperview();
-    CHARACTER_VIEW_POOL.releaseView(charView);
+  _clearCharacterViews () {
+    this._characters = [];
   }
 
-  updateCharacterView (charView) {
-    charView.style.x += this._backing.batchX;
-    charView.style.y += this._backing.verticalAlignOffsetY;
+  _updateCharacterViews () {
+    if (this._backing) {
+      var batchX = this._backing.batchX;
+      var verticalAlignOffsetY = this._backing.verticalAlignOffsetY;
+      for (var c = 0; c < this._characters.length; c += 1) {
+        var character = this._characters[c];
+        character.x += batchX;
+        character.y += verticalAlignOffsetY;
+      }
+    }
   }
 
   makeCharacterView (charData, x, y, scale) {
-    var charView = CHARACTER_VIEW_POOL.obtainView({
-      superview: this,
-      x: x,
-      y: y,
-      width: charData.textureData.sourceW,
-      height: charData.textureData.sourceH,
-      scale: scale,
-      image: charData.textureData.texture
-    });
-
-    charView.setFilter(this._backing.color !== '#ffffff' ? this.colorFilter : null);
-
-    return charView;
+    var image = charData.textureData.texture;
+    var width = charData.textureData.sourceW * scale;
+    var height = charData.textureData.sourceH * scale;
+    this._characters.push(new Character(image, x, y, width, height));
   }
 
-  render (context, transform) {
-    console.error('rendering bitmap font', transform)
+  render (context) {
+    if (this._backing.font === null || this._backing.font.loaded === false) {
+      return;
+    }
+
+    // TODO: attach filter to this view
+    var hasColor = this._backing.hasColor;
+    if (hasColor) {
+      context.setFilter(this.colorFilter);
+    }
+
+    for (var c = 0; c < this._characters.length; c += 1) {
+      var character = this._characters[c];
+      character.image.renderShort(context,
+        character.x, character.y, character.width, character.height);
+    }
+
+    if (hasColor) {
+      context.clearFilter();
+    }
   }
 
   invalidate () {

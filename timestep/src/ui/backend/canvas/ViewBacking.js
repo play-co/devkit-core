@@ -34,6 +34,14 @@ function compareZOrder (a, b) {
   return a._addedAt - b._addedAt;
 }
 
+// var tickCount = 0;
+// var previousTickCount = 0;
+// setInterval(function () {
+//   console.error('nb ticked views/frame', (tickCount - previousTickCount) / 60)
+//   previousTickCount = tickCount;
+// }, 1000);
+
+
 export default class ViewBacking {
 
   constructor (view) {

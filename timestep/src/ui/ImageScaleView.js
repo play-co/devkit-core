@@ -148,21 +148,21 @@ function renderCoverOrContain (ctx, opts) {
 }
 
 var renderFunctions = {
-  'none': function (ctx, opts) {
+  none: function (ctx, opts) {
     if (!this._img || !this._img.isReady()) { return; }
 
     var s = this.style;
     this._img.renderShort(ctx, 0, 0, s.width, s.height);
   },
-  'stretch': function (ctx, opts) {
+  stretch: function (ctx, opts) {
     if (!this._img || !this._img.isReady()) { return; }
 
     var s = this.style;
     this._img.renderShort(ctx, 0, 0, s.width, s.height);
   },
-  'contain': renderCoverOrContain,
-  'cover': renderCoverOrContain,
-  'tile': function (ctx, opts) {
+  contain: renderCoverOrContain,
+  cover: renderCoverOrContain,
+  tile: function (ctx, opts) {
     if (!this._img || !this._img.isReady()) {
       return;
     }
@@ -216,7 +216,7 @@ var renderFunctions = {
       }
     }
   },
-  'slice': function (ctx, opts) {
+  slice: function (ctx, opts) {
     if (!this._img || !this._img.isReady()) {
       return;
     }
@@ -392,6 +392,24 @@ export default class ImageScaleView extends View {
     }
   }
   updateOpts (opts) {
+    // Initializing class properties here for class optimization purpose
+    this._img = null;
+    this.rows = 0;
+    this.columns = 0;
+    this._renderCacheKey = null;
+    this._sliceCache = null;
+    this._sourceSlices = null;
+    this._destSlices = null;
+    this._imgScale = 1;
+    this._sourceSlicesHor = null;
+    this._destSlicesHor = null;
+    this._sourceSlicesVer = null;
+    this._destSlicesVer = null;
+    this._scaleMethod = null;
+    this._isSlice = false;
+    this._verticalAlign = null;
+    this._align = null;
+
     var opts = super.updateOpts(opts);
     var changeScaleMethod = opts.scaleMethod && this._scaleMethod != opts.scaleMethod;
     if (changeScaleMethod) {
@@ -403,7 +421,7 @@ export default class ImageScaleView extends View {
       this.render = renderFunctions[key].bind(this);
       this._renderCacheKey = {};
       this._scaleMethod = opts.scaleMethod;
-      this._isSlice = this._scaleMethod.slice(1) == 'slice';
+      this._isSlice = this._scaleMethod.slice(1) === 'slice';
     }
 
     if ('debug' in opts) {
