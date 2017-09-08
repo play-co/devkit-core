@@ -45,12 +45,13 @@ class DevkitClient {
   _initializeSocialPlatform (analyticsParams) {
     facebook.initializeAsync()
       .then(() => {
-
         var playerID = facebook.player.getID();
         var initParams = merge({ userID: playerID }, analyticsParams);
         analytics.initialize(initParams);
 
         this.locale = facebook.getLocale();
+
+        analytics.pushEvent('PlatformInitSuccess');
       })
       .catch((e) => {
         analytics.pushError('PlatformInitFailed', e);
