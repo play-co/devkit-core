@@ -62,7 +62,6 @@ class DevkitClient {
   }
 
   _loadBuild () {
-    var element = document.createElement('script');
 
     // element.onload = function () {
     //   this.onload = null;
@@ -70,17 +69,31 @@ class DevkitClient {
     // };
 
     var buildURL = this._buildURL;
-    element.onerror = function (error) {
-      this.onload = null;
-      this.onerror = null;
-      var statusCode = ' Status code: ' + error.status;
-      var reason = ' Reason: ' + error.reason;
-      var response = ' Response: ' + error.response;
-      console.error('Build not found: ' + buildURL + statusCode + reason + response);
-    };
+    // these are not if/else because we want the dead code
+    // elimination to work nicely.
+    if (process.env.NODE_ENV == 'development') {
+      var element = document.createElement('script');
+      element.onerror = function (error) {
+        this.onload = null;
+        this.onerror = null;
+        var statusCode = ' Status code: ' + error.status;
+        var reason = ' Reason: ' + error.reason;
+        var response = ' Response: ' + error.response;
+        console.error('Build not found: ' + buildURL + statusCode + reason + response);
+      };
 
-    element.src = buildURL;
-    document.getElementsByTagName('head')[0].appendChild(element);
+      element.src = buildURL;
+      document.getElementsByTagName('head')[0].appendChild(element);
+    }
+    if (process.env.NODE_ENV == 'production') {
+      var xhr = new XMLHttpRequest();
+      xhr.onload = function (res) {
+        var src = this.responseText;
+        window.eval(src);
+      };
+      xhr.open('GET', this._buildURL);
+      xhr.send();
+    }
   }
 };
 
