@@ -89,9 +89,10 @@ export default class ImageWrapper extends PubSub {
 
   _setSrcImg (img, url) {
     this._cb.reset();
-    this._isError = false;
 
-    this._srcImg = img;
+    this._isError = false;
+    this._srcImg = null;
+
     var loadRequestID = ++this._loadRequestID;
     if (img instanceof HTMLCanvasElement || img instanceof Canvas) {
       this._onLoad(img, loadRequestID);
@@ -301,9 +302,11 @@ export default class ImageWrapper extends PubSub {
     this._onMapUpdate();
     this._cb.fire(null, this);
   }
+
   isError () {
     return this._isError;
   }
+
   isReady () {
     return !this._isError && this._cb.fired();
   }
@@ -326,7 +329,7 @@ export default class ImageWrapper extends PubSub {
   render (ctx, srcX, srcY, srcW, srcH, destX, destY, destW, destH) {
     if (!this.isReady()) { return; }
 
-    var srcImg = ctx.isWebGL ? this._srcImg : this._srcImg.image;
+    var srcImg = this._srcImg;
 
     if (ctx.filter) {
       var filterImg = filterRenderer.renderFilter(ctx, this, srcX, srcY, srcW, srcH);

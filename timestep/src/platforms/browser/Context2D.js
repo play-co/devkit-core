@@ -24,6 +24,9 @@ import { logger } from 'base';
 
 import device from 'device';
 import FontRenderer from './FontRenderer';
+import WebGLContext2D from 'platforms/browser/webgl/WebGLContext2D';
+
+var webglSupported = WebGLContext2D.isSupported;
 
 exports = function (opts) {
   var parentNode = opts && opts.parent;
@@ -38,8 +41,9 @@ exports = function (opts) {
     return el;
   };
 
-  ctx.__needsUpload = true;
   ctx.texture = null;
+
+  ctx.__needsUpload = true;
   Object.defineProperty(ctx, 'needsUpload', {
     get: function() { return this.__needsUpload; },
     set: function(value) { this.__needsUpload = value; }
@@ -66,10 +70,9 @@ exports = function (opts) {
     ctx.clip();
   };
 
-  ctx.swap = function () {
-  };
-  ctx.execSwap = function () {
-  };
+  ctx.swap = function () {};
+
+  ctx.execSwap = function () {};
 
   ctx.circle = function (x, y, radius) {
     this.beginPath();
@@ -88,9 +91,6 @@ exports = function (opts) {
       return;
     }
 
-
-
-
     var width = sprite.width;
     var height = sprite.height;
     var canvas = _lastPointSprite.canvas || (_lastPointSprite.canvas = document.createElement('canvas'));
@@ -107,9 +107,6 @@ exports = function (opts) {
       ctx.drawImage(sprite, 0, 0);
     }
 
-
-
-
     // Add points to the buffer so there are drawing points every X pixels
     var dx = x2 - x1;
     var dy = y2 - y1;
@@ -117,9 +114,6 @@ exports = function (opts) {
     if (count < 1) {
       count = 1;
     }
-
-
-
 
     var d = this.lineWidth;
     for (var i = 0; i < count; ++i) {
@@ -154,6 +148,7 @@ exports = function (opts) {
   ctx.setFilter = function (filter) {
     this.filter = filter;
   };
+
   // deprecated API, we only support one filter per context
   ctx.setFilters = function () {
     logger.warn('ctx.setFilters is deprecated, use ctx.setFilter instead.');
@@ -166,11 +161,30 @@ exports = function (opts) {
   ctx.clearFilter = function () {
     this.filter = null;
   };
+
   // deprecated API, we only support one filter per context
   ctx.clearFilters = function () {
     logger.warn('ctx.clearFilters is deprecated, use ctx.clearFilter instead.');
     this.clearFilter();
   };
+
+  if (webglSupported) {
+    // Some bad hacking stuff to allow performance optimization when WebGL is enabled
+    ctx._drawImage = ctx.drawImage;
+    ctx.drawImage = function (image, sx, sy, sw, sh, x, y, w, h) {
+      var wrappedImage = image.image;
+      if (wrappedImage) {
+        image = wrappedImage;
+      }
+
+      if (x === undefined) {
+        this._drawImage(image, sx, sy, sw, sh);
+      } else {
+        this._drawImage(image, sx, sy, sw, sh, x, y, w, h);
+      }
+    }
+  }
+
 
   return ctx;
 };

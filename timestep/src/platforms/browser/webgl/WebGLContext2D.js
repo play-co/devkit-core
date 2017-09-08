@@ -721,10 +721,6 @@ class Context2D extends ContextState {
   }
 
   drawImage (image, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight) {
-    if (!image) {
-      return;
-    }
-
     var alpha = this.globalAlpha;
     if (alpha === 0) {
       return;
@@ -740,13 +736,8 @@ class Context2D extends ContextState {
     }
 
     var drawIndex = manager.addToBatch(this, image.texture);
-    var width = this.width;
-    var height = this.height;
-    var imageWidth = image.width;
-    var imageHeight = image.height;
+
     var m = this.transform;
-    var sxW = sx + sWidth;
-    var syH = sy + sHeight;
     var dxW = dx + dWidth;
     var dyH = dy + dHeight;
 
@@ -761,15 +752,15 @@ class Context2D extends ContextState {
     var y3 = dxW * m.b + dyH * m.d + m.ty;
 
     // TOOD: remove private access to _vertices
-    var tw = 1 / imageWidth;
-    var th = 1 / imageHeight;
+    var tw = 1 / image.width;
+    var th = 1 / image.height;
     var vc = manager._vertices;
     var i = drawIndex * 6 * 4;
 
     var uLeft = sx * tw;
-    var uRight = sxW * tw;
+    var uRight = (sx + sWidth) * tw;
     var vTop = sy * th;
-    var vBottom = syH * th;
+    var vBottom = (sy + sHeight) * th;
 
     vc[i + 0] = x0;
     vc[i + 1] = y0;
