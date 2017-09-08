@@ -2,38 +2,42 @@ let exports = {};
 
 var STRIDE = 24;
 
+var vertexShaderDefault = [
+  'precision mediump float;',
+  'attribute vec2 aTextureCoord;',
+  'attribute vec2 aPosition;',
+  'attribute vec4 aColor;',
+  'attribute float aAlpha;',
+  'uniform vec2 uResolution;',
+  'varying vec2 vTextureCoord;',
+  'varying float vAlpha;',
+  'varying vec4 vColor;',
+  'void main() {',
+  ' vTextureCoord = aTextureCoord;',
+  ' vColor = aColor;',
+  ' vAlpha = aAlpha;',
+  ' vec2 clipSpace = (aPosition / uResolution) * 2.0 - 1.0;',
+  ' gl_Position = vec4(clipSpace * vec2(1.0, -1.0), 0.0, 1.0);',
+  '}'
+].join('\n');
+
+var fragmentShaderDefault = [
+  'precision mediump float;',
+  'varying vec2 vTextureCoord;',
+  'varying float vAlpha;',
+  'uniform sampler2D uSampler;',
+  'void main(void) {',
+  ' gl_FragColor = texture2D(uSampler, vTextureCoord) * vAlpha;',
+  '}'
+].join('\n');
+
 class Shader {
   constructor (opts) {
     var gl = this._gl = opts.gl;
 
-    this._vertexSrc = opts.vertexSrc || [
-      'precision mediump float;',
-      'attribute vec2 aTextureCoord;',
-      'attribute vec2 aPosition;',
-      'attribute vec4 aColor;',
-      'attribute float aAlpha;',
-      'uniform vec2 uResolution;',
-      'varying vec2 vTextureCoord;',
-      'varying float vAlpha;',
-      'varying vec4 vColor;',
-      'void main() {',
-      ' vTextureCoord = aTextureCoord;',
-      ' vColor = aColor;',
-      ' vAlpha = aAlpha;',
-      ' vec2 clipSpace = (aPosition / uResolution) * 2.0 - 1.0;',
-      ' gl_Position = vec4(clipSpace * vec2(1.0, -1.0), 0.0, 1.0);',
-      '}'
-    ].join('\n');
+    this._vertexSrc = opts.vertexSrc || vertexShaderDefault;
 
-    this._fragmentSrc = opts.fragmentSrc || [
-      'precision mediump float;',
-      'varying vec2 vTextureCoord;',
-      'varying float vAlpha;',
-      'uniform sampler2D uSampler;',
-      'void main(void) {',
-      ' gl_FragColor = texture2D(uSampler, vTextureCoord) * vAlpha;',
-      '}'
-    ].join('\n');
+    this._fragmentSrc = opts.fragmentSrc || fragmentShaderDefault;
 
     var useTexture = opts.useTexture !== undefined ? opts.useTexture : true;
 
@@ -42,7 +46,9 @@ class Shader {
       aPosition: 0,
       aAlpha: 0,
       aColor: 0
-    };
+    }
+
+    this.lastAttributeIndex = Object.keys(this.attributes).length - 1;
 
     this.uniforms = {
       uSampler: useTexture ? 0 : -1,
@@ -68,36 +74,21 @@ class Shader {
       }
     }
   }
-  enableVertexAttribArrays () {
+  useProgram (ctx) {
     var gl = this._gl;
-    for (var attrib in this.attributes) {
-      if (this.attributes[attrib] !== -1) {
-        var index = this.attributes[attrib];
-        gl.enableVertexAttribArray(index);
-        switch (attrib) {
-          case 'aPosition':
-            gl.vertexAttribPointer(index, 2, gl.FLOAT, false, STRIDE, 0);
-            break;
-          case 'aTextureCoord':
-            gl.vertexAttribPointer(index, 2, gl.FLOAT, false, STRIDE, 8);
-            break;
-          case 'aAlpha':
-            gl.vertexAttribPointer(index, 1, gl.FLOAT, false, STRIDE, 16);
-            break;
-          case 'aColor':
-            gl.vertexAttribPointer(index, 4, gl.UNSIGNED_BYTE, true, STRIDE, 20);
-            break;
-        }
-      }
+
+    gl.useProgram(this.program);
+
+    var uniforms = this.uniforms;
+    gl.uniform2f(uniforms.uResolution, ctx.width, ctx.height);
+    if (uniforms.uSampler !== -1) {
+      gl.uniform1i(uniforms.uSampler, 0);
     }
-  }
-  disableVertexAttribArrays () {
-    var gl = this._gl
-    for (var attrib in this.attributes) {
-      if (this.attributes[attrib] !== -1) {
-        gl.disableVertexAttribArray(this.attributes[attrib]);
-      }
-    }
+
+    gl.vertexAttribPointer(this.attributes.aPosition, 2, gl.FLOAT, false, STRIDE, 0);
+    gl.vertexAttribPointer(this.attributes.aTextureCoord, 2, gl.FLOAT, false, STRIDE, 8);
+    gl.vertexAttribPointer(this.attributes.aAlpha, 1, gl.FLOAT, false, STRIDE, 16);
+    gl.vertexAttribPointer(this.attributes.aColor, 4, gl.UNSIGNED_BYTE, true, STRIDE, 20);
   }
   createProgram () {
     var gl = this._gl;
