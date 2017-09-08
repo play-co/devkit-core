@@ -3,8 +3,7 @@ let exports = {};
 import {
   logger,
   CONFIG,
-  GLOBAL,
-  NATIVE
+  GLOBAL
 } from 'base';
 
 /**
@@ -44,7 +43,7 @@ if (DEBUG) {
         'title': CONFIG.title,
         'shortName': CONFIG.shortName,
         'userAgent': navigator.userAgent,
-        'device': GLOBAL.NATIVE ? NATIVE.device : null
+        'device': null
       });
 
       logger.log('DEBUGGING CONNECTION MADE');
@@ -56,15 +55,7 @@ if (DEBUG) {
 
     conn.onRequest.subscribe('EVAL', this, function (req) {
       try {
-        var value;
-        if (GLOBAL.NATIVE && NATIVE.eval) {
-          value = NATIVE.eval(req.args, '[console]');
-        } else {
-          value = window.eval(req.args, '[console]');
-        }
-
-
-
+        var value = window.eval(req.args, '[console]');
 
         req.respond(stringify(value));
       } catch (e) {

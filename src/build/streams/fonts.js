@@ -8,8 +8,7 @@ var toDataURI = require('../util/datauri').toDataURI;
 exports.getFormatsForTarget = function (buildTarget) {
   if (buildTarget === 'browser-mobile') {
     return ['.ttf', '.svg'];
-  } else if (buildTarget === 'browser-desktop' || /^native/.test(buildTarget)) {
-    // buildTarget.startsWith('native') -- for simulated native builds
+  } else if (buildTarget === 'browser-desktop') {
     return ['.ttf', '.eot', '.woff'];
   } else {
     // unknown buildTarget? shouldn't ever get here
@@ -35,7 +34,6 @@ exports.create = function (api, config) {
       if (validExts[ext]) {
         fonts[file.basename] = new Font(file);
 
-        // TODO: better font management on native
         if (!/^resources\/fonts\//.test(file.targetRelativePath)) {
           file.moveToDirectory('resources/fonts');
         }

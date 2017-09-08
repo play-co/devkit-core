@@ -17,8 +17,7 @@ let exports = {};
  */
 import {
   logger,
-  bind,
-  NATIVE
+  bind
 } from 'base';
 
 import engineInstance from 'ui/engineInstance';
@@ -209,35 +208,6 @@ class BrowserDelegate {
     this.send({ type: 'hide' });
     $.hide(this._el);
     device.hideAddressBar();
-  }
-}
-
-class IOSDelegate {
-  constructor (api) {
-    this._api = api;
-  }
-  load (name) {
-    logger.log('loading', name);
-    NATIVE.overlay.load('/overlay/' + name + '.html?' + +new Date());
-    if (!this._subscribed) {
-      logger.log('subscribing to ', NATIVE.overlay.delegate);
-      NATIVE.overlay.delegate.subscribe('message', this, '_onMessage');
-      this._subscribed = true;
-    }
-  }
-  _onMessage (data) {
-    logger.log('got a message', data);
-    this._api.controller.onEvent(data);
-  }
-  show () {
-    NATIVE.overlay.show();
-  }
-  hide () {
-    NATIVE.overlay.hide();
-  }
-  send (data) {
-    logger.log('doing native.overlay.send');
-    NATIVE.overlay.send(JSON.stringify(data));
   }
 }
 

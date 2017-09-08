@@ -3,7 +3,6 @@ var JSCompiler = require('../jsCompiler').JSCompiler;
 var JSConfig = require('../jsConfig').JSConfig;
 
 exports.initialImports = {
-  'native': 'devkit.native.launchClient',
   'browser': 'devkit.browser.launchClient'
 };
 
