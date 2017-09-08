@@ -1,7 +1,7 @@
 'use strict';
 const Promise = require('bluebird');
 
-const jsioWebpack = require('jsio-webpack');
+const jsioWebpack = require('@blackstormlabs/jsio-webpack-v1');
 
 
 class Watcher {
@@ -91,7 +91,7 @@ const cleanOldWatchers = () => {
 };
 
 
-const getWebpackConfig = (userConfigs) => {
+const getWebpackConfig = function(userConfigs) {
   if (!Array.isArray(userConfigs)) {
     userConfigs = [userConfigs];
   }

@@ -9,19 +9,6 @@ dependencies:
   pre:
     - brew install node
     - |
-      if [ ! -d /usr/local/Cellar/android-sdk/ ]; then
-        brew install android-sdk
-        echo 'y' | android update sdk --no-ui --force --all --filter platform-tools,android-19,build-tools-20.0.0
-      else
-        brew link android-sdk
-      fi
-    - |
-      if [ ! -d /usr/local/Cellar/android-ndk/ ]; then
-        brew install android-ndk
-      else
-        brew link android-ndk
-      fi
-    - |
       if [ ! -d /usr/local/Cellar/ant/ ]; then
         brew install ant
       else
@@ -45,9 +32,6 @@ dependencies:
     - "~/devkit/"
     - /usr/local/lib/node_modules/imagemin-pngquant/
     - /usr/local/lib/node_modules/devkit-imagemin/
-    - /usr/local/Cellar/android-ndk/
-    - /usr/local/Cellar/android-sdk/
-    - /usr/local/var/lib/android-sdk/
 
 test:
   override:

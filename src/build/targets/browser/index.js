@@ -16,6 +16,8 @@
 var createBuildTarget = require('../../index').createBuildTarget;
 var cacheWorker = require('./cacheWorker');
 var webAppManifest = require('./webAppManifest');
+const path = require('path');
+const fs = require('../../util/fs');
 
 var slash = require('slash');
 
@@ -37,11 +39,11 @@ exports.init = function (api, app, config) {
   var argv = exports.opts.argv;
 
   var webAppManifest = {
-    "name": app.manifest.title,
-    "short_name": app.manifest.shortname,
-    "icons": JSON.parse(JSON.stringify(app.manifest.icons || [])),
-    "start_url": "index.html",
-    "display": "standalone"
+    'name': app.manifest.title,
+    'short_name': app.manifest.shortname,
+    'icons': JSON.parse(JSON.stringify(app.manifest.icons || [])),
+    'start_url': 'index.html',
+    'display': 'standalone'
   };
 
   if (config.isSimulated && !/browser/.test(config.target)) {
@@ -68,42 +70,42 @@ exports.init = function (api, app, config) {
 
   merge(config.browser,
       app.manifest.browser, // copy in keys from manifest
-      { // copy in defaults (if not present)
+    { // copy in defaults (if not present)
         // include image for the apple-touch-icon meta tag (if webpage is saved to
         // homescreen)
-        icon: true,
-        appleTouchIcon: true,
-        appleTouchStartupImage: true,
+      icon: true,
+      appleTouchIcon: true,
+      appleTouchStartupImage: true,
 
         // rich social graph meta properties
-        openGraph: {},
+      openGraph: {},
 
         // embed fonts disabled by default (load over URL), if true, base64 encode
         // them into the css
-        embedFonts: false,
+      embedFonts: false,
 
         // embed a base64 splash screen (background-size: cover)
-        embedSplash: true,
-        cache: [],
-        copy: [],
-        desktopBodyCSS: '',
+      embedSplash: true,
+      cache: [],
+      copy: [],
+      desktopBodyCSS: '',
 
         // html to insert
-        headHTML: [],
-        bodyHTML: [],
-        footerHTML: [],
+      headHTML: [],
+      bodyHTML: [],
+      footerHTML: [],
 
-        hasApplicationCache: argv['application-cache'],
-        hasWebAppManifest: argv['web-app-manifest'],
+      hasApplicationCache: argv['application-cache'],
+      hasWebAppManifest: argv['web-app-manifest'],
 
         // web app manifest, converted to json
-        webAppManifest: webAppManifest,
+      webAppManifest: webAppManifest,
 
         // browser framing options
-        frame: {},
-        canvas: {},
-        baseURL: exports.opts.argv.baseURL || ''
-      });
+      frame: {},
+      canvas: {},
+      baseURL: exports.opts.argv.baseURL || ''
+    });
 
   merge(config.browser.frame, {width: 320, height: 480});
   merge(config.browser.canvas, {width: 320, height: 480});
@@ -128,7 +130,7 @@ exports.init = function (api, app, config) {
   }
 };
 
-function createSourceMap(api, filename) {
+function createSourceMap (api, filename) {
   var sourceMap = {};
   return api.streams.createFileStream({
     onFile: function (file) {
@@ -154,20 +156,27 @@ exports.setupStreams = function (api, app, config) {
   streams.create('spriter');
   streams.create('resource-list');
   streams.create('sound-map');
-  var fontStream = streams.create('fonts');
-  streams.create('html', {fontStream: fontStream});
-  streams.create('app-js', {
-      env: 'browser',
-      tasks: [],
-      inlineCache: true,
-      filename: config.target + '.js',
-      composite: function (tasks, js, cache, jsConfig) {
-        return 'NATIVE=false;'
-          + 'CACHE=' + JSON.stringify(cache) + ';\n'
-          + js + ';'
-          + 'GC_LOADER.onLoadApp("import ' + INITIAL_IMPORT + '");';
-      }
-    });
+  const fontStream = streams.create('fonts');
+  const jsStream = streams.create('app-js', {
+    env: 'browser',
+    tasks: [],
+    inlineCache: true,
+    filename: config.target + '.js',
+    composite: function (tasks, js, cache, jsConfig) {
+      // Also output the old stuff
+      const devkitHeader = (
+        'CACHE=' + JSON.stringify(cache) + ';'
+        // + '\nGC_LOADER.onLoadApp("import ' + INITIAL_IMPORT + '");'
+      );
+      const devkitHeaderPath = path.join(config.outputResourcePath, 'devkitHeader.js');
+      fs.writeFileSync(devkitHeaderPath, devkitHeader, 'utf8');
+      return js;
+    }
+  });
+  streams.create('html', {
+    fontStream: fontStream,
+    jsStream: jsStream
+  });
 
   var staticFileStream = streams.create('static-files')
     .add(cacheWorker.generate(config))
@@ -186,16 +195,12 @@ exports.getStreamOrder = function (api, app, config) {
     'resource-list',
     'sound-map',
     'fonts',
-    'html',
     'app-js',
+    'html',
     'static-files',
     config.browser.hasApplicationCache && 'application-cache-manifest',
     'write-files'
   ];
-
-  if (config.compressImages) {
-    order.push('image-compress');
-  }
 
   return order;
 };

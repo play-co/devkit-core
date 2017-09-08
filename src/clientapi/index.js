@@ -20,24 +20,13 @@ let exports = {};
 import {
   GLOBAL,
   logger,
-  bind,
   CONFIG,
   merge
 } from 'base';
 
-import PubSub from 'lib/PubSub';
-import Callback from 'lib/Callback';
 import Engine from 'ui/Engine';
-import View from 'ui/View';
-import StackView from 'ui/StackView';
-
-import device from 'device';
-
-import UI from './UI';
 import loader from 'ui/resource/loader';
-import AudioManager from 'AudioManager';
-
-var FontRenderer = device.get('FontRenderer');
+import FontRenderer from 'platforms/browser/FontRenderer';
 
 if (!GLOBAL.CONFIG) {
   GLOBAL.CONFIG = {};
@@ -64,194 +53,49 @@ try {
   logger.warn('sound map failed to parse', e);
 }
 
-class PluginManager {
-  constructor () {
-    this._plugins = {};
+loader.addSheets(spritesheets);
+loader.addAudioMap(soundMap);
+
+exports.startApp = function (ApplicationCtor, simulatorModules)  {
+
+  if (CONFIG.version) {
+    logger.log('Version', CONFIG.version);
   }
-  register (name, plugin) {
-    this._plugins[name] = plugin;
-  }
-  getPlugin (name) {
-    return this._plugins[name];
-  }
-}
 
-exports.ClientAPI = class extends PubSub {
-  constructor (opts) {
-    super();
+  ApplicationCtor.prototype.__root = true;
+  var app = new ApplicationCtor();
 
-    window.addEventListener('pageshow', bind(this, '_onShow'), false);
-    window.addEventListener('pagehide', bind(this, '_onHide'), false);
+  app.view = app;
+  // legacy, deprecated
+  app.engine = new Engine(merge({ view: app }, app._settings));
+  app.engine.show();
+  app.engine.startLoop();
 
-    if (this.isKik && GLOBAL.cards && cards.browser) {
-      cards.browser.on('foreground', bind(this, '_onShow'));
-      cards.browser.on('background', bind(this, '_onHide'));
-    }
+  // N.B: application needs to be attached to GC before call to initUI
+  GC.attachApp(app);
 
-    this.isOnline = navigator.onLine;
+  app.initUI && app.initUI();
 
-    window.addEventListener('online', bind(this, function () {
-      if (!this.isOnline) {
-        this.isOnline = true;
-        this.publish('OnlineStateChanged', true);
+  FontRenderer.init();
+
+  if (simulatorModules) {
+    // client API inside simulator: call init() on each simulator module,
+    // optionally block on a returned promise for up to 5 seconds
+    simulatorModules.forEach(function (module) {
+      if (typeof module.onApp == 'function') {
+        module.onApp(app);
       }
-    }), false);
-
-    window.addEventListener('offline', bind(this, function () {
-      if (this.isOnline) {
-        this.isOnline = false;
-        this.publish('OnlineStateChanged', false);
-      }
-    }), false);
-
-    // var uri = new URI(window.location);
-    // var campaign = uri.query('campaign') || "NO CAMPAIGN";
-    //
-    // XXX: The following lines cause a DOMException in some browsers
-    // because we're using a <base> tag, which doesn't resolve the URL relative correctly.
-    // get rid of it in case the game uses something
-    // if (window.history && window.history.replaceState) {
-    //  history.replaceState(null, null, uri.toString().replace("?campaign=" + campaign, ""));
-    // }
-    //
-    // if (!localStorage.getItem("campaignID")) {
-    //  localStorage.setItem("campaignID", campaign)
-    // }
-    if (this.env == 'browser') {
-      setTimeout(bind(this, '_onShow'), 0);
-    }
-
-    if (CONFIG.version) {
-      logger.log('Version', CONFIG.version);
-    }
+    });
   }
-  _onHide () {
-    // signal to the app that the window is going away
-    this.app && this.app.onPause && this.app.onPause();
 
-    this.publish('Hide');
-    this.publish('AfterHide');
+  window.addEventListener('pageshow', function onShow () {
+    app && app.onResume && app.onResume();
+  }, false);
 
-    if (this.tracker) {
-      this.tracker.endSession();
-    }
-  }
-  _onShow () {
-    this.app && this.app.onResume && this.app.onResume();
+  window.addEventListener('pagehide', function onHide () {
+    app && app.onPause && app.onPause();
+  }, false);
 
-    this.publish('Show');
-    this.publish('AfterShow');
-  }
-  buildApp (entry, ApplicationCtor) {
-    ApplicationCtor.prototype.__root = true;
-    this.app = new ApplicationCtor();
-    this.buildEngine(merge({ view: this.app }, this.app._settings));
-
-    this.emit('app', this.app);
-  }
-  buildEngine (opts) {
-    if (!opts) {
-      opts = {};
-    }
-    if (!opts.entry) {
-      opts.entry = 'launchUI';
-    }
-
-    var view = opts.view;
-    if (!view) {
-      throw 'a timestep.Engine must be created with a root view';
-    }
-
-    if (!(view instanceof View)) {
-      throw 'src/Application.js must export a Class that inherits from ui.View';
-    }
-
-    view.subscribe('onLoadError', this, '_onAppLoadError');
-
-    var launch;
-    if (typeof view[opts.entry] == 'function') {
-      launch = bind(view, opts.entry);
-    }
-
-    view.view = view;
-    // legacy, deprecated
-    view.engine = new Engine(opts);
-    view.engine.show();
-    view.engine.startLoop();
-
-    view.initUI && view.initUI();
-
-    FontRenderer.init();
-
-    var settings = view._settings || {};
-    var preload = settings.preload;
-    var autoHide = CONFIG.splash && CONFIG.splash.autoHide !== false;
-    if (preload && preload.length) {
-      var cb = new Callback();
-      for (var i = 0, group; group = preload[i]; ++i) {
-        this.resources.preload(group, cb.chain());
-      }
-
-      // note that hidePreloader takes a null cb argument to avoid
-      // forwarding the preloader result as the callback
-      if (autoHide) {
-        cb.run(this, 'hidePreloader', null);
-      }
-      if (launch) {
-        cb.run(launch);
-      }
-    } else {
-      if (autoHide) {
-        this.hidePreloader();
-      }
-      launch && launch();
-    }
-  }
-  _onAppLoadError (error) {
-    logger.error('encountered error when creating src Application: ', JSON.stringify(
-      error));
-    var splash = CONFIG.splash;
-    if (splash && splash.onAppLoadError) {
-      splash.onAppLoadError(error);
-    }
-  }
-  hidePreloader (cb) {
-    var splash = CONFIG.splash;
-    if (splash && splash.hide && !splash.hidden) {
-      splash.hide(cb);
-      splash.hidden = true;
-    } else {
-      cb && cb();
-    }
-  }
 };
-
-exports.ClientAPI.prototype.Application = StackView;
-exports.ClientAPI.prototype.plugins = new PluginManager();
-exports.ClientAPI.prototype.ui = new UI();
-exports.ClientAPI.prototype.resources = loader;
-var ua = navigator.userAgent;
-exports.ClientAPI.prototype.isNative = /TeaLeaf/.test(ua);
-if (exports.ClientAPI.prototype.isNative) {
-  exports.ClientAPI.prototype.isIOS = /iPhone OS/.test(ua);
-  exports.ClientAPI.prototype.isAndroid = /Android/.test(ua);
-} else if (/(iPod|iPhone|iPad)/i.test(ua)) {
-  exports.ClientAPI.prototype.isMobileBrowser = true;
-  exports.ClientAPI.prototype.isIOS = true;
-  exports.ClientAPI.prototype.isUIWebView = !/Safari/.test(ua);
-} else if (/Android/.test(ua)) {
-  exports.ClientAPI.prototype.isMobileBrowser = true;
-  exports.ClientAPI.prototype.isAndroid = true;
-} else {
-  exports.ClientAPI.prototype.isDesktop = true;
-  exports.ClientAPI.prototype.isFacebook = GLOBAL.CONFIG.isFacebookApp;
-}
-
-exports.ClientAPI.prototype.isKik = /Kik\/\d/.test(ua);
-
-exports.ClientAPI.prototype.hideSplash = exports.ClientAPI.prototype.hidePreloader;
-
-exports.ClientAPI.prototype.resources.addSheets(spritesheets);
-exports.ClientAPI.prototype.resources.addAudioMap(soundMap);
 
 export default exports;

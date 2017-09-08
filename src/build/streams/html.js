@@ -8,11 +8,11 @@ var appJS = require('./app-js');
 var JSConfig = require('../jsConfig').JSConfig;
 var JSCompiler = require('../jsCompiler').JSCompiler;
 var getBase64Image = require('../util/datauri').getBase64Image;
+var jsioWebpack = require('@blackstormlabs/jsio-webpack-v1');
+const webpack = jsioWebpack.webpack;
 
 var TARGET_APPLE_TOUCH_ICON_SIZE = 152;
 var STATIC_BOOTSTRAP_CSS = getStaticFilePath('bootstrap.styl');
-var STATIC_BOOTSTRAP_JS = getStaticFilePath('bootstrap.js');
-var STATIC_LIVE_EDIT_JS = getStaticFilePath('liveEdit.js');
 
 // Static resources.
 function getStaticFilePath(filePath) {
@@ -21,83 +21,78 @@ function getStaticFilePath(filePath) {
 
 exports.create = function (api, app, config, opts) {
   var isMobile = (config.target !== 'browser-desktop');
-  var isLiveEdit = (config.target === 'live-edit');
-
   var jsConfig = new JSConfig(api, app, config);
-  if (isLiveEdit && !config.preCompressCallback) {
-    config.preCompressCallback = function(sourceTable) {
-      for (var fullPath in sourceTable) {
-        var fileValues = sourceTable[fullPath];
-        if (fileValues.friendlyPath === 'ui.resource.Image') {
-          logger.log('Patching ui.resource.Image to look for'
-                   + 'GC_LIVE_EDIT._imgBase');
-
-          var regex = /(this._setSrcImg.+{)/;
-          var insert = 'if(url&&GC_LIVE_EDIT._imgBase){'
-                     + 'url=GC_LIVE_EDIT._imgBase+url;'
-                     + '}';
-
-          fileValues.src = fileValues.src.replace(regex, '$1' + insert);
-        }
-      }
-    };
-  }
 
   // start file-system tasks in background immediately
-  var tasks = [
-    fs.readFileAsync(STATIC_BOOTSTRAP_CSS, 'utf8'),
-    fs.readFileAsync(STATIC_BOOTSTRAP_JS, 'utf8'),
-    isLiveEdit && fs.readFileAsync(STATIC_LIVE_EDIT_JS, 'utf8')
-  ];
+  var readBoostrap = fs.readFileAsync(STATIC_BOOTSTRAP_CSS, 'utf8');
+
+  const jsStreamCompletePromise = new Promise((resolve, reject) => {
+    opts.jsStream.once('error', reject);
+    opts.jsStream.once('end', resolve);
+  });
+
+  // generating analytics initialization params
+  var analyticsParams = JSON.stringify(app.manifest.analytics);
 
   // generate html when stream ends
   return api.streams.createFileStream({
     onFinish: function (addFile) {
-      // wait for file-system tasks to finish
-      return Promise.all(tasks)
-        .spread(function (bootstrapCSS, bootstrapJS, liveEditJS) {
-          var gameHTML = new exports.GameHTML();
+      let gameHTML = new exports.GameHTML();
+      Promise.resolve(readBoostrap).then(bootstrapCSS => {
+        gameHTML.addCSS(bootstrapCSS);
+        if (opts.fontStream) {
+          jsConfig.add('embeddedFonts', opts.fontStream.getNames());
+          gameHTML.addCSS(opts.fontStream.getCSS({
+            embedFonts: config.browser.embedFonts
+          }));
+        }
 
-          gameHTML.addCSS(bootstrapCSS);
-          if (opts.fontStream) {
-            jsConfig.add('embeddedFonts', opts.fontStream.getNames());
-            gameHTML.addCSS(opts.fontStream.getCSS({
-              embedFonts: config.browser.embedFonts
-            }));
-          }
+        if (config.browser.canvas.css) {
+          gameHTML.addCSS('#timestep_onscreen_canvas{'
+                        + config.browser.canvas.css
+                        + '}');
+        }
 
-          if (config.browser.canvas.css) {
-            gameHTML.addCSS('#timestep_onscreen_canvas{'
-                          + config.browser.canvas.css
-                          + '}');
-          }
+        config.browser.headHTML.push('<script>' + jsConfig.toString() + '</script>');
 
-          gameHTML.addJS(jsConfig.toString());
-          gameHTML.addJS(bootstrapJS);
-          gameHTML.addJS(printf('GC_LOADER.init("%(target)s")', {
-              target: config.target
-            }));
+        gameHTML.addJS(printf('initGC(\'./%(target)s.js\', ' + analyticsParams +')', {
+          target: config.target
+        }));
 
-          liveEditJS && gameHTML.addJS(liveEditJS);
+        var hasWebAppManifest = !!config.browser.webAppManifest;
+        if (hasWebAppManifest) {
+          config.browser.headHTML.push('<link rel="manifest" href="web-app-manifest.json">');
+        }
 
-          var hasWebAppManifest = !!config.browser.webAppManifest;
-          if (hasWebAppManifest) {
-            config.browser.headHTML.push('<link rel="manifest" href="web-app-manifest.json">');
-          }
+        // Add the devkit header (CACHE)
+        config.browser.headHTML.push('<script src="./devkitHeader.js"></script>');
 
-          var hasIndexPage = !isMobile;
-          addFile({
-            filename: hasIndexPage ? 'game.html' : 'index.html',
-            contents: gameHTML.generate(api, app, config)
-          });
-
-          if (hasIndexPage) {
-            addFile({
-              filename: 'index.html',
-              contents: new exports.IndexHTML().generate(api, app, config)
-            });
-          }
+        // Wait for jsStream to complete, .chunk.js are files generated by it.
+        return jsStreamCompletePromise;
+      }).then(() => {
+        // Find all .chunk.js files, load them
+        // FIXME: This happens too soon, no .chunk.js files exist.
+        //   For now it works on second build, picks up the last build .chunk.js files.
+        const fileNames = fs.readdirSync(config.outputPath).filter(s => /\.chunk\.js$/.test(s));
+        fileNames.forEach((fileName) => {
+          config.browser.headHTML.push(`<script src="./${fileName}"></script>`);
         });
+
+        config.browser.headHTML.push(`<script src="./bootstrap.js"></script>`);
+
+        var hasIndexPage = !isMobile;
+        addFile({
+          filename: hasIndexPage ? 'game.html' : 'index.html',
+          contents: gameHTML.generate(api, app, config)
+        });
+
+        if (hasIndexPage) {
+          addFile({
+            filename: 'index.html',
+            contents: new exports.IndexHTML().generate(api, app, config)
+          });
+        }
+      });
     }
   });
 };
@@ -253,7 +248,6 @@ exports.GameHTML = Class(function () {
           ? compileJS('[bootstrap]', js, {showWarnings: false})
           : js,
         splashImage && fs.existsAsync(splashImage) || false,
-        config.browser.hasApplicationCache && fs.readFileAsync(getStaticFilePath('app-cache-events.js'), 'utf8'),
         require('../targets/browser/orientation').addOrientationHTML(app, config)
       ])
       .bind(this)

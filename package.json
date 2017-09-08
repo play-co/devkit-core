@@ -8,16 +8,16 @@
     "url": "http://github.com/gameclosure/devkit-core.git"
   },
   "dependencies": {
+    "@blackstormlabs/jsio-webpack-v1": "^2.2.0",
     "archiver": "^0.14.4",
     "bluebird": "^3.4.7",
     "chalk": "^1.1.1",
-    "devkit-spriter": "git+https://github.com/gameclosure/devkit-spriter.git#es6",
+    "devkit-spriter": "git+https://github.com/gameclosure/devkit-spriter.git#0c743d8985dfcccd73eb3be17510c06b4228a79c",
     "fs-extra": "^0.23.1",
     "glob": "^5.0.2",
     "graceful-fs": "^4.1.2",
     "image-size": "^0.3.5",
-    "jsio": "git+https://github.com/gameclosure/js.io.git#es6",
-    "jsio-webpack": "git+https://github.com/jsio-private/jsio-webpack.git#6d412e3d297a7e308fbb4c18c8e1b44d57007030",
+    "jsio": "git+https://github.com/gameclosure/js.io.git#73c51b787d359ed92ea33b78ce4d008b151e1a43",
     "lodash": "^4.16.4",
     "mime": "^1.3.4",
     "mkdirp": "^0.5.1",
@@ -33,8 +33,8 @@
     "through2": "^2.0.0",
     "uglify-js": "^2.4.17",
     "vinyl": "^0.5.1",
-    "vinyl-fs": "^1.0.0",
-    "xml-loader": "^1.1.0"
+    "vinyl-fs": "^2.4.4",
+    "amplitude-js": "^3.2.0"
   },
   "scripts": {
     "preinstall": "sh scripts/preinstall.sh"
@@ -43,16 +43,13 @@
     "buildTargets": {
       "browser-mobile": "src/build/targets/browser/",
       "browser-desktop": "src/build/targets/browser/",
-      "live-edit": "src/build/targets/browser/",
-      "native-ios": "src/build/targets/native/native-ios",
-      "native-android": "src/build/targets/native/native-android",
-      "native-archive": "src/build/targets/native/native-archive",
       "chrome": "src/build/targets/chrome",
       "resources-bundle": "src/build/targets/resources-bundle"
     },
     "clientPaths": {
-      "devkit": "src/clientapi",
-      "*": "src/clientapi/api/"
+      "*": "timestep/src",
+      "analytics": "src/clientapi/analytics/",
+      "devkit": "src/clientapi"
     }
   },
   "devDependencies": {

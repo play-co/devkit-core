@@ -1,5 +1,14 @@
 import EventEmitter from 'lib/PubSub';
-import nextTick from 'nextTick';
+import { bind } from 'base';
+
+var _onTick = window.requestAnimationFrame || window.setTimeout;
+function nextTick (cb, ctx) {
+  if (ctx) {
+    cb = bind(cb, ctx);
+  }
+  _onTick(cb);
+}
+
 
 class Transport extends EventEmitter {
   emit (name, data) {
