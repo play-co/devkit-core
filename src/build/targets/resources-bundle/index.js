@@ -14,7 +14,6 @@
  */
 
 var path = require('path');
-var nativeBuild = require('../native/native-android');
 var logger;
 
 // Static resources.
@@ -24,14 +23,10 @@ exports.opts = require('optimist')(process.argv);
 
 exports.configure = function (api, app, config, cb) {
   logger = api.logging.get('build-resources-bundle');
-  nativeBuild.configure(api, app, config, cb);
 };
 
 exports.build = function (api, app, config, cb) {
   // Add the static src to the path cache so we use this to find Application.js
   // instead of the projects src
   app.clientPaths.src = STATIC_DIR + '/src';
-
-  require('../native/resources')
-    .writeNativeResources(api, app, config, cb);
 };

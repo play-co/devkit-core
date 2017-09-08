@@ -8,9 +8,5 @@ exports = Class(weeby.Application, function(supr) {
     showFPS: false
   };
 
-  this.initUI = function() {
-    if (NATIVE.events) {
-      weeby.initExternalGame('cocos2dx');
-    };
-  };
+  this.initUI = function() {};
 });

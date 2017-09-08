@@ -165,8 +165,7 @@ exports.setupStreams = function (api, app, config) {
     composite: function (tasks, js, cache, jsConfig) {
       // Also output the old stuff
       const devkitHeader = (
-        'NATIVE=false;'
-        + '\nCACHE=' + JSON.stringify(cache) + ';'
+        'CACHE=' + JSON.stringify(cache) + ';'
         // + '\nGC_LOADER.onLoadApp("import ' + INITIAL_IMPORT + '");'
       );
       const devkitHeaderPath = path.join(config.outputResourcePath, 'devkitHeader.js');

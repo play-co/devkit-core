@@ -28,18 +28,12 @@ import Promise from 'bluebird';
 GLOBAL.Promise = Promise;
 
 var isSimulator = GLOBAL.CONFIG && !!CONFIG.simulator;
-var isNative = /^native/.test(CONFIG.target);
-
 if (isSimulator) {
   // prefix filenames in the debugger
   jsio.__env.debugPath = function (path) {
     return 'http://' + (CONFIG.bundleID || CONFIG.packageName) + '/' + path.replace(
       /^[\.\/]+/, '');
   };
-
-  if (isNative) {
-    require('../debugging/nativeShim');
-  }
 }
 
 // shims
@@ -120,30 +114,11 @@ export const startGame = _ApplicationCtor => {
       //   console.warn(e);
       // }
       console.error('TODO: Dynamic require ctx');
-    }).timeout(5000).finally(queueStart);
-  } else {
-    queueStart();
-  }
-};
-
-function queueStart () {
-  /* jshint -W117 */
-  if (window.GC_LIVE_EDIT && GC_LIVE_EDIT._isLiveEdit) {
-    var intervalId = setInterval(function () {
-      if (GC_LIVE_EDIT._liveEditReady) {
-        try {
-          startApp();
-        } catch (err) {
-          // In case loading fails, we will still clear the interval
-          console.error('Error while starting app', err);
-        }
-        clearInterval(intervalId);
-      }
-    }, 100);
+    }).timeout(5000).finally(startApp);
   } else {
     startApp();
   }
-}
+};
 
 /* jshint +W117 */
 
@@ -155,19 +130,6 @@ function startApp () {
   require('platforms/browser/initialize');
   device.init();
 
-  // init sets up the GC object
-  GLOBAL.GC = new devkit.ClientAPI();
-  if (simulatorModules) {
-    GLOBAL.GC.on('app', function (app) {
-      // client API inside simulator: call init() on each simulator module,
-      // optionally block on a returned promise for up to 5 seconds
-      simulatorModules.forEach(function (module) {
-        if (typeof module.onApp == 'function') {
-          module.onApp(app);
-        }
-      });
-    });
-  }
-
-  GLOBAL.GC.buildApp('launchUI', ApplicationCtor);
+  // construct the app
+  devkit.startApp(ApplicationCtor, simulatorModules);
 }

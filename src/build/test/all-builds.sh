@@ -24,23 +24,6 @@ function run_builds () {
   contains 'index.html'
   contains 'spritesheets'
 
-  ##### Android
-
-  if command -v ndk-build >/dev/null 2>&1; then
-
-    run devkit debug native-android
-
-    # don't sign
-    run devkit release native-android --no-compress --no-signing
-    not_contains 'image-compress'
-    contains '-release-unsigned.apk'
-
-    # test native repack (don't do the full android build)
-    run devkit debug native-android --repack
-    not_contains 'ant debug'
-
-  fi
-
   ##### Chrome
 
   run devkit debug chrome
@@ -54,35 +37,8 @@ function run_builds () {
   contains 'index.html'
   contains 'pageWrapper.html'
 
-  ##### IOS
-
-  if command -v xcodebuild >/dev/null 2>&1; then
-
-    run devkit debug native-ios --no-open
-    check find build/debug -name '*.xcodeproj'
-    contains '.xcodeproj'
-
-    run devkit release native-ios --no-compress --no-open
-    check find build/release -name '*.xcodeproj'
-    contains '.xcodeproj'
-
-    check ls build/release/native-ios/xcodeproject/resources/resources.bundle
-    contains 'manifest.json'
-    contains 'native.js'
-    contains 'spritesheets'
-
-    check ls build/release/native-ios/xcodeproject/resources/resources.bundle/spritesheets
-    contains 'spritesheetSizeMap.json'
-
-  fi
-
-  # native archive with browser files too, should only sprite once
-  run devkit debug native-archive --browser
-
-  check find build/debug/native-archive -name '*.zip' -exec unzip -l {} \;
   contains 'index.html'
   contains 'browser-mobile.js'
-  contains 'native.js'
 }
 
 # runs a command, only showing output if it fails
