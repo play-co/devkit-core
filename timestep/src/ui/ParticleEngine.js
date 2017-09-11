@@ -27,6 +27,7 @@ import View from 'ui/View';
 import Image from 'ui/resource/Image';
 import ImageViewCache from 'ui/resource/ImageViewCache';
 import performance from 'performance';
+import Matrix2D from 'platforms/browser/webgl/Matrix2D';
 
 // animation transtion functions borrowed from animate
 var TRANSITION_LINEAR = 'linear';
@@ -64,16 +65,52 @@ class ParticleStyle {
     this.flipX = false;
     this.flipY = false;
     this.visible = true;
+    this.compositeOperation = null;
+
+    this._cachedRotation = 0;
+    this._cachedSin = 0;
+    this._cachedCos = 1;
   }
 }
 
 class Particle {
-  constructor () {
-    this.image = null;
-    this.imageURL = '';
+  constructor (engine) {
+    this._engine = engine;
+    this._image = null;
+    this._imageURL = '';
     this.style = new ParticleStyle();
 
     this.reset();
+  }
+
+  get image () {
+    return this._imageURL;
+  }
+
+  set image (imageURL) {
+    if (imageURL && imageURL !== this._imageURL) {
+      this._image = ImageViewCache.getImage(imageURL);
+      this._imageURL = imageURL;
+      this._engine._loaded = false;
+    }
+  }
+
+  getFilter () {
+    return this._filter;
+  }
+
+  addFilter (filter) {
+    logger.warn(
+      'View.addFilter() is deprecated! Use View.setFilter() instead.');
+    this.setFilter(filter);
+  }
+
+  setFilter (filter) {
+    this._filter = filter;
+  }
+
+  removeFilter () {
+    this._filter = null;
   }
 
   reset () {
@@ -155,25 +192,115 @@ exports = class extends View {
     // pre-initialization
     var initCount = opts.initCount;
     initCount && this._initParticlePool(initCount);
+    this._initCount = initCount;
     this._logViewCreation = initCount > 0;
+
+    this._globalTransform = new Matrix2D();
   }
 
-  render (ctx, transform) {
+  _forceLoad () {
     for (var p = 0; p < this._activeParticles.length; p += 1) {
       var particle = this._activeParticles[p];
-      var image = particle.image;
+      var image = particle._image;
+      if (image) {
+        image._forceLoad();
+      }
+    }
+    this._loaded = true;
+  }
+
+  _addAssetsToList (assetURLs) {
+    for (var p = 0; p < this._activeParticles.length; p += 1) {
+      var particle = this._activeParticles[p];
+      var image = particle._image;
+      if (image) {
+        image._addAssetsToList(assetURLs);
+      }
+    }
+  }
+
+
+  render (ctx, transform, parentOpacity) {
+    for (var p = 0; p < this._activeParticles.length; p += 1) {
+      var particle = this._activeParticles[p];
+      var image = particle._image;
+      // debugger
       if (image) {
         var style = particle.style;
+        this.updateGlobalTransform(transform, style);
+
+        var gt = this._globalTransform;
+        ctx.setTransform(gt.a, gt.b, gt.c, gt.d, gt.tx, gt.ty);
+        ctx.globalAlpha = style.opacity * parentOpacity;
+
+        var savedCompositeOperation;
+        var compositeOperation = style.compositeOperation;
+        if (compositeOperation) {
+          savedCompositeOperation = ctx.globalCompositeOperation;
+          ctx.globalCompositeOperation = compositeOperation;
+        }
+
         image.renderShort(ctx, 0, 0, style.width, style.height);
+
+        if (compositeOperation) {
+          ctx.globalCompositeOperation = savedCompositeOperation;
+        }
       }
+    }
+  }
+
+  updateGlobalTransform (pgt, style) {
+    var flipX = style.flipX ? -1 : 1;
+    var flipY = style.flipY ? -1 : 1;
+
+    var gt = this._globalTransform;
+    var sx = style.scaleX * style.scale * flipX;
+    var sy = style.scaleY * style.scale * flipY;
+    var ax = style.flipX ? style._width - style.anchorX : style.anchorX;
+    var ay = style.flipY ? style._height - style.anchorY : style.anchorY;
+    var tx = style.x + style.offsetX + style.anchorX;
+    var ty = style.y + style.offsetY + style.anchorY;
+
+    if (style.r === 0) {
+      tx -= ax * sx;
+      ty -= ay * sy;
+      gt.a = pgt.a * sx;
+      gt.b = pgt.b * sx;
+      gt.c = pgt.c * sy;
+      gt.d = pgt.d * sy;
+      gt.tx = tx * pgt.a + ty * pgt.c + pgt.tx;
+      gt.ty = tx * pgt.b + ty * pgt.d + pgt.ty;
+    } else {
+      if (style.r !== style._cachedRotation) {
+        style._cachedRotation = style.r;
+        style._cachedSin = Math.sin(style.r);
+        style._cachedCos = Math.cos(style.r);
+      }
+      var a = style._cachedCos * sx;
+      var b = style._cachedSin * sx;
+      var c = -style._cachedSin * sy;
+      var d = style._cachedCos * sy;
+
+      if (ax || ay) {
+        tx -= a * ax + c * ay;
+        ty -= b * ax + d * ay;
+      }
+
+      gt.a = a * pgt.a + b * pgt.c;
+      gt.b = a * pgt.b + b * pgt.d;
+      gt.c = c * pgt.a + d * pgt.c;
+      gt.d = c * pgt.b + d * pgt.d;
+      gt.tx = tx * pgt.a + ty * pgt.c + pgt.tx;
+      gt.ty = tx * pgt.b + ty * pgt.d + pgt.ty;
     }
   }
 
   _initParticlePool (count) {
     for (var i = 0; i < count; i++) {
-      this._freeParticles.push(new Particle());
+      this._freeParticles.push(new Particle(this));
     }
   }
+
   obtainParticleArray (count, opts) {
     opts = opts || {};
 
@@ -181,88 +308,71 @@ exports = class extends View {
       opts.allowReduction);
 
     for (var i = 0; i < count; i++) {
-      this._particleDataArray.push(this._freeParticles.pop() || new Particle());
-    }
-    // OK to use an array here
-    return this._particleDataArray;
-  }
-  emitParticles (particleDataArray) {
-    for (var i = 0; i < particleDataArray.length; i++) {
-      // get particle data object and recycled view if possible
-      var data = particleDataArray.pop();
       var particle = this._freeParticles.pop();
       if (!particle) {
-        particle = new Particle();
+        particle = new Particle(this);
         if (this._logViewCreation) {
           logger.warn(this.getTag(), 'created Particle');
         }
       }
+      this._particleDataArray.push(particle);
+    }
+
+    // OK to use an array here
+    return this._particleDataArray;
+  }
+
+  emitParticles (particleDataArray) {
+    for (var i = 0; i < particleDataArray.length; i++) {
+      // get particle data object and recycled view if possible
+      var particle = particleDataArray.pop();
 
       // apply style properties
       var s = particle.style;
-      s.x = data.x;
-      s.y = data.y;
-      s.r = data.r;
-      s.anchorX = data.anchorX;
-      s.anchorY = data.anchorY;
-      s.width = data.width;
-      s.height = data.height;
-      s.scale = data.scale;
-      s.scaleX = data.scaleX;
-      s.scaleY = data.scaleY;
-      s.opacity = data.opacity;
-      s.flipX = data.flipX;
-      s.flipY = data.flipY;
-      s.compositeOperation = data.compositeOperation;
-      s.visible = data.visible;
-
-      for (var property in data) {
-        if (particle[property] !== undefined && property !== 'image') {
-          particle[property] = data[property];
-        }
-      }
-
-      var imageURL = data.image;
-      if (imageURL !== particle.imageURL) {
-        particle.image = ImageViewCache.getImage(imageURL);
-        particle.imageURL = imageURL;
-      }
-      // var image = data.image;
-      // if (particle.setImage && particle.lastImage !== image) {
-      //   var img = imageCache[image];
-      //   if (img === void 0) {
-      //     img = imageCache[image] = new Image({ url: image });
-      //   }
-      //   particle.setImage(img);
-      //   particle.lastImage = image;
-      // }
+      s.x = particle.x;
+      s.y = particle.y;
+      s.r = particle.r;
+      s.anchorX = particle.anchorX;
+      s.anchorY = particle.anchorY;
+      s.width = particle.width;
+      s.height = particle.height;
+      s.scale = particle.scale;
+      s.scaleX = particle.scaleX;
+      s.scaleY = particle.scaleY;
+      s.opacity = particle.opacity;
+      s.flipX = particle.flipX;
+      s.flipY = particle.flipY;
+      s.compositeOperation = particle.compositeOperation;
+      s.visible = particle.visible;
 
       // start particles if there's no delay
-      if (!data.delay) {
+      if (!particle.delay) {
         s.visible = true;
-        data.onStart && data.onStart(particle);
-      } else if (data.delay < 0) {
+        particle.onStart && particle.onStart(particle);
+      } else if (particle.delay < 0) {
         throw new Error('Particles cannot have negative delay values!');
       }
 
-      if (data.ttl < 0) {
+      if (particle.ttl < 0) {
         throw new Error(
           'Particles cannot have negative time-to-live values!');
       }
 
       // and finally emit the particle
-      this._prepareTriggers(data);
+      this._prepareTriggers(particle);
       this._activeParticles.push(particle);
     }
   }
-  _prepareTriggers (data) {
-    var triggers = data.triggers;
+
+  _prepareTriggers (particle) {
+    var triggers = particle.triggers;
     for (var i = 0; i < triggers.length; i++) {
       var trig = triggers[i];
       trig.isStyle = trig.isStyle !== void 0 ? trig.isStyle : trig.property
         .charAt(0) !== 'd';
     }
   }
+
   _killParticle (particle, index) {
     this._activeParticles.splice(index, 1);
 
@@ -271,6 +381,7 @@ exports = class extends View {
 
     this._freeParticles.push(particle);
   }
+
   killAllParticles () {
     var active = this._activeParticles;
     while (active.length) {
@@ -278,6 +389,7 @@ exports = class extends View {
       this._killParticle(particle, particle.pData, 0);
     }
   }
+
   runTick (dt) {
     var i = 0;
     while (i < this._activeParticles.length) {
@@ -427,9 +539,11 @@ exports = class extends View {
       i += 1;
     }
   }
+
   getActiveParticles () {
     return this._activeParticles;
   }
+
   forEachActiveParticle (fn, ctx) {
     var views = this._activeParticles;
     for (var i = views.length - 1; i >= 0; i--) {

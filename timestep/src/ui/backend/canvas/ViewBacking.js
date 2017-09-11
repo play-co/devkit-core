@@ -463,7 +463,7 @@ export default class ViewBacking {
     }
 
     if (this._hasRender) {
-      this._view._render(ctx, gt);
+      this._view._render(ctx, gt, parentOpacity);
     }
 
     var subviews = this._visibleSubviews;
