@@ -253,7 +253,7 @@ export default class ImageScaleView extends View {
   _forceLoad () {
     if (this._img) {
       this._img._forceLoad(() => {
-        this.setImage(this._img, this._opts);
+        this._setImage(this._img, this._opts);
       });
       this._loaded = true;
     }
@@ -582,8 +582,11 @@ export default class ImageScaleView extends View {
     return this._img;
   }
   setImage (img, opts) {
-    this._renderCacheKey = {};
     this._loaded = false;
+    this._setImage(img, opts);
+  }
+  _setImage(img, opts) {
+    this._renderCacheKey = {};
 
     var autoSized = false;
     var sw, sh, iw, ih, bounds;
