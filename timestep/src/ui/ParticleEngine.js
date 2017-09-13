@@ -79,6 +79,7 @@ class Particle {
     this._image = null;
     this._imageURL = '';
     this.style = new ParticleStyle();
+    this._filter = null;
 
     this.reset();
   }
@@ -97,12 +98,6 @@ class Particle {
 
   getFilter () {
     return this._filter;
-  }
-
-  addFilter (filter) {
-    logger.warn(
-      'View.addFilter() is deprecated! Use View.setFilter() instead.');
-    this.setFilter(filter);
   }
 
   setFilter (filter) {
@@ -240,10 +235,21 @@ exports = class extends View {
           ctx.globalCompositeOperation = compositeOperation;
         }
 
+        var filter = particle._filter;
+        if (filter) {
+          ctx.setFilter(filter);
+        } else {
+          ctx.clearFilter();
+        }
+
         image.renderShort(ctx, 0, 0, style.width, style.height);
 
         if (compositeOperation) {
           ctx.globalCompositeOperation = savedCompositeOperation;
+        }
+
+        if (filter) {
+          ctx.clearFilter();
         }
       }
     }
@@ -256,8 +262,8 @@ exports = class extends View {
     var gt = this._globalTransform;
     var sx = style.scaleX * style.scale * flipX;
     var sy = style.scaleY * style.scale * flipY;
-    var ax = style.flipX ? style._width - style.anchorX : style.anchorX;
-    var ay = style.flipY ? style._height - style.anchorY : style.anchorY;
+    var ax = style.flipX ? style.width - style.anchorX : style.anchorX;
+    var ay = style.flipY ? style.height - style.anchorY : style.anchorY;
     var tx = style.x + style.offsetX + style.anchorX;
     var ty = style.y + style.offsetY + style.anchorY;
 
@@ -323,7 +329,7 @@ exports = class extends View {
   }
 
   emitParticles (particleDataArray) {
-    for (var i = 0; i < particleDataArray.length; i++) {
+    while (particleDataArray.length !== 0) {
       // get particle data object and recycled view if possible
       var particle = particleDataArray.pop();
 
