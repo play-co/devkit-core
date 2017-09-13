@@ -92,11 +92,11 @@ class Analytics {
 
     if (params.pixel && params.pixel.enabled) {
       this.pixelEnabled = params.pixel.enabled && pixel.enabled;
-      this.pixelWhitelist = params.pixel.whitelist || {};
+      this.pixelWhitelist = params.pixel.whitelist || [];
     }
 
-    this.keenWhitelist = params.keen.whitelist || {};
-    this.amplitudeBlacklist = params.amplitude.blacklist || {};
+    this.keenWhitelist = params.keen.whitelist || [];
+    this.amplitudeBlacklist = params.amplitude.blacklist || [];
 
     if (params.amplitude.key) {
       this._initAmplitude(params.amplitude.key);
