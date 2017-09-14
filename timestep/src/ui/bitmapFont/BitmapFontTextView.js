@@ -35,10 +35,13 @@ import BitmapFontTextViewBacking from 'ui/bitmapFont/BitmapFontTextViewBacking';
 
 
 const CHARACTER_VIEW_POOL = new ViewPool({ ctor: ImageView });
+const DEFAULT_COLOR = '#ffffff';
 
 class Character {
   constructor (image, x, y, width, height) {
     this.image = image;
+    this.originalX = x;
+    this.originalY = y;
     this.x = x;
     this.y = y;
     this.width = width;
@@ -50,10 +53,9 @@ class BitmapFontTextView extends View {
   constructor(opts) {
     super(opts);
 
-    this._backing = new BitmapFontTextViewBacking(merge({ listener: this }, opts));
-    this.colorFilter = new filter.MultiplyFilter(this._backing.color);
-
+    this._colorFilter = new filter.MultiplyFilter(this._color);
     this._characters = [];
+    this._backing = new BitmapFontTextViewBacking(merge({ listener: this }, opts));
   };
 
   _addAssetsToList (assetURLs) {
@@ -84,31 +86,24 @@ class BitmapFontTextView extends View {
     if (this._backing) {
       this._backing.updateOpts(opts);
     }
+
+    this._color = opts.color || this._color || DEFAULT_COLOR;
+    this._hasColor = this._color !== DEFAULT_COLOR;
   }
 
-  updateColorFilter () {
-    if (this.colorFilter) {
-      this.colorFilter.update(this._backing.color);
-    }
-  }
-
-  _clearCharacterViews () {
+  _clearCharacter () {
     this._characters = [];
   }
 
-  _updateCharacterViews () {
-    if (this._backing) {
-      var batchX = this._backing.batchX;
-      var verticalAlignOffsetY = this._backing.verticalAlignOffsetY;
-      for (var c = 0; c < this._characters.length; c += 1) {
-        var character = this._characters[c];
-        character.x += batchX;
-        character.y += verticalAlignOffsetY;
-      }
+  _updateCharacters (batchX, verticalAlignOffsetY) {
+    for (var c = 0; c < this._characters.length; c += 1) {
+      var character = this._characters[c];
+      character.x = character.originalX + batchX;
+      character.y = character.originalY + verticalAlignOffsetY;
     }
   }
 
-  makeCharacterView (charData, x, y, scale) {
+  makeCharacter (charData, x, y, scale) {
     var image = charData.textureData.texture;
     var width = charData.textureData.sourceW * scale;
     var height = charData.textureData.sourceH * scale;
@@ -120,10 +115,8 @@ class BitmapFontTextView extends View {
       return;
     }
 
-    // TODO: attach filter to this view
-    var hasColor = this._backing.hasColor;
-    if (hasColor) {
-      context.setFilter(this.colorFilter);
+    if (this._hasColor) {
+      context.setFilter(this._colorFilter);
     }
 
     for (var c = 0; c < this._characters.length; c += 1) {
@@ -132,7 +125,7 @@ class BitmapFontTextView extends View {
         character.x, character.y, character.width, character.height);
     }
 
-    if (hasColor) {
+    if (this._hasColor) {
       context.clearFilter();
     }
   }
@@ -186,11 +179,17 @@ class BitmapFontTextView extends View {
   }
 
   get color () {
-    return this._backing.color;
+    return this._color;
   }
 
   set color (value) {
-    this._backing.color = value;
+    if (value === this._color) {
+      return;
+    }
+
+    this._color = value;
+    this._hasColor = this._color !== DEFAULT_COLOR;
+    this._colorFilter.update(this._color);
   }
 
   get baseline () {

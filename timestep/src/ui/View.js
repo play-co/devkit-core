@@ -174,7 +174,7 @@ export default class View extends IView {
     this._loaded = false;
 
     // some views have a debug property
-    this.debug = false;
+    this.debug = opts.debug || false;
 
     this.updateOpts(opts);
   }
