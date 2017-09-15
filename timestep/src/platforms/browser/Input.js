@@ -49,9 +49,6 @@ export default class Input {
     this._rootView = opts.rootView;
 
     if (opts.el) {
-      if (device.isMobileBrowser) {
-        this._toggleNode = $({ parent: document.body });
-      }
       this.setElement(opts.el);
     }
 
@@ -77,14 +74,20 @@ export default class Input {
     }
     this._isEnabled = true;
 
-    $.onEvent(document, 'touchmove', this, 'handleMouse', eventTypes.MOVE);
-    $.onEvent(document, 'mousemove', this, 'handleMouse', eventTypes.MOVE);
-    $.onEvent(document, 'mouseup', this, 'handleMouse', eventTypes.SELECT);
-    $.onEvent(document, 'touchend', this, 'handleMouse', eventTypes.SELECT);
-    $.onEvent(window, 'DOMMouseScroll', this, 'handleMouse', eventTypes.SCROLL);
+    // $.onEvent(document, 'touchmove', this, 'handleMouse', eventTypes.MOVE);
+    // $.onEvent(document, 'mousemove', this, 'handleMouse', eventTypes.MOVE);
+    // $.onEvent(document, 'mouseup', this, 'handleMouse', eventTypes.SELECT);
+    // $.onEvent(document, 'touchend', this, 'handleMouse', eventTypes.SELECT);
+    // $.onEvent(window, 'DOMMouseScroll', this, 'handleMouse', eventTypes.SCROLL);
+    document.addEventListener('touchmove', (evt) => this.handleMouse(eventTypes.MOVE, evt), { passive: false });
+    document.addEventListener('mousemove', (evt) => this.handleMouse(eventTypes.MOVE, evt), { passive: false });
+    document.addEventListener('mouseup', (evt) => this.handleMouse(eventTypes.SELECT, evt), { passive: false });
+    document.addEventListener('touchend', (evt) => this.handleMouse(eventTypes.SELECT, evt), { passive: false });
+    window.addEventListener('DOMMouseScroll', (evt) => this.handleMouse(eventTypes.SCROLL, evt), { passive: false });
 
     // FF
-    this._handleWheel = $.onEvent(window, 'mousewheel', this, 'handleMouse', eventTypes.SCROLL);
+    // this._handleWheel = $.onEvent(window, 'mousewheel', this, 'handleMouse', eventTypes.SCROLL);
+    window.addEventListener('mousewheel', (evt) => this.handleMouse(eventTypes.SCROLL, evt));
 
     // webkit
     this._addElEvents();
@@ -134,8 +137,9 @@ export default class Input {
 
   _removeElEvents () {
     if (this._elEvents) {
-      for (var i = 0, detach; detach = this._elEvents[i]; ++i) {
-        detach();
+      for (var i = 0; i < this._elEvents.length; ++i) {
+        var event = this._elEvents[i];
+        this._el.removeEventListener(event.name, event.callback, false);
       }
     }
   }
@@ -151,13 +155,25 @@ export default class Input {
       return false;
     };
 
+
     this._elEvents = [];
-    this._elEvents.push($.onEvent(el, 'mousedown', this, 'handleMouse', eventTypes.START));
-    this._elEvents.push($.onEvent(el, 'touchstart', this, 'handleMouse', eventTypes.START));
+    var onTouchStart = bind(this, function onTouchStart (evt) { this.handleMouse(eventTypes.START, evt) });
+
+    el.addEventListener('mousedown', onTouchStart, { passive: false });
+    el.addEventListener('touchstart', onTouchStart, { passive: false });
+
+    this._elEvents.push({ name: 'mousedown', function: onMouseDown });
+    this._elEvents.push({ name: 'touchstart', function: onMouseDown });
 
     if (!device.isMobileBrowser) {
-      this._elEvents.push($.onEvent(el, 'mouseover', this, 'onMouseOver'));
-      this._elEvents.push($.onEvent(el, 'mouseout', this, 'onMouseOut'));
+      var onMouseDown = bind(this, 'onMouseOver');
+      var onMouseOut = bind(this, 'onMouseOut');
+
+      el.addEventListener('mouseover', onMouseDown, { passive: false });
+      el.addEventListener('mouseout', onMouseOut, { passive: false });
+
+      this._elEvents.push({ name: 'mouseover', function: onMouseDown });
+      this._elEvents.push({ name: 'mouseover', function: onMouseOut });
     }
   }
 
@@ -201,7 +217,7 @@ export default class Input {
 
     var isMobileBrowser = device.isMobileBrowser;
 
-    // Cancel all events that occur on the canvas.  Optionally, pass scroll events
+    // Cancel all events that occur on the canvas. Optionally, pass scroll events
     // through to the page (apps that don't care about handling scroll events may
     // want to pass them through for easier browser debugging).
     if (isMobileBrowser) {
@@ -311,11 +327,6 @@ export default class Input {
       this._isDown = true;
     } else if (type == eventTypes.SELECT) {
       this._isDown = false;
-
-      if (this._toggleNode) {
-        document.body.removeChild(this._toggleNode);
-        document.body.appendChild(this._toggleNode);
-      }
     }
 
     var dpr = device.screen.devicePixelRatio;
