@@ -1,3 +1,5 @@
+import { CACHE } from 'base';
+import Promise from 'bluebird';
 import loader from 'ui/resource/loader';
 import loaders from 'ui/resource/primitiveLoaders'
 import Image from 'ui/resource/Image';
@@ -11,7 +13,7 @@ import ImageViewCache from 'ui/resource/ImageViewCache';
 
 import AnimationData from './AnimationData';
 
-var CACHE = loaders.loadFile.cache;
+var LoadRequest = loader.LoadRequest;
 
 /* TERMINOLOGY
  *
@@ -28,13 +30,7 @@ var CACHE = loaders.loadFile.cache;
  *
  * Symbol: an element that has a timeline.
  *
- * MovieClip: an instance of a Symbol within a timeline
- *   whose frame is independent from the frame of the timeline it belongs to.
- *
- * Graphic: an instance of a Symbol within a timeline
- *   whose frame is dependent from the frame of the timeline it belongs to.
- *
- * FlashPlayerView (currently named MovieClip): an object that exposes an API to load and play Flash animations.
+ * MovieClip: an object that exposes an API to load and play Flash animations.
  *   It has a library, an FPS and a set of API to control and combine Flash animations data.
  *   It also inherits from a timestep View and be handled as such.
  *
@@ -63,7 +59,6 @@ const NULL_BOUNDS = new Rect();
 var viewCount = 0;
 var EMPTY = {};
 
-// TODO: rename to FlashPlayerView
 export default class MovieClip extends View {
 
   constructor (opts) {
