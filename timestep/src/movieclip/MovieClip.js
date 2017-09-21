@@ -313,7 +313,7 @@ export default class MovieClip extends View {
     this._animationName = animationName;
     this.looping = loop || false;
     this.isPlaying = true;
-    this.animation = this._library[animationName];
+    this.animation = this._substitutes[animationName] || this._library[animationName];
     this.timeline = this.animation.timeline;
     this.frameCount = this.animation.duration;
     this.frame = 0;
