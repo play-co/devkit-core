@@ -101,7 +101,7 @@ export default class ImageWrapper extends PubSub {
         resourceLoader.setAssetCrossOrigin(url, this._crossOrigin);
       }
 
-      resourceLoader._loadImage(url, img => this._onLoad(img, loadRequestID));
+      resourceLoader.loadImage(url, img => this._onLoad(img, loadRequestID));
     }
   }
 
