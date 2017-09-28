@@ -21,78 +21,23 @@ let exports = {};
  * System timer exposed to the device.
  */
 
-import WebGLContext2D from './webgl/WebGLContext2D';
-
 var _onTick = null;
-var disableRequestAnimFrame = !WebGLContext2D.isSupported;
-var disablePostMessage = false;
-var asFastAsPossible = !WebGLContext2D.isSupported;
-var MIN_DT = 16;
+var requestID;
 
-if (window.postMessage) {
-  function postMessageCb (evt) {
-    if (evt.data == 'timestep.TICK') {
-      onFrame();
-    }
-  }
+var requestAnimationFrame = window.requestAnimationFrame;
+var cancelAnimationFrame = window.cancelAnimationFrame;
+var prefixes = [
+  '',
+  'webkit',
+  'moz',
+  'o',
+  'ms'
+];
 
-  if (window.addEventListener) {
-    window.addEventListener('message', postMessageCb, false);
-  } else {
-    window.attachEvent('onmessage', postMessageCb);
-  }
-} else {
-  disablePostMessage = true;
-  tickNow = sendTimeoutNow;
-}
-
-function sendPostMessage () {
-  window.postMessage('timestep.TICK', '*');
-}
-
-function sendTimeout () {
-  setTimeout(onFrame, MIN_DT);
-}
-
-function sendTimeoutNow () {
-  setTimeout(onFrame, 0);
-}
-
-var fastDriver = sendTimeoutNow,
-  mainDriver = sendTimeout,
-  cancelDriver, driverId;
-
-if (asFastAsPossible) {
-  if (!disablePostMessage) {
-    fastDriver = mainDriver = sendPostMessage;
-  } else {
-    mainDriver = sendTimeoutNow;
-  }
-} else {
-  var reqAnim = window.requestAnimationFrame;
-  var cancelAnim = window.cancelAnimationFrame;
-  var prefixes = [
-    '',
-    'webkit',
-    'moz',
-    'o',
-    'ms'
-  ];
-
-  if (!disableRequestAnimFrame) {
-    for (var i = 0; i < prefixes.length && !reqAnim; ++i) {
-      reqAnim = window[prefixes[i] + 'RequestAnimationFrame'];
-      cancelAnim = window[prefixes[i] + 'CancelAnimationFrame'] || window[
-        prefixes[i] + 'CancelRequestAnimationFrame'];
-    }
-  }
-
-  if (reqAnim) {
-    fastDriver = mainDriver = reqAnim;
-    cancelDriver = cancelAnim;
-  } else if (!disablePostMessage) {
-    fastDriver = sendPostMessage;
-  }
+for (var i = 0; i < prefixes.length && !requestAnimationFrame; ++i) {
+  requestAnimationFrame = window[prefixes[i] + 'RequestAnimationFrame'];
+  cancelAnimationFrame = window[prefixes[i] + 'CancelAnimationFrame'] || window[
+    prefixes[i] + 'CancelRequestAnimationFrame'];
 }
 
 /*
@@ -105,34 +50,29 @@ var slow = 0, fast = 0;
 function onFrame () {
   if (_onTick) {
     var now = Date.now();
-    var dt = now - (exports.last || now);
+    var dt = now - exports.last;
 
     exports.last = now;
 
-    if (dt > MIN_DT) {
-      //  ++fast;
-      driverId = fastDriver.call(window, onFrame);
-    } else {
-      //  ++slow;
-      driverId = mainDriver.call(window, onFrame);
-    }
+    requestID = requestAnimationFrame(onFrame);
 
     _onTick(dt);
   }
 }
 
-exports.last = null;
+exports.last = 0;
 
 exports.start = function (onTick) {
   _onTick = onTick;
-  driverId = mainDriver.call(window, onFrame);
+  exports.last = Date.now();
+  requestID = requestAnimationFrame(onFrame);
 };
 
 exports.stop = function () {
   _onTick = null;
-  if (driverId) {
-    cancelDriver.call(window, driverId);
-    driverId = null;
+  if (requestID) {
+    cancelAnimationFrame(requestID);
+    requestID = null;
   }
 };
 

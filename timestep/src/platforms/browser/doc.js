@@ -24,8 +24,6 @@ import {
 
 import PubSub from 'lib/PubSub';
 import Enum from 'lib/Enum';
-import browser from 'util/browser';
-let $ = browser.$;
 
 import device from 'device';
 import userAgent from 'userAgent';
@@ -42,35 +40,18 @@ var defaultScalingMode = SCALING.RESIZE;
  * @extends lib.PubSub
  */
 class Document extends PubSub {
+
   constructor () {
     super();
 
-    if (!$) {
-      return;
-    }
-
-    var doc = GLOBAL.document;
-    var body = doc && doc.body;
-
-    this._el = $({
-      parent: body,
-      style: {
-        position: 'absolute',
-        overflow: 'hidden',
-        width: '100%',
-        height: '100%'
-      }
-    });
-
     device.screen.subscribe('Resize', this, 'onResize');
-    if (exports.postCreateHook) {
-      exports.postCreateHook(this);
-    }
     this.setScalingMode(defaultScalingMode);
   }
+
   unsubscribeResize () {
     device.screen.unsubscribe('Resize', this, 'onResize');
   }
+
   setEngine (engine) {
     if (engine == this._engine) {
       return;
@@ -88,24 +69,11 @@ class Document extends PubSub {
       this._canvas.style.position = 'fixed';
     }
 
-    this.appendChild(this._canvas);
+    document.body.appendChild(this._canvas);
+  }
 
-    if (this._canvas.getContext) {
-      var ctx = this._canvas.getContext(window.WebGLRenderingContext ?
-        'webgl' : '2d');
-      if (ctx.setParentNode) {
-        ctx.setParentNode(this._el);
-      }
-    }
-  }
-  getElement () {
-    return this._el;
-  }
   setScalingMode (scalingMode, opts) {
     this._scalingMode = scalingMode;
-
-    var el = this._el,
-      s = el.style;
 
     switch (scalingMode) {
       case SCALING.FIXED:
@@ -113,16 +81,11 @@ class Document extends PubSub {
           width: device.width,
           height: device.height
         });
-        s.width = opts.width + 'px';
-        s.height = opts.height + 'px';
         break;
       case SCALING.RESIZE:
         opts = merge(opts, { resizeCanvas: true });
       // fall through:
       case SCALING.MANUAL:
-        s.margin = '0px';
-        s.width = '100%';
-        s.height = '100%';
         break;
     }
 
@@ -130,18 +93,23 @@ class Document extends PubSub {
     this.onResize();
     setTimeout(bind(this, 'onResize'), 1000);
   }
+
   onResize () {
+    if (!this._canvas) {
+      return;
+    }
+
     var isIOS = userAgent.OS_TYPE === 'iPhone OS';
-    var el = this._el;
-    var s = this._el.style;
+    var el = this._canvas;
+    var cs = this._canvas.style;
     var orientation = device.screen.orientation;
     el.className = orientation;
 
     if (enableLandscapeScroll) {
       // on phones, ios7 will only ever be 320px high max (does not change until the 6+)
       var isLandscape = orientation === 'landscape';
-      document.documentElement.style.height = isLandscape && isIOS7 ? window.innerHeight ==
-        320 ? '320px' : '640px' : '100%';
+      document.documentElement.style.height = (isLandscape && isIOS7) ?
+        (window.innerHeight === 320 ? '320px' : '640px') : '100%';
       document.body.style.height = isIOS7 ? '100%' : '150%';
     } else {
       document.body.style.height = '100%';
@@ -180,28 +148,21 @@ class Document extends PubSub {
 
     switch (mode) {
       case SCALING.MANUAL:
+        // do nothing
         break;
 
-      // do nothing
       case SCALING.FIXED:
-      // try to center the container
-        el.style.top = Math.round(Math.max(0, (window.innerHeight - height) / 2)) +
-        'px';
-        el.style.left = Math.round(Math.max(0, (window.innerWidth - width) / 2)) +
-        'px';
-
-        s.width = width + 'px';
-        s.height = height + 'px';
+        // try to center the container
+        cs.top = Math.round(Math.max(0, (window.innerHeight - height) / 2)) + 'px';
+        cs.left = Math.round(Math.max(0, (window.innerWidth - width) / 2)) + 'px';
         break;
 
       case SCALING.RESIZE:
-        var cs = this._canvas && this._canvas.style;
         var dpr = device.screen.devicePixelRatio;
         var scaledWidth = width / dpr;
         var scaledHeight = height / dpr;
-      // if we have a canvas element, scale it
-        if (opts.resizeCanvas && this._canvas && (cs.width != scaledWidth || cs
-          .height != scaledHeight)) {
+        // if we have a canvas element, scale it
+        if (opts.resizeCanvas && this._canvas &&(cs.width != scaledWidth || cs.height != scaledHeight)) {
           this._canvas.width = width;
           this._canvas.height = height;
           var ctx = this._canvas.getContext();
@@ -229,9 +190,6 @@ class Document extends PubSub {
           cs.width = scaledWidth + 'px';
           cs.height = scaledHeight + 'px';
         }
-
-        s.width = scaledWidth + 'px';
-        s.height = scaledHeight + 'px';
         break;
     }
 
@@ -241,6 +199,7 @@ class Document extends PubSub {
       this._engine.render();
     }
   }
+
   _setDim (width, height) {
     if (this.width != width || this.height != height) {
       this.width = width;
@@ -248,44 +207,9 @@ class Document extends PubSub {
       this.publish('Resize', width, height);
     }
   }
-  setColors (bgColor, engineColor) {
-    if (this._el) {
-      this._el.style.background = engineColor;
-      document.documentElement.style.background = document.body.style.background =
-        bgColor;
-    }
-  }
-  appendChild (el) {
-    this._el.appendChild(el);
-  }
-  getOffset () {
-    return {
-      x: this._el.offsetLeft,
-      y: this._el.offsetTop
-    };
-  }
 }
 
 exports = new Document();
 exports.SCALING = SCALING;
-
-exports.setDocStyle = function () {
-  var doc = GLOBAL.document,
-    body = doc && doc.body;
-
-  if (body) {
-    var docStyle = {
-      height: '100%',
-      margin: '0px',
-      padding: '0px'
-    };
-
-    $.style(document.documentElement, docStyle);
-    $.style(document.body, docStyle);
-  }
-};
-
-exports.defaultParent = null;
-exports.postCreateHook = null;
 
 export default exports;

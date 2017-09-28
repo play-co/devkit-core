@@ -130,6 +130,9 @@ exports = class extends Emitter {
     var dpr = device.screen.devicePixelRatio;
     this._rootElement.style.width = opts.width / dpr + 'px';
     this._rootElement.style.height = opts.height / dpr + 'px';
+    this._rootElement.style.top = '0px';
+    this._rootElement.style.left = '0px';
+    this._rootElement.style.position = 'absolute';
     this._rootElement.id = 'timestep_onscreen_canvas';
     this._ctx = this._rootElement.getContext('2d');
     this._ctx.font = '11px ' + device.defaultFontFamily;
@@ -397,10 +400,6 @@ exports = class extends Emitter {
     this.publish('Render', this._ctx);
 
     if (this._ctx) {
-      if (DEBUG) {
-        this._renderFPS(this._ctx, dt);
-      }
-
       this._ctx.swap();
     }
   }

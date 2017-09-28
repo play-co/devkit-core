@@ -32,7 +32,20 @@ export default class AnimationData {
     this.frameRate = meta.frameRate;
 
     // Pool of transformation and color matrices
-    var transforms = data.transforms;
+    var transformArrays = data.transforms;
+    var transforms = new Array(transformArrays.length);
+    for (var t = 0; t < transformArrays.length; t += 1) {
+      var transformArray = transformArrays[t];
+      var transform = new Matrix();
+      transform.a = transformArray[0];
+      transform.b = transformArray[1];
+      transform.c = transformArray[2];
+      transform.d = transformArray[3];
+      transform.tx = transformArray[4];
+      transform.ty = transformArray[5];
+      transforms[t] = transform;
+    }
+
     var colors = data.colors;
 
     var symbols = data.symbols;
@@ -40,14 +53,14 @@ export default class AnimationData {
 
     // Exposed symbols can either be substituted or used as substitutes
     this.library = {};
+    this.libraryIDs = {};
 
     // Map of all the Flash elements in the animation data
     var elements = {};
 
-    // TODO: remove these properties, is used in Cats PropView & CatView
+    // TODO: make these properties private
     this.animations = this.library;
-    this.animationList = this.symbolList;
-
+    this.animationList = [];
 
     // populating library and list of elements with sprites
     var spritesData = data.sprites;
@@ -59,7 +72,9 @@ export default class AnimationData {
 
       var libraryID = spriteData.className;
       if (libraryID) {
+        this.animationList.push(libraryID);
         this.library[libraryID] = sprite;
+        this.libraryIDs[spriteID] = libraryID;
       }
     }
 
@@ -76,20 +91,21 @@ export default class AnimationData {
         timeline[f] = [];
       }
 
-      for (var c = 0; c < children.length; c += 1) {
+      for (var c = children.length - 1; c >= 0; c -= 1) {
         var instanceData = children[c];
         var frames = instanceData.frames;
         var instanceFirstFrame = frames[0];
         var instanceFrameCount = frames[1] - instanceFirstFrame + 1;
         var instanceTransforms = instanceData.transforms;
         var instanceColors = instanceData.colors;
-        var libraryID = instanceData.id;
+        var elementID = instanceData.id;
+        var libraryID = this.libraryIDs[elementID];
 
         for (var frame = 0; frame < instanceFrameCount; frame += 1) {
           var transform = transforms[instanceTransforms[frame]];
           var color = colors[instanceColors[frame]];
 
-          var instance = new Instance(elements[libraryID], frame, transform, color);
+          var instance = new Instance(elements[elementID], frame, transform, color, libraryID);
           timeline[instanceFirstFrame + frame].push(instance);
         }
       }
@@ -99,7 +115,9 @@ export default class AnimationData {
 
       var libraryID = symbolData.className;
       if (libraryID) {
+        this.animationList.push(libraryID);
         this.library[libraryID] = symbol;
+        this.libraryIDs[symbolID] = libraryID;
       }
     }
   }
@@ -112,11 +130,11 @@ export default class AnimationData {
 
 class Instance {
 
-  constructor (element, frame, transform, color) {
+  constructor (element, frame, transform, color, libraryID) {
     this.element = element;
 
     // Optional identifiers
-    this.libraryID = element.className || null; // unique symbol identifier (aka actionscript linkage)
+    this.libraryID = libraryID || null; // unique symbol identifier (aka actionscript linkage)
     // this.instanceName = instanceName; // unique instance identifier
 
     this.frame = frame;
@@ -125,15 +143,6 @@ class Instance {
     // TODO: replace alpha with full color transform
     // this.color = null;
   }
-
-  // getFrame (frameCount, frame) {
-  //   // instance of graphic
-  //   if (frame >= frameCount) {
-  //     return frame % frameCount;
-  //   }
-
-  //   return frame;
-  // }
 
 }
 
@@ -144,8 +153,8 @@ class Instance {
 class Bounds {
 
   constructor (boundsData) {
-    this.x = boundsData.x;
-    this.y = boundsData.y;
+    this.x = -boundsData.x;
+    this.y = -boundsData.y;
     this.w = boundsData.w;
     this.h = boundsData.h;
   }
@@ -156,6 +165,7 @@ class Sprite {
 
   constructor (image, spriteData) {
     this.image = image;
+    this.frameCount = 1;
     this.bounds = new Bounds(spriteData);
   }
 
@@ -208,13 +218,13 @@ class Sprite {
 // Symbol
 // -----------------------------------
 
-// function getFrame (frameCount, frame) {
-//   if (frame >= frameCount) {
-//     return frame % frameCount;
-//   }
+function getFrame (frameCount, frame) {
+  if (frame >= frameCount) {
+    return frame % frameCount;
+  }
 
-//   return frame;
-// }
+  return frame;
+}
 
 class Symbol {
 
@@ -249,11 +259,6 @@ class Symbol {
       // Lookup in the substitutes map is slow, trying to avoid it
       var element = (libraryID !== null) && substitutes[libraryID] || child.element;
       var childFrame = getFrame(element.frameCount, child.frame);
-      // var childFrame = child.frame;
-      // var frameCount = element.frameCount;
-      // if (childFrame >= frameCount) {
-      //   frameCount = childFrame % frameCount;
-      // }
 
       // n.b element can be of 3 different types: Symbol, Sprite or MovieClip
       // therefore this method cannot be perfectly optimized by optimizer-compilers
@@ -288,7 +293,7 @@ class Symbol {
       var element = (libraryID !== null) && substitutes[libraryID] || child.element;
       var childFrame = getFrame(element.frameCount, child.frame);
 
-      var searchedElementID = (elementID === childID) ? null : elementID;
+      var searchedElementID = (elementID === libraryID) ? null : elementID;
       element.expandBoundingBox(boundingBox, searchedElementID, transform, childFrame, elapsedFrames, substitutes, currentBounds);
     }
   }

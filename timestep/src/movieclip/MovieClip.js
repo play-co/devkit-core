@@ -102,12 +102,13 @@ export default class MovieClip extends View {
     this._nbViewSubstitutions = 0;
 
     this._url = null;
+    this._data = null;
 
     this.fps = opts.fps ? opts.fps : 30;
     this.data = opts.data ? opts.data : null;
     this.buffered = opts.buffered ? opts.buffered : null;
 
-    if (!this.data && opts.url) {
+    if (!this._data && opts.url) {
       this.url = opts.url;
     }
 
@@ -248,13 +249,13 @@ export default class MovieClip extends View {
 
   updateBoundingBox (animation, elementID, transform) {
     this._bbox.reset();
-    if (!animation || !animation.timeline) {
+    if (!animation || !animation.frameCount) {
       return;
     }
 
     var actualFrame = this.frame;
-    var timeline = animation.timeline;
-    for (var frame = 0; frame < timeline.length; frame++) {
+    var frameCount = animation.frameCount;
+    for (var frame = 0; frame < frameCount; frame++) {
       animation.expandBoundingBox(this._bbox, elementID, transform, frame, frame, this._substitutes);
     }
   }
@@ -315,7 +316,7 @@ export default class MovieClip extends View {
     this.isPlaying = true;
     this.animation = this._substitutes[animationName] || this._library[animationName];
     this.timeline = this.animation.timeline;
-    this.frameCount = this.animation.duration;
+    this.frameCount = this.animation.frameCount;
     this.frame = 0;
     this.framesElapsed = 0;
     this._callback = callback || null;
@@ -346,7 +347,7 @@ export default class MovieClip extends View {
 
     if (this.frame >= this.frameCount) {
       if (this.looping) {
-        this.frame = this.frame % this.animation.duration;
+        this.frame = this.frame % this.animation.frameCount;
       } else {
         this.frame = this.frameCount > 0 ? this.frameCount - 1 : 0;
         this.stop();
@@ -414,32 +415,34 @@ export default class MovieClip extends View {
       var libraryID = libraryIDs[i];
       this._substitutes[libraryID] = library[libraryID];
     }
+
     this.clearBoundsMap();
   }
 
   substituteAllAnimations (animationData) {
     var library = animationData.library;
-    var symbolList = animationData.symbolList;
-    for (var s = 0; s < symbolList.length; s += 1) {
-      var symbolID = symbolList[s];
-      this._substitutes[symbolID] = library[symbolID];
+    var animationList = animationData.animationList;
+    for (var a = 0; a < animationList.length; a += 1) {
+      var animationID = animationList[a];
+      this._substitutes[animationID] = library[animationID];
     }
     this.clearBoundsMap();
   }
 
   setData (data) {
-    if (this.data === data) { return; }
+    if (this._data === data) { return; }
 
     if (data) {
-      this.data = data;
+      this._data = data;
       this._url = data.url;
       this.fps = this._opts.fps || this.data.frameRate || 30;
       this._url = data.url;
       this._library = data.library;
       this.emit(MovieClip.LOADED);
     } else {
-      this.data = null;
+      this._data = null;
       this.animation = null;
+      this._library = null;
       this._loaded = false;
     }
   }
@@ -464,7 +467,7 @@ export default class MovieClip extends View {
   }
 
   get animationList () {
-    return this.data && this.data.symbolList || [];
+    return this.data && this.data.animationList || [];
   }
 
   get fps () {
@@ -478,6 +481,14 @@ export default class MovieClip extends View {
 
   get loaded () {
     return !!this.data;
+  }
+
+  get data () {
+    return this._data;
+  }
+
+  set data (data) {
+    this.setData(data);
   }
 
   get url () {
@@ -558,40 +569,28 @@ function getAnimation (url) {
 }
 
 function loadAnimationMethod (url, cb, loader, priority, isExplicit) {
-  var jsonURL = url + '/data.js';
-
+  var jsonURL = url + '.json';
   loaders.loadJSON(jsonURL, jsonData => {
     if (jsonData === null) {
       return cb && cb(null);
     }
 
-    var imageURLs = [];
-    var spritesData = jsonData.textureOffsets;
-    var imageNames = [];
-    for (var spriteID in spritesData) {
-      var spriteData = spritesData[spriteID];
-      var imageName = spriteData.url;
-      imageNames.push(imageName);
-      imageURLs.push(url + '/' + imageName);
-    }
+    var imagePath = url.substr(0, url.lastIndexOf('/') + 1);
+    var imageURLs = jsonData.images.map(function (imageURL) {
+      return imagePath + imageURL;
+    });
 
-    var uniqueImageURLs = [];
-    imageURLs.reduce((urls, url) => {
-      if (urls.indexOf(url) === -1) { urls.push(url); }
-      return urls;
-    }, uniqueImageURLs);
+    loader.loadImages(imageURLs, domImages => {
 
-    loader.loadImages(uniqueImageURLs, images => {
-      var imageMap = {};
-      for (var i = 0; i < images.length; i += 1) {
-        imageMap[imageNames[i]] = new Image({
-          srcImage: images[i],
+      var images = [];
+      for (var i = 0; i < domImages.length; i += 1) {
+        images[i] = new Image({
+          srcImage: domImages[i],
           url: imageURLs[i]
         });
       }
 
-      var animationData = new AnimationData(jsonData, url, imageMap);
-      return cb && cb(animationData);
+      return cb && cb(new AnimationData(jsonData, url, images));
     }, priority, isExplicit);
   }, loader, priority, isExplicit);
 }
