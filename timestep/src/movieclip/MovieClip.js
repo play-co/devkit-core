@@ -73,7 +73,7 @@ export default class MovieClip extends View {
     this.frame = 0;
     this.framesElapsed = 0;
     this.looping = false;
-    this.frameCount = 0;
+    this.duration = 0;
     this.isPlaying = false;
     this._playOnLoadCallback = null;
     this._animationName = '';
@@ -166,8 +166,8 @@ export default class MovieClip extends View {
   }
 
   goto (frameIndex) {
-    if (this.frameCount === 0) { return; }
-    this.frame = frameIndex % this.frameCount;
+    if (this.duration === 0) { return; }
+    this.frame = frameIndex % this.duration;
     this.framesElapsed = frameIndex;
   }
 
@@ -249,13 +249,13 @@ export default class MovieClip extends View {
 
   updateBoundingBox (animation, elementID, transform) {
     this._bbox.reset();
-    if (!animation || !animation.frameCount) {
+    if (!animation || !animation.duration) {
       return;
     }
 
     var actualFrame = this.frame;
-    var frameCount = animation.frameCount;
-    for (var frame = 0; frame < frameCount; frame++) {
+    var duration = animation.duration;
+    for (var frame = 0; frame < duration; frame++) {
       animation.expandBoundingBox(this._bbox, elementID, transform, frame, frame, this._substitutes);
     }
   }
@@ -316,7 +316,7 @@ export default class MovieClip extends View {
     this.isPlaying = true;
     this.animation = this._substitutes[animationName] || this._library[animationName];
     this.timeline = this.animation.timeline;
-    this.frameCount = this.animation.frameCount;
+    this.duration = this.animation.duration;
     this.frame = 0;
     this.framesElapsed = 0;
     this._callback = callback || null;
@@ -345,11 +345,11 @@ export default class MovieClip extends View {
       this._elapsed -= this._frameMS;
     }
 
-    if (this.frame >= this.frameCount) {
+    if (this.frame >= this.duration) {
       if (this.looping) {
-        this.frame = this.frame % this.animation.frameCount;
+        this.frame = this.frame % this.animation.duration;
       } else {
-        this.frame = this.frameCount > 0 ? this.frameCount - 1 : 0;
+        this.frame = this.duration > 0 ? this.duration - 1 : 0;
         this.stop();
         if (this._callback) {
           var callback = this._callback;

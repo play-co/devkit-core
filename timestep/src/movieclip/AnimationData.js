@@ -166,6 +166,7 @@ class Sprite {
   constructor (image, spriteData) {
     this.image = image;
     this.frameCount = 1;
+    this.duration = spriteData.duration || 1;
     this.bounds = new Bounds(spriteData);
   }
 
@@ -228,9 +229,10 @@ function getFrame (frameCount, frame) {
 
 class Symbol {
 
-  constructor (timeline) {
+  constructor (timeline, duration) {
     this.timeline = timeline;
     this.frameCount = timeline.length;
+    this.duration = duration || this.frameCount;
     this.transform = new Matrix();
   }
 
