@@ -105,15 +105,15 @@ class Document extends PubSub {
     var orientation = device.screen.orientation;
     el.className = orientation;
 
-    if (enableLandscapeScroll) {
-      // on phones, ios7 will only ever be 320px high max (does not change until the 6+)
-      var isLandscape = orientation === 'landscape';
-      document.documentElement.style.height = (isLandscape && isIOS7) ?
-        (window.innerHeight === 320 ? '320px' : '640px') : '100%';
-      document.body.style.height = isIOS7 ? '100%' : '150%';
-    } else {
-      document.body.style.height = '100%';
-    }
+    // if (enableLandscapeScroll) {
+    //   // on phones, ios7 will only ever be 320px high max (does not change until the 6+)
+    //   var isLandscape = orientation === 'landscape';
+    //   document.documentElement.style.height = (isLandscape && isIOS7) ?
+    //     (window.innerHeight === 320 ? '320px' : '640px') : '100%';
+    //   document.body.style.height = isIOS7 ? '100%' : '150%';
+    // } else {
+    //   document.body.style.height = '100%';
+    // }
 
     logger.log('resize', device.width, device.height);
 

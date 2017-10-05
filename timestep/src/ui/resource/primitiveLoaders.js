@@ -104,7 +104,7 @@ function onRequestComplete (cb, asset) {
     return;
   }
 
-  if (nbAssetsLoading === 0 && pendingRequestsLowPriority.length > 0) {
+  if (nbAssetsLoading === 1 && pendingRequestsLowPriority.length > 0) {
     pendingRequestsLowPriority.shift()();
     return;
   }

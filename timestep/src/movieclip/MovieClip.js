@@ -545,17 +545,20 @@ function getAnimation (url) {
 }
 
 function loadAnimationMethod (url, cb, loader, priority, isExplicit) {
-  loader.loadJSON(url, jsonData => {
+
+  loader.loadJSON(url + '.json', jsonData => {
     if (jsonData === null) {
       return cb && cb(null);
     }
 
-    var imagePath = url.substr(0, url.lastIndexOf('.')) + '/';
+    var imagePath = url + '/';
     var imageURLs = jsonData.images.map(function (imageURL) {
       return imagePath + imageURL;
     });
 
+console.error('loadImages!', imageURLs)
     loader.loadImages(imageURLs, domImages => {
+console.error('domImages!', domImages)
 
       var images = [];
       for (var i = 0; i < domImages.length; i += 1) {
