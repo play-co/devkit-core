@@ -325,6 +325,14 @@ class Loader {
     this._loadSound(url, cb, priority, true);
   }
 
+  _loadJSON (url, cb, priority, isExplicit) {
+    this._loadAsset(url, loadJSON, cb, priority, isExplicit);
+  }
+
+  loadJSON (url, cb, priority) {
+    this._loadJSON(url, cb, priority, true);
+  }
+
   _loadImage (url, cb, priority, isExplicit) {
     url = this._getImageURL(url);
     this._loadAsset(url, loadImage, cb, priority, isExplicit);
@@ -340,6 +348,14 @@ class Loader {
 
   loadSounds (urls, cb, priority) {
     this._loadSounds(urls, cb, priority, true);
+  }
+
+  _loadJSONs (urls, cb, priority, isExplicit) {
+    this._loadAssets(urls, loadJSON, cb, priority, isExplicit);
+  }
+
+  loadJSONs (urls, cb, priority) {
+    this._loadJSONs(urls, cb, priority, true);
   }
 
   _loadImages (urls, cb, priority, isExplicit) {

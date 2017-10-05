@@ -62,6 +62,9 @@ export default class AnimationData {
     this.animations = this.library;
     this.animationList = [];
 
+    // Keeping track of image names
+    this.imageNames = {};
+
     // populating library and list of elements with sprites
     var spritesData = data.sprites;
     for (var spriteID in spritesData) {
@@ -122,6 +125,11 @@ export default class AnimationData {
     }
   }
 
+  getImage (libraryID) {
+    var sprite = this.library[libraryID];
+    return (sprite && sprite.image) || null;
+  }
+
 }
 
 // -----------------------------------
@@ -171,11 +179,11 @@ class Sprite {
   }
 
   _wrapRender (ctx, transform, alpha) {
-    ctx.setTransform(transform.a, transform.b, transform.c, transform.d, transform.tx, transform.ty);
-    ctx.globalAlpha = alpha;
-
-    var bounds = this.bounds;
     if (this.image) {
+      ctx.setTransform(transform.a, transform.b, transform.c, transform.d, transform.tx, transform.ty);
+      ctx.globalAlpha = alpha;
+
+      var bounds = this.bounds;
       this.image.renderShort(ctx, bounds.x, bounds.y, bounds.w, bounds.h);
     }
   }
@@ -238,6 +246,10 @@ class Symbol {
 
   _wrapRender (ctx, parentTransform, parentAlpha, frame, elapsedFrames, substitutes) {
     var children = this.timeline[frame];
+
+if (!children) {
+  debugger
+}
     for (var i = 0; i < children.length; i++) {
       var child = children[i];
 

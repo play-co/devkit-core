@@ -22,10 +22,9 @@ import { CACHE, logger } from 'base';
 import WebGLContext2D from 'platforms/browser/webgl/WebGLContext2D';
 
 var FILE_CACHE = CACHE;
-
+var JSON_CACHE = {};
 var IMAGE_CACHE = {};
 var SOUND_CACHE = {};
-var JSON_CACHE = {};
 
 var RETRY_MAP = {
   '598': true,
@@ -273,19 +272,22 @@ var loadFile = exports.loadFile;
 exports.loadFile.cache = FILE_CACHE;
 
 exports.loadJSON = function (url, cb, loader, priority, isExplicit) {
-  loadFile(url, (fileContent) => {
-    if (fileContent === null) {
-      return cb(null);
-    }
-
-    var json;
+  function parseJSON (fileContent) {
     try {
-      json = JSON.parse(fileContent);
+      return JSON.parse(fileContent);
     } catch (e) {
       logger.error('JSON file could not be parsed: ' + url);
-      json = null;
+      return null;
     }
-    return cb(json);
+  }
+
+  var fileContent = FILE_CACHE[url];
+  if (fileContent) {
+    return cb(parseJSON(fileContent));
+  }
+
+  loadFile(url, (fileContent) => {
+    return cb(parseJSON(fileContent));
   }, loader, priority, isExplicit);
 }
 exports.loadJSON.cache = JSON_CACHE;

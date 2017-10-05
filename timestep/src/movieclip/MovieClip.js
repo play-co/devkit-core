@@ -1,7 +1,6 @@
 import { CACHE } from 'base';
 import Promise from 'bluebird';
 import loader from 'ui/resource/loader';
-import loaders from 'ui/resource/primitiveLoaders'
 import Image from 'ui/resource/Image';
 
 import Rect from 'math/geom/Rect';
@@ -12,8 +11,6 @@ import Canvas from 'platforms/browser/Canvas';
 import ImageViewCache from 'ui/resource/ImageViewCache';
 
 import AnimationData from './AnimationData';
-
-var LoadRequest = loader.LoadRequest;
 
 /* TERMINOLOGY
  *
@@ -74,6 +71,7 @@ export default class MovieClip extends View {
     this.framesElapsed = 0;
     this.looping = false;
     this.duration = 0;
+    this.frameCount = 0;
     this.isPlaying = false;
     this._playOnLoadCallback = null;
     this._animationName = '';
@@ -167,7 +165,7 @@ export default class MovieClip extends View {
 
   goto (frameIndex) {
     if (this.duration === 0) { return; }
-    this.frame = frameIndex % this.duration;
+    this.frame = frameIndex % this.frameCount;
     this.framesElapsed = frameIndex;
   }
 
@@ -249,13 +247,13 @@ export default class MovieClip extends View {
 
   updateBoundingBox (animation, elementID, transform) {
     this._bbox.reset();
-    if (!animation || !animation.duration) {
+    if (!animation || !animation.frameCount) {
       return;
     }
 
     var actualFrame = this.frame;
-    var duration = animation.duration;
-    for (var frame = 0; frame < duration; frame++) {
+    var frameCount = animation.frameCount;
+    for (var frame = 0; frame < frameCount; frame++) {
       animation.expandBoundingBox(this._bbox, elementID, transform, frame, frame, this._substitutes);
     }
   }
@@ -317,6 +315,7 @@ export default class MovieClip extends View {
     this.animation = this._substitutes[animationName] || this._library[animationName];
     this.timeline = this.animation.timeline;
     this.duration = this.animation.duration;
+    this.frameCount = this.animation.duration;
     this.frame = 0;
     this.framesElapsed = 0;
     this._callback = callback || null;
@@ -345,18 +344,16 @@ export default class MovieClip extends View {
       this._elapsed -= this._frameMS;
     }
 
-    if (this.frame >= this.duration) {
-      if (this.looping) {
-        this.frame = this.frame % this.animation.duration;
-      } else {
-        this.frame = this.duration > 0 ? this.duration - 1 : 0;
-        this.stop();
-        if (this._callback) {
-          var callback = this._callback;
-          this._callback = null;
-          callback();
-        }
+    if (this.framesElapsed >= this.duration && !this.looping) {
+      this.frame = this.frameCount > 0 ? this.frameCount - 1 : 0;
+      this.stop();
+      if (this._callback) {
+        var callback = this._callback;
+        this._callback = null;
+        callback();
       }
+    } else if (this.frame >= this.frameCount) {
+      this.frame = this.frame % this.frameCount;
     }
 
     if (this.frame !== currentFrame) {
@@ -544,38 +541,16 @@ function loadAnimations (urls, cb, priority) {
 
 const ANIMATION_CACHE = {};
 function getAnimation (url) {
-  var animationData = ANIMATION_CACHE[url];
-  if (!animationData) {
-    // TODO: remove this whole block of code when animations are properly preloaded
-    var fullURL = url + '/data.js';
-
-    var dataString = CACHE[fullURL];
-    if (dataString) {
-      var jsonData = JSON.parse(dataString);
-
-      var imageMap = [];
-      var spritesData = jsonData.textureOffsets;
-      for (var spriteID in spritesData) {
-        var spriteData = spritesData[spriteID];
-        var imageURL = spriteData.url;
-
-        imageMap[imageURL] = ImageViewCache.getImage(url + '/' + imageURL);
-      }
-
-      animationData = ANIMATION_CACHE[fullURL] = new AnimationData(jsonData, url, imageMap);
-    }
-  }
-  return animationData;
+  return ANIMATION_CACHE[url];
 }
 
 function loadAnimationMethod (url, cb, loader, priority, isExplicit) {
-  var jsonURL = url + '.json';
-  loaders.loadJSON(jsonURL, jsonData => {
+  loader.loadJSON(url, jsonData => {
     if (jsonData === null) {
       return cb && cb(null);
     }
 
-    var imagePath = url.substr(0, url.lastIndexOf('/') + 1);
+    var imagePath = url.substr(0, url.lastIndexOf('.')) + '/';
     var imageURLs = jsonData.images.map(function (imageURL) {
       return imagePath + imageURL;
     });
@@ -592,7 +567,7 @@ function loadAnimationMethod (url, cb, loader, priority, isExplicit) {
 
       return cb && cb(new AnimationData(jsonData, url, images));
     }, priority, isExplicit);
-  }, loader, priority, isExplicit);
+  }, priority);
 }
 loadAnimationMethod.cache = ANIMATION_CACHE;
 loader.loadMethods.loadMovieClip = loadAnimationMethod;
