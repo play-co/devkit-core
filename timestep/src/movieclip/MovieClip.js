@@ -1,4 +1,4 @@
-import { CACHE } from 'base';
+import { CACHE, logger } from 'base';
 import Promise from 'bluebird';
 import loader from 'ui/resource/loader';
 import Image from 'ui/resource/Image';
@@ -313,6 +313,11 @@ export default class MovieClip extends View {
     this.looping = loop || false;
     this.isPlaying = true;
     this.animation = this._substitutes[animationName] || this._library[animationName];
+    if (!this.animation) {
+      logger.warn('Missing animation: ' + animationName);
+      this.animation = AnimationData.EMPTY_SYMBOL;
+    }
+
     this.timeline = this.animation.timeline;
     this.duration = this.animation.duration;
     this.frameCount = this.animation.duration;
@@ -556,9 +561,7 @@ function loadAnimationMethod (url, cb, loader, priority, isExplicit) {
       return imagePath + imageURL;
     });
 
-console.error('loadImages!', imageURLs)
     loader.loadImages(imageURLs, domImages => {
-console.error('domImages!', domImages)
 
       var images = [];
       for (var i = 0; i < domImages.length; i += 1) {

@@ -247,9 +247,6 @@ class Symbol {
   _wrapRender (ctx, parentTransform, parentAlpha, frame, elapsedFrames, substitutes) {
     var children = this.timeline[frame];
 
-if (!children) {
-  debugger
-}
     for (var i = 0; i < children.length; i++) {
       var child = children[i];
 
@@ -260,19 +257,15 @@ if (!children) {
 
       var libraryID = child.libraryID;
 
-      // var childFrame;
-      // // Lookup in the substitutes map is slow, trying to avoid it
-      // var element = (libraryID !== null) && substitutes[libraryID];
-      // if (element) {
-      //   childFrame = getFrame(element.frameCount, elapsedFrames);
-      // } else {
-      //   element = child.element;
-      //   childFrame = getFrame(element.frameCount, child.frame);
-      // }
-
+      var childFrame;
       // Lookup in the substitutes map is slow, trying to avoid it
-      var element = (libraryID !== null) && substitutes[libraryID] || child.element;
-      var childFrame = getFrame(element.frameCount, child.frame);
+      var element = (libraryID !== null) && substitutes[libraryID];
+      if (element) {
+        childFrame = getFrame(element.frameCount, elapsedFrames);
+      } else {
+        element = child.element;
+        childFrame = getFrame(element.frameCount, child.frame);
+      }
 
       // n.b element can be of 3 different types: Symbol, Sprite or MovieClip
       // therefore this method cannot be perfectly optimized by optimizer-compilers
@@ -295,17 +288,14 @@ if (!children) {
 
       var libraryID = child.libraryID;
 
-      // var childFrame;
-      // var element = (libraryID !== null) && substitutes[libraryID];
-      // if (element) {
-      //   childFrame = getFrame(element.frameCount, elapsedFrames);
-      // } else {
-      //   element = child.element;
-      //   childFrame = getFrame(element.frameCount, child.frame);
-      // }
-
-      var element = (libraryID !== null) && substitutes[libraryID] || child.element;
-      var childFrame = getFrame(element.frameCount, child.frame);
+      var childFrame;
+      var element = (libraryID !== null) && substitutes[libraryID];
+      if (element) {
+        childFrame = getFrame(element.frameCount, elapsedFrames);
+      } else {
+        element = child.element;
+        childFrame = getFrame(element.frameCount, child.frame);
+      }
 
       var searchedElementID = (elementID === libraryID) ? null : elementID;
       element.expandBoundingBox(boundingBox, searchedElementID, transform, childFrame, elapsedFrames, substitutes, currentBounds);
@@ -315,4 +305,4 @@ if (!children) {
 }
 
 var emptyTimeline = [[]];
-AnimationData.EMPTY_SYMBOL = new Symbol(emptyTimeline);
+AnimationData.EMPTY_SYMBOL = new Symbol(emptyTimeline, 1);
