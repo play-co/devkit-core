@@ -1,4 +1,4 @@
-import { CACHE, logger } from 'base';
+import { logger } from 'base';
 import Promise from 'bluebird';
 import loader from 'ui/resource/loader';
 import Image from 'ui/resource/Image';

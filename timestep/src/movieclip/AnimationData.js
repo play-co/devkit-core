@@ -1,4 +1,4 @@
-
+import { logger } from 'base';
 import Matrix from 'platforms/browser/webgl/Matrix2D';
 
 // -----------------------------------
@@ -84,44 +84,57 @@ export default class AnimationData {
 
     // populating library and list of elements with symbols
     for (var s = 0; s < this.symbolList.length; s += 1) {
-      var symbolID = this.symbolList[s];
-      var symbolData = symbols[symbolID];
-      var children = symbolData.children;
-      var frameCount = symbolData.frameCount;
+      this.processSymbol(symbols, this.symbolList[s], elements, transforms, colors);
+    }
+  }
 
-      var timeline = new Array(frameCount);
-      for (var f = 0; f < timeline.length; f += 1) {
-        timeline[f] = [];
-      }
+  processSymbol (symbols, symbolID, elements, transforms, colors) {
+    var symbolData = symbols[symbolID];
+    if (!symbolData) {
+      logger.warn('Reference to non-existent symbol: ' + symbolID);
+    }
 
-      for (var c = children.length - 1; c >= 0; c -= 1) {
-        var instanceData = children[c];
-        var frames = instanceData.frames;
-        var instanceFirstFrame = frames[0];
-        var instanceFrameCount = frames[1] - instanceFirstFrame + 1;
-        var instanceTransforms = instanceData.transforms;
-        var instanceColors = instanceData.colors;
-        var elementID = instanceData.id;
-        var libraryID = this.libraryIDs[elementID];
+    var children = symbolData.children;
+    var frameCount = symbolData.frameCount;
 
-        for (var frame = 0; frame < instanceFrameCount; frame += 1) {
-          var transform = transforms[instanceTransforms[frame]];
-          var color = colors[instanceColors[frame]];
+    var timeline = new Array(frameCount);
+    for (var f = 0; f < timeline.length; f += 1) {
+      timeline[f] = [];
+    }
 
-          var instance = new Instance(elements[elementID], frame, transform, color, libraryID);
-          timeline[instanceFirstFrame + frame].push(instance);
+    for (var c = children.length - 1; c >= 0; c -= 1) {
+      var instanceData = children[c];
+      var frames = instanceData.frames;
+      var instanceFirstFrame = frames[0];
+      var instanceFrameCount = frames[1] - instanceFirstFrame + 1;
+      var instanceTransforms = instanceData.transforms;
+      var instanceColors = instanceData.colors;
+      var elementID = instanceData.id;
+      var libraryID = this.libraryIDs[elementID];
+
+      for (var frame = 0; frame < instanceFrameCount; frame += 1) {
+        var transform = transforms[instanceTransforms[frame]];
+        var color = colors[instanceColors[frame]];
+
+        var element = elements[elementID];
+        if (!element) {
+          this.processSymbol(symbols, elementID, elements, transforms, colors);
+          element = elements[elementID];
         }
-      }
 
-      var symbol = new Symbol(timeline);
-      elements[symbolID] = symbol;
-
-      var libraryID = symbolData.className;
-      if (libraryID) {
-        this.animationList.push(libraryID);
-        this.library[libraryID] = symbol;
-        this.libraryIDs[symbolID] = libraryID;
+        var instance = new Instance(element, frame, transform, color, libraryID);
+        timeline[instanceFirstFrame + frame].push(instance);
       }
+    }
+
+    var symbol = new Symbol(timeline);
+    elements[symbolID] = symbol;
+
+    var libraryID = symbolData.className;
+    if (libraryID) {
+      this.animationList.push(libraryID);
+      this.library[libraryID] = symbol;
+      this.libraryIDs[symbolID] = libraryID;
     }
   }
 
@@ -255,16 +268,27 @@ class Symbol {
       transform.copy(parentTransform);
       transform.transform(child.transform);
 
-      var libraryID = child.libraryID;
+      // var libraryID = child.libraryID;
 
-      var childFrame;
+      // var childFrame;
+      // // Lookup in the substitutes map is slow, trying to avoid it
+      // var element = (libraryID !== null) && substitutes[libraryID];
+      // if (element) {
+      //   childFrame = getFrame(element.frameCount, elapsedFrames);
+      // } else {
+      //   element = child.element;
+      //   childFrame = getFrame(element.frameCount, child.frame);
+      // }
+
       // Lookup in the substitutes map is slow, trying to avoid it
-      var element = (libraryID !== null) && substitutes[libraryID];
-      if (element) {
-        childFrame = getFrame(element.frameCount, elapsedFrames);
-      } else {
+      var element, childFrame;
+      var libraryID = child.libraryID;
+      if (libraryID === null) {
         element = child.element;
         childFrame = getFrame(element.frameCount, child.frame);
+      } else {
+        element = substitutes[libraryID] || child.element;
+        childFrame = getFrame(element.frameCount, elapsedFrames);
       }
 
       // n.b element can be of 3 different types: Symbol, Sprite or MovieClip
@@ -286,15 +310,14 @@ class Symbol {
       transform.copy(parentTransform);
       transform.transform(child.transform);
 
+      var element, childFrame;
       var libraryID = child.libraryID;
-
-      var childFrame;
-      var element = (libraryID !== null) && substitutes[libraryID];
-      if (element) {
-        childFrame = getFrame(element.frameCount, elapsedFrames);
-      } else {
+      if (libraryID === null) {
         element = child.element;
         childFrame = getFrame(element.frameCount, child.frame);
+      } else {
+        element = substitutes[libraryID] || child.element;
+        childFrame = getFrame(element.frameCount, elapsedFrames);
       }
 
       var searchedElementID = (elementID === libraryID) ? null : elementID;
