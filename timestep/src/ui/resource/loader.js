@@ -22,9 +22,9 @@ import { logger } from 'base';
 var LOW_RES_KEY = 'low_res_';
 var LOW_RES_ENABLED = false;
 if (userAgent.OS_TYPE === 'Android') {
-  LOW_RES_ENABLED = CONFIG.android.enableLowRes;
+  LOW_RES_ENABLED = CONFIG.android.enableLowRes || false;
 } else if (userAgent.OS_TYPE === 'iPhone OS') {
-  LOW_RES_ENABLED = CONFIG.ios.enableLowRes;
+  LOW_RES_ENABLED = CONFIG.ios.enableLowRes || false;
 }
 
 // special application resolution settings
