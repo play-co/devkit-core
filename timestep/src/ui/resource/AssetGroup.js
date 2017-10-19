@@ -19,7 +19,8 @@ class AssetGroup {
     this._ids = [];
 
     this._priority = priority;
-    this._assetsById = {};
+    this._assetsByID = {};
+    this._identifiedURLs = {};
     this._loaded = false;
     this._progress = 0;
     this._nbRequests = 0;
@@ -57,7 +58,7 @@ class AssetGroup {
 
   _load (cb, contextualAssetsURLs) {
     if (this._loaded && (!contextualAssetsURLs || contextualAssetsURLs.length === 0)) {
-      return cb && cb(this._assetsById);
+      return cb && cb(this._assetsByID);
     }
 
     var generatedAssetURLs;
@@ -75,7 +76,7 @@ class AssetGroup {
     this._nbRequests = this._urls.length;
     loader._loadAssets(this._urls, this._loadMethods,
       (assets) => {
-        var assetsByID = this._assetsById = {};
+        var assetsByID = this._assetsByID = {};
         for (var a = 0; a < assets.length; a += 1) {
           var id = this._ids[a];
           var url = this._urls[a];
@@ -104,9 +105,8 @@ class AssetGroup {
   }
 
   load (cb, contextualAssetsURLs) {
-    var dependency = this._dependency;
-    if (dependency) {
-      dependency.load((depAssetsByID) => {
+    if (this._dependency) {
+      this._dependency.load((depAssetsByID) => {
         this._load((assetsByID) => {
           for (var assetID in depAssetsByID) {
             assetsByID[assetID] = depAssetsByID[assetID];
@@ -121,10 +121,18 @@ class AssetGroup {
     this._load(cb, contextualAssetsURLs);
   }
 
+  getAssetURL (assetID) {
+    var url = this._identifiedURLs[assetID];
+    if (!url && this._dependency) {
+      url = this._dependency.getAssetURL(assetID);
+    }
+    return url;
+  }
+
   // TODO: give more control over memory by adding possibility to unload group of assets
   // unload () {
     // this._loaded = false;
-    // this._assetsById = {};
+    // this._assetsByID = {};
     // TODO: recursively unload unused dependencies
   // }
 
@@ -140,6 +148,7 @@ class AssetGroup {
       priority = url.priority;
       loadMethod = url.loadMethod;
       url = url.url;
+      this._identifiedURLs[id] = url;
     }
 
     // Ugly temporary fix to properly load low res spritesheets
