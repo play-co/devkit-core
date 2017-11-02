@@ -305,7 +305,7 @@ export default class MovieClip extends View {
         this._playOnLoadCallback = null;
 
         // make sure this animation exists in the current data
-        if (this._library[animationName]) {
+        if (this.getAnimationData(animationName)) {
           this.play(animationName, callback, loop);
         }
       };
@@ -314,13 +314,24 @@ export default class MovieClip extends View {
       return;
     }
 
-    this._frameDirty = animationName !== this._animationName;
-    this._animationName = animationName;
+    var animationData = this.getAnimationData(animationName);
+    if (!animationData) {
+      console.error('MISSING MOVIECLIP ANIMATION:', animationName, 'FOR URL:', this._url);
+
+      // bail if we don't actually find an animation to play
+      this.animation = null;
+      this.looping = false;
+      this.isPlaying = false;
+      return;
+    }
+
     this.looping = loop || false;
     this.isPlaying = true;
-    this.animation = this._substitutes[animationName] || this._library[animationName];
-    this.timeline = this.animation.timeline;
-    this.frameCount = this.animation.duration;
+    this._frameDirty = animationName !== this._animationName;
+    this._animationName = animationName;
+    this.animation = animationData;
+    this.timeline = animationData.timeline;
+    this.frameCount = animationData.duration;
     this.frame = 0;
     this.framesElapsed = 0;
     this._callback = callback || null;
@@ -366,6 +377,10 @@ export default class MovieClip extends View {
     if (this.frame !== currentFrame) {
       this._frameDirty = true;
     }
+  }
+
+  getAnimationData (name) {
+    return this._substitutes[name] || this._library[name];
   }
 
   updateCanvasBounds (bounds) {
