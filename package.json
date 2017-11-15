@@ -8,7 +8,7 @@
     "url": "http://github.com/gameclosure/devkit-core.git"
   },
   "dependencies": {
-    "@blackstormlabs/jsio-webpack-v1": "^2.2.0",
+    "@blackstormlabs/jsio-webpack-v1": "^2.3.0",
     "archiver": "^0.14.4",
     "bluebird": "^3.4.7",
     "chalk": "^1.1.1",
