@@ -196,7 +196,7 @@ exports.JSCompiler = Class(function () {
 
         // TODO: turn this on and remove the postConfigure aliases
         options.scanLibs = false;
-        options.useGitRevisionPlugin = 'production';
+        options.useGitRevisionPlugin = 'always';
 
         configurator.plugin(
           'CommonsChunk_thirdParty',
