@@ -7,6 +7,7 @@ import pixel from 'facebook-pixel';
 
 import { merge, logger } from 'base';
 
+const BATCH_UPDATE_INTERVAL = 5000;
 
 /**
  * Ployfill for toISOString from:
@@ -46,6 +47,7 @@ class Analytics {
     this.eventQueue = [];
     this.sessionData = {};
     this._amplitudeClient = null;
+    this._abTestVariants = null;
     this.pixelEnabled = false;
   }
 
@@ -115,9 +117,7 @@ class Analytics {
         output: 'parsed_user_agent'
       }, {
         name: 'keen:date_time_parser',
-        input: {
-          date_time: 'timestamp',
-        },
+        input: { date_time: 'timestamp' },
         output: 'timestamp_info'
       }]
     };
@@ -139,7 +139,7 @@ class Analytics {
 
     this.processEventQueue();
 
-    window.setInterval(() => this.processEventQueue(), 5000);
+    window.setInterval(() => this.processEventQueue(), BATCH_UPDATE_INTERVAL);
   }
 
   /**
@@ -237,6 +237,10 @@ class Analytics {
           data.keen = this.keenAddons;
           data.userProperties = merge({}, this.userProperties);
 
+          if (this._abTestVariants) {
+            data.abTestVariants = this._abTestVariants;
+          }
+
           // special nested ab tests for Keen
           if (GC.app && GC.app.abTests) {
             GC.app.abTests.applyKeenData(data);
@@ -258,11 +262,10 @@ class Analytics {
   }
 
   /**
-   * Keen.io API for tracking AB Tests
+   * API for tracking AB Tests
    */
-
   setABTestVariants (data) {
-    keen.setABTestVariants(data);
+    this._abTestVariants = this._abTestVariants ? merge(data, this._abTestVariants) : merge({}, data);
   }
 
   /**
