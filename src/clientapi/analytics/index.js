@@ -88,6 +88,8 @@ class Analytics {
     this.userID = params.userID;
 
     var isDev = userAgent.SIMULATED || process.env.NODE_ENV === 'development';
+    this.enabled = !userAgent.SIMULATED && (params.dev || !isDev);
+
     params = isDev && params.dev ? merge(params.dev, params.prod) : params.prod;
 
     if (params.pixel && params.pixel.enabled) {
@@ -213,8 +215,8 @@ class Analytics {
         data.BROWSER_VERSION = userAgent.BROWSER_VERSION;
         data.SIMULATED = userAgent.SIMULATED;
 
-        if (process.env.NODE_ENV !== 'production') {
-          log(`Skipping event send (development mode): key= ${key} data=`, data);
+        if (!this.enabled) {
+          log(`Skipping event send (no config for current environment): key= ${key} data=`, data);
           continue;
         }
 
